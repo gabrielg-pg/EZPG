@@ -154,21 +154,27 @@ export function StoreCards({ initialStores }: { initialStores: StoreData[] }) {
 
   const handleUpdateProgress = async (storeId: number, progress: number) => {
     startTransition(async () => {
-      const result = await updateStoreProgress(storeId, progress)
-      if (result.success) {
-        setStores(
-          stores.map((s) =>
-            s.id === storeId
-              ? {
-                  ...s,
-                  progress,
-                  status: progress >= 100 ? "concluido" : progress > 0 ? "em_andamento" : "pendente",
-                }
-              : s,
-          ),
-        )
-      }
-    })
+  const result = await updateStoreProgress(storeId, progress)
+
+  if (result.success) {
+    setStores(
+      stores.map((s) =>
+        s.id === storeId
+          ? {
+              ...s,
+              progress,
+              status:
+                progress >= 100
+                  ? "concluido"
+                  : progress > 0
+                  ? "em_andamento"
+                  : "pendente",
+            }
+          : s,
+      ),
+    )
+  }
+})
   }
 
   const handleViewStore = async (storeId: number) => {
@@ -180,6 +186,22 @@ export function StoreCards({ initialStores }: { initialStores: StoreData[] }) {
       }
     })
   }
+
+  const handleMarkAsConcluded = async () => {
+  if (!selectedStore) return
+
+  startTransition(async () => {
+    const result = await updateStoreProgress(selectedStore.store.id, 100)
+    if (result.success) {
+      setStores(
+        stores.map((s) =>
+          s.id === selectedStore.store.id ? { ...s, progress: 100, status: "concluido" } : s,
+        ),
+      )
+      setViewDialogOpen(false)
+    }
+  })
+}
 
   const handleEditStore = async (storeId: number) => {
     startTransition(async () => {
@@ -533,6 +555,15 @@ export function StoreCards({ initialStores }: { initialStores: StoreData[] }) {
           )}
 
           <DialogFooter>
+            {selectedStore?.store.status !== "concluido" && (
+  <Button
+    onClick={handleMarkAsConcluded}
+    disabled={isPending}
+    className="bg-green-600/80 hover:bg-green-600 text-white"
+  >
+    Marcar como concluída
+  </Button>
+)}
             <Button variant="outline" onClick={() => setViewDialogOpen(false)}>
               Fechar
             </Button>

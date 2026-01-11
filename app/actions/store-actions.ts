@@ -41,7 +41,7 @@ export async function createStore(data: {
   try {
     const storeResult = await sql`
       INSERT INTO stores (name, store_number, region, plan, progress, status, created_by, drive_link)
-      VALUES (${data.storeName}, ${data.storeNumber}, ${data.region}, ${data.plan}, 100, 'concluido', ${user.id}, ${data.driveLink || null})
+VALUES (${data.storeName}, ${data.storeNumber}, ${data.region}, ${data.plan}, 25, 'em_andamento', ${user.id}, ${data.driveLink || null})
       RETURNING id
     `
 
