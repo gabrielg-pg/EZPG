@@ -22,11 +22,11 @@ export function DashboardLayout({ children, userRole = "user" }: DashboardLayout
   const pathname = usePathname()
 
   const navigation = [
-    { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["admin", "comercial", "user"] },
-    { name: "Nova Loja", href: "/nova-loja", icon: Store, roles: ["admin", "comercial", "user"] },
-    { name: "Reuniões", href: "/reunioes", icon: Calendar, roles: ["admin", "comercial"] },
-    { name: "Admin", href: "/admin", icon: Users, roles: ["admin"] },
-  ]
+  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["admin"] },
+  { name: "Nova Loja", href: "/nova-loja", icon: Store, roles: ["admin"] },
+  { name: "Reuniões", href: "/reunioes", icon: Calendar, roles: ["admin", "comercial"] },
+  { name: "Admin", href: "/admin", icon: Users, roles: ["admin"] },
+]
 
   const filteredNavigation = navigation.filter((item) => item.roles.includes(userRole))
 
