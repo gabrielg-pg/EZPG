@@ -235,18 +235,27 @@ export function MeetingsScheduler({ currentUserId }: { currentUserId: number }) 
   }
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Compra":
-        return "bg-green-500/20 text-green-400 border-green-500/30"
-      case "Talvez":
-        return "bg-yellow-500/20 text-yellow-400 border-yellow-500/30"
-      case "Não compra":
-        return "bg-red-500/20 text-red-400 border-red-500/30"
-      case "Pendente":
-      default:
-        return "bg-gray-500/20 text-gray-400 border-gray-500/30"
-    }
+  switch (status) {
+    case "Compra":
+      return "bg-green-500/20 text-green-400 border border-green-500/30"
+
+    case "Realizado": // 👈 NOVO
+      return "bg-green-500/10 text-green-400 border border-green-500/30"
+
+    case "Talvez":
+      return "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"
+
+    case "Não compra":
+      return "bg-red-500/20 text-red-400 border border-red-500/30"
+
+    case "Pendente":
+      return "bg-gray-500/20 text-gray-400 border border-gray-500/30"
+
+    default:
+      return "bg-gray-500/20 text-gray-400 border border-gray-500/30"
   }
+}
+
 
   return (
     <div className="space-y-6">
