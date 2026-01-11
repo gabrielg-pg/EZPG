@@ -230,9 +230,17 @@ export function MeetingsScheduler({ currentUserId }: { currentUserId: number }) 
   }
 
   const getReasonColor = (reason: string) => {
-    if (reason === "Mentoria") return "bg-purple-500/20 text-purple-400 border-purple-500/30"
-    return "bg-blue-500/20 text-blue-400 border-blue-500/30"
+  if (reason === "Mentoria") {
+    return "bg-purple-500/20 text-purple-400 border-purple-500/30"
   }
+
+  if (reason === "Onboarding") {
+    return "bg-orange-500/15 text-orange-400 border-orange-500/30"
+  }
+
+  // Planos (default)
+  return "bg-blue-500/20 text-blue-400 border-blue-500/30"
+}
 
   const getStatusColor = (status: string) => {
   switch (status) {
@@ -530,6 +538,7 @@ export function MeetingsScheduler({ currentUserId }: { currentUserId: number }) 
                 <SelectContent>
                   <SelectItem value="Mentoria">Mentoria</SelectItem>
                   <SelectItem value="Planos">Planos</SelectItem>
+                  <SelectItem value="Onboarding">Onboarding</SelectItem>
                 </SelectContent>
               </Select>
             </div>
