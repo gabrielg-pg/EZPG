@@ -108,6 +108,7 @@ export function MeetingsScheduler({ currentUserId }: { currentUserId: number }) 
   useEffect(() => {
     loadMeetings()
     loadUsers()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate])
 
   const loadMeetings = async () => {
@@ -124,30 +125,34 @@ export function MeetingsScheduler({ currentUserId }: { currentUserId: number }) 
     }
   }
 
-  const handleSlotClick = (time: string) => {
-    const existingMeeting = meetings.find((m) => m.meeting_time === time + ":00")
-    if (existingMeeting) {
-      setEditingMeeting(existingMeeting)
-      setFormData({
-        lead_name: existingMeeting.lead_name,
-        lead_phone: formatPhoneNumber(existingMeeting.lead_phone),
-        meeting_time: time,
-        attendant_user_id: String(existingMeeting.attendant_user_id),
-        performer_user_id: String(existingMeeting.performer_user_id),
-        reason: existingMeeting.reason,
-      })
-    } else {
-      setEditingMeeting(null)
-      setFormData({
-        lead_name: "",
-        lead_phone: "",
-        meeting_time: time,
-        attendant_user_id: String(currentUserId),
-        performer_user_id: "",
-        reason: "",
-      })
-    }
+  // ✅ Agora clicar no slot SEMPRE cria uma nova reunião naquele horário
+  const handleCreateAtSlot = (time: string) => {
+    setEditingMeeting(null)
+    setFormData({
+      lead_name: "",
+      lead_phone: "",
+      meeting_time: time,
+      attendant_user_id: String(currentUserId),
+      performer_user_id: "",
+      reason: "",
+    })
     setSelectedSlot(time)
+    setIsDialogOpen(true)
+    setError(null)
+  }
+
+  // ✅ Edição agora é por reunião (pela lista do dia)
+  const handleEditMeeting = (meeting: Meeting) => {
+    setEditingMeeting(meeting)
+    setFormData({
+      lead_name: meeting.lead_name,
+      lead_phone: formatPhoneNumber(meeting.lead_phone),
+      meeting_time: meeting.meeting_time.slice(0, 5),
+      attendant_user_id: String(meeting.attendant_user_id),
+      performer_user_id: String(meeting.performer_user_id),
+      reason: meeting.reason,
+    })
+    setSelectedSlot(meeting.meeting_time.slice(0, 5))
     setIsDialogOpen(true)
     setError(null)
   }
@@ -195,6 +200,7 @@ export function MeetingsScheduler({ currentUserId }: { currentUserId: number }) 
           return
         }
       }
+
       setIsDialogOpen(false)
       loadMeetings()
     })
@@ -230,40 +236,39 @@ export function MeetingsScheduler({ currentUserId }: { currentUserId: number }) 
   }
 
   const getReasonColor = (reason: string) => {
-  if (reason === "Mentoria") {
-    return "bg-purple-500/20 text-purple-400 border-purple-500/30"
-  }
+    if (reason === "Mentoria") {
+      return "bg-purple-500/20 text-purple-400 border-purple-500/30"
+    }
 
-  if (reason === "Onboarding") {
-    return "bg-orange-500/15 text-orange-400 border-orange-500/30"
-  }
+    if (reason === "Onboarding") {
+      return "bg-orange-500/15 text-orange-400 border-orange-500/30"
+    }
 
-  // Planos (default)
-  return "bg-blue-500/20 text-blue-400 border-blue-500/30"
-}
+    // Planos (default)
+    return "bg-blue-500/20 text-blue-400 border-blue-500/30"
+  }
 
   const getStatusColor = (status: string) => {
-  switch (status) {
-    case "Compra":
-      return "bg-green-500/20 text-green-400 border border-green-500/30"
+    switch (status) {
+      case "Compra":
+        return "bg-green-500/20 text-green-400 border border-green-500/30"
 
-    case "Realizado": // 👈 NOVO
-      return "bg-green-500/10 text-green-400 border border-green-500/30"
+      case "Realizado":
+        return "bg-green-500/10 text-green-400 border border-green-500/30"
 
-    case "Talvez":
-      return "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"
+      case "Talvez":
+        return "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"
 
-    case "Não compra":
-      return "bg-red-500/20 text-red-400 border border-red-500/30"
+      case "Não compra":
+        return "bg-red-500/20 text-red-400 border border-red-500/30"
 
-    case "Pendente":
-      return "bg-gray-500/20 text-gray-400 border border-gray-500/30"
+      case "Pendente":
+        return "bg-gray-500/20 text-gray-400 border border-gray-500/30"
 
-    default:
-      return "bg-gray-500/20 text-gray-400 border border-gray-500/30"
+      default:
+        return "bg-gray-500/20 text-gray-400 border border-gray-500/30"
+    }
   }
-}
-
 
   return (
     <div className="space-y-6">
@@ -302,8 +307,10 @@ export function MeetingsScheduler({ currentUserId }: { currentUserId: number }) 
         <CardContent>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
             {TIME_SLOTS.map((time) => {
-              const meeting = meetings.find((m) => m.meeting_time === time + ":00")
-              const isBooked = !!meeting
+              // ✅ Agora pode ter mais de uma reunião por horário
+              const meetingsAtTime = meetings.filter((m) => m.meeting_time === time + ":00")
+              const isBooked = meetingsAtTime.length > 0
+              const firstMeeting = meetingsAtTime[0]
 
               return (
                 <Button
@@ -313,7 +320,8 @@ export function MeetingsScheduler({ currentUserId }: { currentUserId: number }) 
                     "h-auto py-3 flex flex-col items-start gap-1 relative",
                     isBooked && "border-primary/50 bg-primary/5",
                   )}
-                  onClick={() => handleSlotClick(time)}
+                  // ✅ clicar no slot abre CRIAÇÃO (não edição)
+                  onClick={() => handleCreateAtSlot(time)}
                 >
                   <span
                     className={cn(
@@ -323,16 +331,20 @@ export function MeetingsScheduler({ currentUserId }: { currentUserId: number }) 
                   >
                     {time}
                   </span>
-                  {isBooked && (
+
+                  {isBooked ? (
                     <>
                       <span className="text-xs text-muted-foreground truncate w-full text-left">
-                        {meeting.lead_name}
+                        {firstMeeting.lead_name}
+                        {meetingsAtTime.length > 1 ? ` (+${meetingsAtTime.length - 1})` : ""}
                       </span>
-                      <Badge className={cn("text-xs", getReasonColor(meeting.reason))}>{meeting.reason}</Badge>
-                      <Badge className={cn("text-xs", getStatusColor(meeting.status))}>{meeting.status}</Badge>
+                      <Badge className={cn("text-xs", getReasonColor(firstMeeting.reason))}>{firstMeeting.reason}</Badge>
+                      <Badge className={cn("text-xs", getStatusColor(firstMeeting.status))}>{firstMeeting.status}</Badge>
+                      <span className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1">
+                        <Plus className="h-3 w-3" /> Adicionar mais
+                      </span>
                     </>
-                  )}
-                  {!isBooked && (
+                  ) : (
                     <span className="text-xs text-muted-foreground flex items-center gap-1">
                       <Plus className="h-3 w-3" /> Disponível
                     </span>
@@ -400,11 +412,7 @@ export function MeetingsScheduler({ currentUserId }: { currentUserId: number }) 
                         </SelectContent>
                       </Select>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleSlotClick(meeting.meeting_time.slice(0, 5))}
-                    >
+                    <Button variant="ghost" size="icon" onClick={() => handleEditMeeting(meeting)}>
                       <Edit className="h-4 w-4" />
                     </Button>
                   </div>
@@ -470,17 +478,14 @@ export function MeetingsScheduler({ currentUserId }: { currentUserId: number }) 
                 <SelectTrigger className="bg-secondary border-input text-foreground">
                   <SelectValue placeholder="Selecione o horário" />
                 </SelectTrigger>
+
+                {/* ✅ agora não desabilita mais horários "ocupados" */}
                 <SelectContent>
-                  {TIME_SLOTS.map((time) => {
-                    const isBooked = meetings.some(
-                      (m) => m.meeting_time === time + ":00" && m.id !== editingMeeting?.id,
-                    )
-                    return (
-                      <SelectItem key={time} value={time} disabled={isBooked}>
-                        {time} {isBooked && "(Ocupado)"}
-                      </SelectItem>
-                    )
-                  })}
+                  {TIME_SLOTS.map((time) => (
+                    <SelectItem key={time} value={time}>
+                      {time}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

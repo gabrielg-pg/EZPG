@@ -73,10 +73,26 @@ const userColors: Record<string, string> = {
   default: "bg-gray-500/20 text-gray-400 border-gray-500/30",
 }
 
-function formatDateBR(dateStr: string) {
-  if (!dateStr) return "-"
-  const date = new Date(dateStr + "T12:00:00")
-  return date.toLocaleDateString("pt-BR")
+function formatDateBR(value: string) {
+  if (!value) return "-"
+
+  // Se vier como YYYY-MM-DD ou ISO completo
+  if (/^\d{4}-\d{2}-\d{2}/.test(value)) {
+    const isoDate = value.includes("T") ? value : `${value}T12:00:00`
+    const d = new Date(isoDate)
+    return isNaN(d.getTime()) ? "-" : d.toLocaleDateString("pt-BR")
+  }
+
+  // Se vier como DD/MM/YYYY
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(value)) {
+    const [dd, mm, yyyy] = value.split("/")
+    const d = new Date(`${yyyy}-${mm}-${dd}T12:00:00`)
+    return isNaN(d.getTime()) ? "-" : d.toLocaleDateString("pt-BR")
+  }
+
+  // Fallback: tenta como Date normal
+  const d = new Date(value)
+  return isNaN(d.getTime()) ? "-" : d.toLocaleDateString("pt-BR")
 }
 
 function generateRawText(details: StoreDetails): string {
