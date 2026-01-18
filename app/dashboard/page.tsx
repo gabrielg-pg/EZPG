@@ -8,20 +8,20 @@ import type { StoreData } from "@/types/store"
 export default async function DashboardPage() {
   const user = await requireAuth()
 
-  // Comercial só pode ver Reuniões
-  if (user.role === "comercial") {
+  // Se só tem role comercial (e não admin), redireciona para Reuniões
+  if (user.roles.includes("comercial") && !user.roles.includes("admin")) {
     redirect("/reunioes")
   }
 
-  // Qualquer coisa diferente de admin não entra
-  if (user.role !== "admin") {
+  // Se não tem role admin, não pode ver o dashboard
+  if (!user.roles.includes("admin")) {
     redirect("/login")
   }
 
   const stores = await getStores() as StoreData[]
 
   return (
-    <DashboardLayout userRole={user.role}>
+    <DashboardLayout userRoles={user.roles}>
       <StoreCards initialStores={stores} />
     </DashboardLayout>
   )

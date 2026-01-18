@@ -30,14 +30,16 @@ export async function createUserAction(data: {
   email: string
   password: string
   name: string
-  role: string
+  roles: string[]
 }) {
   const { user } = await getSession()
-  if (!user || user.role !== "admin") {
+  if (!user || !user.roles.includes("admin")) {
     return { success: false, error: "Não autorizado" }
   }
 
-  const result = await createUser(data)
+  // Use primary role for legacy field
+  const primaryRole = data.roles[0] || "user"
+  const result = await createUser({ ...data, role: primaryRole, roles: data.roles })
   if (result.success) {
     revalidatePath("/admin")
   }

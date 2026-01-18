@@ -80,7 +80,7 @@ export async function logout(): Promise<void> {
 }
 
 export async function getSession(): Promise<{
-  user: { id: number; username: string; name: string; role: string } | null
+  user: { id: number; username: string; name: string; role: string; roles: string[] } | null
 }> {
   try {
     const cookieStore = await cookies()
@@ -104,12 +104,23 @@ export async function getSession(): Promise<{
     }
 
     const session = sessions[0]
+    
+    // Fetch roles from user_roles table
+    const userRoles = await sql`
+      SELECT role FROM user_roles WHERE user_id = ${session.user_id}
+    `
+    
+    const roles = userRoles.length > 0 
+      ? userRoles.map((r: { role: string }) => r.role)
+      : [session.role] // Fallback to legacy role field
+    
     return {
       user: {
         id: session.user_id,
         username: session.username,
         name: session.name,
-        role: session.role,
+        role: session.role, // Keep for backwards compatibility
+        roles: roles,
       },
     }
   } catch (error) {
@@ -128,7 +139,7 @@ export async function requireAuth() {
 
 export async function requireAdmin() {
   const user = await requireAuth()
-  if (user.role !== "admin") {
+  if (!user.roles.includes("admin")) {
     redirect("/dashboard")
   }
   return user
@@ -136,7 +147,7 @@ export async function requireAdmin() {
 
 export async function requireComercialOrAdmin() {
   const user = await requireAuth()
-  if (user.role !== "admin" && user.role !== "comercial") {
+  if (!user.roles.includes("admin") && !user.roles.includes("comercial")) {
     redirect("/dashboard")
   }
   return user
@@ -148,16 +159,28 @@ export async function createUser(data: {
   password: string
   name: string
   role: string
-}): Promise<{ success: boolean; error?: string }> {
+  roles?: string[]
+}): Promise<{ success: boolean; error?: string; userId?: number }> {
   try {
     const passwordHash = await hashPassword(data.password)
 
-    await sql`
+    const result = await sql`
       INSERT INTO users (username, email, password_hash, name, role, status)
       VALUES (${data.username}, ${data.email}, ${passwordHash}, ${data.name}, ${data.role}, 'ativo')
+      RETURNING id
     `
+    
+    const userId = result[0].id
+    
+    // Insert into user_roles table
+    const rolesToInsert = data.roles || [data.role]
+    for (const role of rolesToInsert) {
+      await sql`
+        INSERT INTO user_roles (user_id, role) VALUES (${userId}, ${role})
+      `
+    }
 
-    return { success: true }
+    return { success: true, userId }
   } catch (error: unknown) {
     console.error("Create user error:", error)
     if (error && typeof error === "object" && "code" in error && (error as any).code === "23505") {

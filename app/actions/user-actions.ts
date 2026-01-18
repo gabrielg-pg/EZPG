@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache"
 
 export async function getUsers() {
   const { user } = await getSession()
-  if (!user || user.role !== "admin") return []
+  if (!user || !user.roles.includes("admin")) return []
 
   const users = await sql`
     SELECT id, username, email, name, role, status, created_at
@@ -14,7 +14,25 @@ export async function getUsers() {
     ORDER BY created_at DESC
   `
 
-  return users
+  // Fetch roles for all users
+  const userRoles = await sql`
+    SELECT user_id, role FROM user_roles
+  `
+  
+  // Group roles by user_id
+  const rolesMap: Record<number, string[]> = {}
+  for (const ur of userRoles) {
+    if (!rolesMap[ur.user_id]) {
+      rolesMap[ur.user_id] = []
+    }
+    rolesMap[ur.user_id].push(ur.role)
+  }
+  
+  // Add roles array to each user
+  return users.map((u: { id: number; role: string }) => ({
+    ...u,
+    roles: rolesMap[u.id] || [u.role], // Fallback to legacy role
+  }))
 }
 
 export async function updateUser(
@@ -22,21 +40,32 @@ export async function updateUser(
   data: {
     name: string
     email: string
-    role: string
+    roles: string[]
     status: string
   },
 ) {
   const { user } = await getSession()
-  if (!user || user.role !== "admin") {
+  if (!user || !user.roles.includes("admin")) {
     return { success: false, error: "Não autorizado" }
   }
 
   try {
+    // Update user basic info (keep first role as legacy role field)
+    const primaryRole = data.roles[0] || "user"
     await sql`
       UPDATE users 
-      SET name = ${data.name}, email = ${data.email}, role = ${data.role}, status = ${data.status}, updated_at = NOW()
+      SET name = ${data.name}, email = ${data.email}, role = ${primaryRole}, status = ${data.status}, updated_at = NOW()
       WHERE id = ${userId}
     `
+
+    // Update user_roles table
+    await sql`DELETE FROM user_roles WHERE user_id = ${userId}`
+    
+    for (const role of data.roles) {
+      await sql`
+        INSERT INTO user_roles (user_id, role) VALUES (${userId}, ${role})
+      `
+    }
 
     revalidatePath("/admin")
     return { success: true }
@@ -48,7 +77,7 @@ export async function updateUser(
 
 export async function deleteUser(userId: number) {
   const { user } = await getSession()
-  if (!user || user.role !== "admin") {
+  if (!user || !user.roles.includes("admin")) {
     return { success: false, error: "Não autorizado" }
   }
 

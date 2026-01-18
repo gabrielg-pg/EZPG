@@ -15,17 +15,21 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Plus, Pencil, Trash2, Search, Users, Shield, UserCheck, Loader2, Briefcase } from "lucide-react"
 import { createUserAction } from "@/app/actions/auth-actions"
 import { updateUser, deleteUser } from "@/app/actions/user-actions"
+
+type RoleType = "admin" | "comercial" | "manager" | "user"
 
 interface User {
   id: number
   name: string
   username: string
   email: string
-  role: "admin" | "comercial" | "manager" | "user"
+  role: RoleType
+  roles: RoleType[]
   status: "ativo" | "inativo"
   created_at: string
 }
@@ -51,7 +55,7 @@ export function AdminUserManagement({ initialUsers }: { initialUsers: User[] }) 
     username: "",
     email: "",
     password: "",
-    role: "user" as User["role"],
+    roles: ["user"] as RoleType[],
     status: "ativo" as User["status"],
   })
 
@@ -62,8 +66,18 @@ export function AdminUserManagement({ initialUsers }: { initialUsers: User[] }) 
   )
 
   const resetForm = () => {
-    setFormData({ name: "", username: "", email: "", password: "", role: "user", status: "ativo" })
+    setFormData({ name: "", username: "", email: "", password: "", roles: ["user"], status: "ativo" })
     setError(null)
+  }
+  
+  const toggleRole = (role: RoleType) => {
+    setFormData(prev => {
+      const newRoles = prev.roles.includes(role)
+        ? prev.roles.filter(r => r !== role)
+        : [...prev.roles, role]
+      // Ensure at least one role is selected
+      return { ...prev, roles: newRoles.length > 0 ? newRoles : ["user"] }
+    })
   }
 
   const handleCreate = () => {
@@ -74,7 +88,7 @@ export function AdminUserManagement({ initialUsers }: { initialUsers: User[] }) 
         username: formData.username,
         email: formData.email,
         password: formData.password,
-        role: formData.role,
+        roles: formData.roles,
       })
 
       if (result.success) {
@@ -93,7 +107,7 @@ export function AdminUserManagement({ initialUsers }: { initialUsers: User[] }) 
       const result = await updateUser(selectedUser.id, {
         name: formData.name,
         email: formData.email,
-        role: formData.role,
+        roles: formData.roles,
         status: formData.status,
       })
 
@@ -101,7 +115,7 @@ export function AdminUserManagement({ initialUsers }: { initialUsers: User[] }) 
         setUsers(
           users.map((user) =>
             user.id === selectedUser.id
-              ? { ...user, name: formData.name, email: formData.email, role: formData.role, status: formData.status }
+              ? { ...user, name: formData.name, email: formData.email, role: formData.roles[0] as RoleType, roles: formData.roles, status: formData.status }
               : user,
           ),
         )
@@ -137,7 +151,7 @@ export function AdminUserManagement({ initialUsers }: { initialUsers: User[] }) 
       username: user.username,
       email: user.email,
       password: "",
-      role: user.role,
+      roles: user.roles || [user.role],
       status: user.status,
     })
     setError(null)
@@ -192,7 +206,7 @@ export function AdminUserManagement({ initialUsers }: { initialUsers: User[] }) 
                 <Shield className="h-5 w-5 text-red-500" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">{users.filter((u) => u.role === "admin").length}</p>
+                <p className="text-2xl font-bold text-foreground">{users.filter((u) => u.roles?.includes("admin") || u.role === "admin").length}</p>
                 <p className="text-sm text-muted-foreground">Administradores</p>
               </div>
             </div>
@@ -206,7 +220,7 @@ export function AdminUserManagement({ initialUsers }: { initialUsers: User[] }) 
               </div>
               <div>
                 <p className="text-2xl font-bold text-foreground">
-                  {users.filter((u) => u.role === "comercial").length}
+                  {users.filter((u) => u.roles?.includes("comercial") || u.role === "comercial").length}
                 </p>
                 <p className="text-sm text-muted-foreground">Comerciais</p>
               </div>
@@ -275,9 +289,13 @@ export function AdminUserManagement({ initialUsers }: { initialUsers: User[] }) 
                       <TableCell className="text-foreground font-medium">{user.name}</TableCell>
                       <TableCell className="text-muted-foreground">{user.email}</TableCell>
                       <TableCell>
-                        <Badge variant="outline" className={roleConfig[user.role]?.color || roleConfig.user.color}>
-                          {roleConfig[user.role]?.label || user.role}
-                        </Badge>
+                        <div className="flex flex-wrap gap-1">
+                          {(user.roles || [user.role]).map((role) => (
+                            <Badge key={role} variant="outline" className={roleConfig[role]?.color || roleConfig.user.color}>
+                              {roleConfig[role]?.label || role}
+                            </Badge>
+                          ))}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Badge
@@ -389,31 +407,27 @@ export function AdminUserManagement({ initialUsers }: { initialUsers: User[] }) 
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="create-role" className="text-foreground">
-                Função
+              <Label className="text-foreground">
+                Funções
               </Label>
-              <Select
-                value={formData.role}
-                onValueChange={(value) => setFormData({ ...formData, role: value as User["role"] })}
-              >
-                <SelectTrigger className="bg-secondary border-input text-foreground">
-                  <SelectValue placeholder="Selecione a função" />
-                </SelectTrigger>
-                <SelectContent className="bg-popover border-border">
-                  <SelectItem value="admin" className="text-popover-foreground">
-                    Admin
-                  </SelectItem>
-                  <SelectItem value="comercial" className="text-popover-foreground">
-                    Comercial
-                  </SelectItem>
-                  <SelectItem value="manager" className="text-popover-foreground">
-                    Gerente
-                  </SelectItem>
-                  <SelectItem value="user" className="text-popover-foreground">
-                    Usuário
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="grid grid-cols-2 gap-3 p-3 bg-secondary rounded-lg border border-input">
+                {(Object.entries(roleConfig) as [RoleType, { label: string; color: string }][]).map(([role, config]) => (
+                  <div key={role} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`create-role-${role}`}
+                      checked={formData.roles.includes(role)}
+                      onCheckedChange={() => toggleRole(role)}
+                      className="border-input data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                    />
+                    <Label
+                      htmlFor={`create-role-${role}`}
+                      className="text-sm text-foreground cursor-pointer"
+                    >
+                      {config.label}
+                    </Label>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
           <DialogFooter>
@@ -479,31 +493,27 @@ export function AdminUserManagement({ initialUsers }: { initialUsers: User[] }) 
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-role" className="text-foreground">
-                Função
+              <Label className="text-foreground">
+                Funções
               </Label>
-              <Select
-                value={formData.role}
-                onValueChange={(value) => setFormData({ ...formData, role: value as User["role"] })}
-              >
-                <SelectTrigger className="bg-secondary border-input text-foreground">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-popover border-border">
-                  <SelectItem value="admin" className="text-popover-foreground">
-                    Admin
-                  </SelectItem>
-                  <SelectItem value="comercial" className="text-popover-foreground">
-                    Comercial
-                  </SelectItem>
-                  <SelectItem value="manager" className="text-popover-foreground">
-                    Gerente
-                  </SelectItem>
-                  <SelectItem value="user" className="text-popover-foreground">
-                    Usuário
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="grid grid-cols-2 gap-3 p-3 bg-secondary rounded-lg border border-input">
+                {(Object.entries(roleConfig) as [RoleType, { label: string; color: string }][]).map(([role, config]) => (
+                  <div key={role} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`edit-role-${role}`}
+                      checked={formData.roles.includes(role)}
+                      onCheckedChange={() => toggleRole(role)}
+                      className="border-input data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                    />
+                    <Label
+                      htmlFor={`edit-role-${role}`}
+                      className="text-sm text-foreground cursor-pointer"
+                    >
+                      {config.label}
+                    </Label>
+                  </div>
+                ))}
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-status" className="text-foreground">

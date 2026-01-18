@@ -8,7 +8,7 @@ export default async function AdminPage() {
   const users = await getUsers()
 
   return (
-    <DashboardLayout userRole={user.role}>
+    <DashboardLayout userRoles={user.roles}>
       <AdminUserManagement initialUsers={users} />
     </DashboardLayout>
   )

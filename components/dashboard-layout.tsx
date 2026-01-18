@@ -13,10 +13,10 @@ import { logoutAction } from "@/app/actions/auth-actions"
 
 interface DashboardLayoutProps {
   children: React.ReactNode
-  userRole?: string
+  userRoles?: string[]
 }
 
-export function DashboardLayout({ children, userRole = "user" }: DashboardLayoutProps) {
+export function DashboardLayout({ children, userRoles = ["user"] }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
   const pathname = usePathname()
@@ -28,7 +28,7 @@ export function DashboardLayout({ children, userRole = "user" }: DashboardLayout
   { name: "Admin", href: "/admin", icon: Users, roles: ["admin"] },
 ]
 
-  const filteredNavigation = navigation.filter((item) => item.roles.includes(userRole))
+  const filteredNavigation = navigation.filter((item) => item.roles.some(role => userRoles.includes(role)))
 
   const handleLogout = () => {
     startTransition(async () => {

@@ -11,7 +11,7 @@ export default async function ReunioesPage() {
   }
 
   return (
-    <DashboardLayout userRole={user.role}>
+    <DashboardLayout userRoles={user.roles}>
       <MeetingsScheduler currentUserId={user.id} />
     </DashboardLayout>
   )
