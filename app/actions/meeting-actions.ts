@@ -133,7 +133,7 @@ export async function getComercialUsers() {
     const users = await sql`
       SELECT id, name, username, role 
       FROM users 
-      WHERE name IN ('Gabriel Gerber', 'Alisson Jordi') AND status = 'ativo'
+      WHERE name IN ('Gabriel Gerber', 'Alisson Jordi', 'Guilherme') AND status = 'ativo'
       ORDER BY name ASC
     `
     return { success: true, users }
