@@ -131,11 +131,11 @@ export async function getComercialUsers() {
 
   try {
     const users = await sql`
-      SELECT id, name, username, role 
-      FROM users 
-      WHERE name IN ('Gabriel Gerber', 'Alisson Jordi', 'Guilherme') AND status = 'ativo'
-      ORDER BY name ASC
-    `
+  SELECT id, name, username, role 
+  FROM users 
+  WHERE role IN ('admin', 'comercial') AND status = 'ativo'
+  ORDER BY name ASC
+`
     return { success: true, users }
   } catch (error) {
     console.error("Get comercial users error:", error)
