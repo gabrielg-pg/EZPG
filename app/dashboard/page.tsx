@@ -1,28 +1,24 @@
-import { redirect } from "next/navigation"
-import { DashboardLayout } from "@/components/dashboard-layout"
-import { StoreCards } from "@/components/store-cards"
 import { requireAuth } from "@/lib/auth"
-import { getStores } from "@/app/actions/store-actions"
-import type { StoreData } from "@/types/store"
+import { redirect } from "next/navigation"
 
 export default async function DashboardPage() {
   const user = await requireAuth()
 
-  // Comercial só pode ver Reuniões
-  if (user.role === "comercial") {
+  // ✅ garante que roles é sempre array
+  const roles = Array.isArray(user.role)
+    ? user.role
+    : user.role
+      ? [String(user.role).toLowerCase()]
+      : []
+
+  // Se só tem role comercial (e não admin), redireciona para reuniões
+  if (roles.includes("comercial") && !roles.includes("admin")) {
     redirect("/reunioes")
   }
 
-  // Qualquer coisa diferente de admin não entra
-  if (user.role !== "admin") {
-    redirect("/login")
-  }
-
-  const stores = await getStores() as StoreData[]
-
   return (
-    <DashboardLayout userRole={user.role}>
-      <StoreCards initialStores={stores} />
-    </DashboardLayout>
+    <div>
+      {/* seu conteúdo */}
+    </div>
   )
 }

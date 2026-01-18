@@ -5,6 +5,15 @@ import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import bcrypt from "bcryptjs"
 
+export type AuthUser = {
+  id: number
+  username: string
+  name: string
+  role: string
+  roles: string[]
+}
+
+
 // bcrypt hash (para criar usuário)
 async function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, 10)

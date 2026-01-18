@@ -133,7 +133,7 @@ export async function getComercialUsers() {
     const users = await sql`
   SELECT id, name, username, role 
   FROM users 
-  WHERE role IN ('comercial') AND status = 'ativo'
+  WHERE role IN ('comercial', 'admin') AND status = 'ativo'
   ORDER BY name ASC
 `
     return { success: true, users }

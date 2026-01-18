@@ -140,7 +140,7 @@ export function MeetingsScheduler({ currentUserId }: { currentUserId: number }) 
       lead_name: "",
       lead_phone: "",
       meeting_time: time,
-      attendant_user_id: String(currentUserId),
+      attendant_user_id: "",
       performer_user_id: "",
       reason: "",
       observations: "",
