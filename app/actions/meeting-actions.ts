@@ -9,7 +9,7 @@ async function validateMeetingAccess() {
   if (!user) {
     return { error: "Não autenticado", user: null }
   }
-  if (!user.roles.includes("admin") && !user.roles.includes("comercial")) {
+  if (!user.role.includes("admin") && !user.role.includes("comercial")) {
     return { error: "Acesso negado", user: null }
   }
   return { error: null, user }
