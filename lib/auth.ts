@@ -4,56 +4,74 @@ import { sql } from "@/lib/db"
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import bcrypt from "bcryptjs"
+import crypto from "crypto"
 
-// bcrypt hash (para criar usuário)
+type LoginFail = { success: false; error: string }
+
+type SessionUser = {
+  id: number
+  username: string
+  name: string
+  role: string
+  roles: string[]
+}
+
 async function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, 10)
 }
 
-// bcrypt verify (CORRETO)
 async function verifyPassword(password: string, hash: string): Promise<boolean> {
   return bcrypt.compare(password, hash)
 }
 
 function generateToken(): string {
-  const array = new Uint8Array(32)
-  crypto.getRandomValues(array)
-  return Array.from(array, (b) => b.toString(16).padStart(2, "0")).join("")
+  return crypto.randomBytes(32).toString("hex")
 }
 
-export async function login(username: string, password: string): Promise<{ success: boolean; error?: string }> {
-  try {
-    const identifier = username.trim()
+/**
+ * LOGIN (Server Action)
+ * - Se ok: cria sessão + seta cookie + redirect("/dashboard")
+ * - Se erro: retorna { success:false, error:"..." }
+ *
+ * IMPORTANTE: redirect() fora de try/catch.
+ */
+export async function login(username: string, password: string): Promise<LoginFail | void> {
+  const identifier = (username ?? "").trim()
+  const pass = password ?? ""
 
-    const users = await sql`
+  if (!identifier || !pass) return { success: false, error: "Informe usuário e senha" }
+
+  try {
+    const usersRes: any = await sql`
       SELECT id, username, password_hash, name, role, status
       FROM users
       WHERE (username = ${identifier} OR email = ${identifier})
         AND status = 'ativo'
+      LIMIT 1
     `
+    const users = (usersRes?.rows ?? usersRes) as any[]
 
-    if (users.length === 0) {
+    if (!users || users.length === 0) {
       return { success: false, error: "Usuário não encontrado ou inativo" }
     }
 
     const user = users[0]
-    const isValid = await verifyPassword(password, user.password_hash)
+    const isValid = await verifyPassword(pass, user.password_hash)
 
     if (!isValid) {
       return { success: false, error: "Senha incorreta" }
     }
 
-    // Create session
     const token = generateToken()
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
 
     await sql`
       INSERT INTO sessions (user_id, token, expires_at)
-      VALUES (${user.id}, ${token}, ${expiresAt.toISOString()})
+      VALUES (${user.id}, ${token}, ${expiresAt})
     `
 
-    // Set cookie
-    const cookieStore = await cookies()
+    // cookies(): em alguns setups o TS reclama. Runtime funciona.
+    const cookieStore: any = cookies()
     cookieStore.set("session_token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -61,87 +79,87 @@ export async function login(username: string, password: string): Promise<{ succe
       expires: expiresAt,
       path: "/",
     })
-
-    return { success: true }
-  } catch (error) {
-    console.error("Login error:", error)
+  } catch (err) {
+    console.error("Login error:", err)
     return { success: false, error: "Erro ao fazer login" }
   }
+
+  redirect("/dashboard")
 }
 
 export async function logout(): Promise<void> {
-  const cookieStore = await cookies()
+  const cookieStore: any = cookies()
   const token = cookieStore.get("session_token")?.value
 
-  if (token) {
-    await sql`DELETE FROM sessions WHERE token = ${token}`
+  try {
+    if (token) {
+      await sql`DELETE FROM sessions WHERE token = ${token}`
+    }
+  } catch (err) {
+    console.error("Logout error:", err)
+  } finally {
     cookieStore.delete("session_token")
   }
+
+  redirect("/")
 }
 
-export async function getSession(): Promise<{
-  user: { id: number; username: string; name: string; role: string; roles: string[] } | null
-}> {
+export async function getSession(): Promise<{ user: SessionUser | null }> {
   try {
-    const cookieStore = await cookies()
+    const cookieStore: any = cookies()
     const token = cookieStore.get("session_token")?.value
+    if (!token) return { user: null }
 
-    if (!token) {
-      return { user: null }
-    }
-
-    const sessions = await sql`
-      SELECT s.*, u.id as user_id, u.username, u.name, u.role
+    const sessionRes: any = await sql`
+      SELECT s.token, s.expires_at,
+             u.id as user_id, u.username, u.name, u.role
       FROM sessions s
       JOIN users u ON s.user_id = u.id
       WHERE s.token = ${token}
         AND s.expires_at > NOW()
         AND u.status = 'ativo'
+      LIMIT 1
     `
-
-    if (sessions.length === 0) {
-      return { user: null }
-    }
+    const sessions = (sessionRes?.rows ?? sessionRes) as any[]
+    if (!sessions || sessions.length === 0) return { user: null }
 
     const session = sessions[0]
-    
-    // Fetch roles from user_roles table
-    const userRoles = await sql`
+
+    // user_roles pode não existir/estar vazio -> fallback pro users.role
+    const rolesRes: any = await sql`
       SELECT role FROM user_roles WHERE user_id = ${session.user_id}
     `
-    
-    const roles = userRoles.length > 0 
-      ? userRoles.map((r: { role: string }) => r.role)
-      : [session.role] // Fallback to legacy role field
-    
+    const userRoles = (rolesRes?.rows ?? rolesRes) as any[]
+
+    const roles =
+      userRoles && userRoles.length > 0
+        ? userRoles.map((r) => String(r.role).toLowerCase())
+        : [String(session.role).toLowerCase()]
+
     return {
       user: {
-        id: session.user_id,
-        username: session.username,
-        name: session.name,
-        role: session.role, // Keep for backwards compatibility
-        roles: roles,
+        id: Number(session.user_id),
+        username: String(session.username),
+        name: String(session.name),
+        role: String(session.role),
+        roles,
       },
     }
-  } catch (error) {
-    console.error("Session error:", error)
+  } catch (err) {
+    console.error("Session error:", err)
     return { user: null }
   }
 }
 
 export async function requireAuth() {
   const { user } = await getSession()
-  if (!user) {
-    redirect("/")
-  }
+  if (!user) redirect("/")
   return user
 }
 
 export async function requireAdmin() {
   const user = await requireAuth()
-  if (!user.roles.includes("admin")) {
-    redirect("/dashboard")
-  }
+  if (!user.roles.includes("admin")) redirect("/dashboard")
   return user
 }
 
@@ -164,39 +182,39 @@ export async function createUser(data: {
   try {
     const passwordHash = await hashPassword(data.password)
 
-    const result = await sql`
+    const res: any = await sql`
       INSERT INTO users (username, email, password_hash, name, role, status)
       VALUES (${data.username}, ${data.email}, ${passwordHash}, ${data.name}, ${data.role}, 'ativo')
       RETURNING id
     `
-    
-    const userId = result[0].id
-    
-    // Insert into user_roles table
-    const rolesToInsert = data.roles || [data.role]
+    const rows = (res?.rows ?? res) as any[]
+    const userId = rows?.[0]?.id
+
+    if (!userId) return { success: false, error: "Erro ao criar usuário" }
+
+    const rolesToInsert = data.roles && data.roles.length > 0 ? data.roles : [data.role]
     for (const role of rolesToInsert) {
       await sql`
-        INSERT INTO user_roles (user_id, role) VALUES (${userId}, ${role})
+        INSERT INTO user_roles (user_id, role)
+        VALUES (${userId}, ${String(role).toLowerCase()})
+        ON CONFLICT DO NOTHING
       `
     }
 
-    return { success: true, userId }
-  } catch (error: unknown) {
+    return { success: true, userId: Number(userId) }
+  } catch (error: any) {
     console.error("Create user error:", error)
-    if (error && typeof error === "object" && "code" in error && (error as any).code === "23505") {
-      return { success: false, error: "Usuário ou email já existe" }
-    }
+    if (error?.code === "23505") return { success: false, error: "Usuário ou email já existe" }
     return { success: false, error: "Erro ao criar usuário" }
   }
 }
 
-// Initialize admin user with correct hash
 export async function initializeAdminUser(): Promise<void> {
   try {
-    const gabrielExists = await sql`SELECT id FROM users WHERE username = 'GabrielPG'`
+    const gabrielRes: any = await sql`SELECT id FROM users WHERE username = 'GabrielPG' LIMIT 1`
+    const rows = (gabrielRes?.rows ?? gabrielRes) as any[]
 
-    if (gabrielExists.length === 0) {
-      // Senha do GabrielPG (ajuste se quiser outra)
+    if (!rows || rows.length === 0) {
       const passwordHash = await hashPassword("Gab211223@")
 
       await sql`
@@ -206,9 +224,8 @@ export async function initializeAdminUser(): Promise<void> {
       `
     }
 
-    // Remove o usuário admin padrão se existir
     await sql`DELETE FROM users WHERE username = 'admin'`
-  } catch (error) {
-    console.error("Initialize admin error:", error)
+  } catch (err) {
+    console.error("Initialize admin error:", err)
   }
 }
