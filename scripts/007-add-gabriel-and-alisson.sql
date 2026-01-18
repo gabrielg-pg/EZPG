@@ -20,3 +20,13 @@ VALUES (
   'comercial',
   'ativo'
 ) ON CONFLICT (username) DO UPDATE SET name = 'Alisson Jordi', role = 'comercial', status = 'ativo';
+
+-- Adicionar Guilherme (comercial)
+INSERT INTO users (username, name, password_hash, role, status) 
+VALUES (
+  'guilherme',
+  'Guilherme',
+  'not_for_login',
+  'comercial',
+  'ativo'
+) ON CONFLICT (username) DO UPDATE SET name = 'Guilherme', role = 'comercial', status = 'ativo';

@@ -12,5 +12,6 @@ ALTER TABLE meetings ALTER COLUMN status SET DEFAULT 'Pendente';
 INSERT INTO users (username, email, password_hash, name, role, status)
 VALUES 
   ('gabriel.gerber', 'gabriel.gerber@progrowth.com', 'placeholder', 'Gabriel Gerber', 'comercial', 'ativo'),
-  ('alisson.jordi', 'alisson.jordi@progrowth.com', 'placeholder', 'Alisson Jordi', 'comercial', 'ativo')
+  ('alisson.jordi', 'alisson.jordi@progrowth.com', 'placeholder', 'Alisson Jordi', 'comercial', 'ativo'),
+  ('guilherme', 'guilherme@progrowth.com', 'placeholder', 'Guilherme', 'comercial', 'ativo')
 ON CONFLICT (username) DO UPDATE SET name = EXCLUDED.name, role = EXCLUDED.role;
