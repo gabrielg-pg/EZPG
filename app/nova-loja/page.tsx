@@ -6,7 +6,7 @@ export default async function NewStorePage() {
   const user = await requireAuth()
 
   return (
-    <DashboardLayout userRoles={user.roles}>
+    <DashboardLayout userRoles={[user.role]}>
       <NewStoreForm />
     </DashboardLayout>
   )

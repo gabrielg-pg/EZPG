@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache"
 
 export async function getUsers() {
   const { user } = await getSession()
-  if (!user || !user.roles.includes("admin")) return []
+  if (!user || !user.role.includes("admin")) return []
 
   const users = await sql`
     SELECT id, username, email, name, role, status, created_at
@@ -29,7 +29,7 @@ export async function getUsers() {
   }
   
   // Add roles array to each user
-  return users.map((u: { id: number; role: string }) => ({
+  return (users as Array<{ id: number; role: string }>).map((u) => ({
     ...u,
     roles: rolesMap[u.id] || [u.role], // Fallback to legacy role
   }))
@@ -45,7 +45,7 @@ export async function updateUser(
   },
 ) {
   const { user } = await getSession()
-  if (!user || !user.roles.includes("admin")) {
+  if (!user || !user.role.includes("admin")) {
     return { success: false, error: "Não autorizado" }
   }
 
@@ -77,7 +77,7 @@ export async function updateUser(
 
 export async function deleteUser(userId: number) {
   const { user } = await getSession()
-  if (!user || !user.roles.includes("admin")) {
+  if (!user || !user.role.includes("admin")) {
     return { success: false, error: "Não autorizado" }
   }
 

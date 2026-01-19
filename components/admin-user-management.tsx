@@ -88,7 +88,7 @@ export function AdminUserManagement({ initialUsers }: { initialUsers: User[] }) 
         username: formData.username,
         email: formData.email,
         password: formData.password,
-        roles: formData.roles,
+        role: formData.roles,
       })
 
       if (result.success) {

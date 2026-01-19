@@ -1,6 +1,6 @@
 import { requireAuth } from "@/lib/auth"
 import { redirect } from "next/navigation"
-
+export const dynamic = "force-dynamic"
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { StoreCards } from "@/components/store-cards"
 import { getStores } from "@/app/actions/store-actions"
