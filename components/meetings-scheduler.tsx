@@ -48,6 +48,14 @@ const TIME_SLOTS = [
   "18:00",
   "18:30",
   "19:00",
+  "19:30",
+  "20:00",
+  "20:30",
+  "21:00",
+  "21:30",
+  "22:00",
+  "22:30",
+  "23:00",
 ]
 
 interface Meeting {
@@ -279,6 +287,9 @@ export function MeetingsScheduler({ currentUserId }: { currentUserId: number }) 
       case "Compra":
         return "bg-green-500/20 text-green-400 border border-green-500/30"
 
+        case "Reunião Confirmada":
+        return "bg-green-500/20 text-green-400 border border-green-500/30"
+
       case "Realizado":
         return "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30"
 
@@ -458,6 +469,7 @@ export function MeetingsScheduler({ currentUserId }: { currentUserId: number }) 
                           <SelectItem value="Pendente">Pendente</SelectItem>
                           <SelectItem value="Compra">Compra</SelectItem>
                           <SelectItem value="Realizado">Realizado</SelectItem>
+                          <SelectItem value="Reunião Confirmada">Reunião Confirmada</SelectItem>
                           <SelectItem value="Reagendar">Reagendar</SelectItem>
                           <SelectItem value="Talvez">Talvez</SelectItem>
                           <SelectItem value="Não compra">Não compra</SelectItem>
