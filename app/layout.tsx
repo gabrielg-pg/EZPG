@@ -8,9 +8,9 @@ const _inter = Inter({ subsets: ["latin"] })
 const _geistMono = Geist_Mono({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "PRO GROWTH - Sistema de Onboarding",
-  description: "Sistema interno de onboarding de lojas PRO GROWTH",
-  generator: "v0.app",
+  title: "Pro Growth - Sistema Interno",
+  description: "Sistema interno Pro Growth",
+  generator: "Gerp Business Solutions",
   icons: {
     icon: [
       {
