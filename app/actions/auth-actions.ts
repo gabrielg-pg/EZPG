@@ -4,7 +4,7 @@ import { login, logout, createUser, getSession, initializeAdminUser } from "@/li
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 
-export async function loginAction(formData: FormData) {
+export async function loginAction(formData: FormData): Promise<{ success: boolean; error?: string; redirectTo?: string }> {
   // Initialize admin user if not exists
   await initializeAdminUser()
 
@@ -14,7 +14,26 @@ export async function loginAction(formData: FormData) {
   const result = await login(username, password)
 
   if (result.success) {
-    redirect("/dashboard")
+    // Get user session to determine redirect destination based on role
+    const { user } = await getSession()
+    
+    if (user) {
+      const role = user.role?.toLowerCase() || ""
+      
+      // Redirect based on role
+      if (role === "admin") {
+        return { success: true, redirectTo: "/dashboard" }
+      } else if (role === "comercial") {
+        return { success: true, redirectTo: "/reunioes" }
+      } else if (role === "zona_execucao") {
+        return { success: true, redirectTo: "/zona-de-execucao" }
+      } else {
+        // Default fallback for other roles
+        return { success: true, redirectTo: "/dashboard" }
+      }
+    }
+    
+    return { success: true, redirectTo: "/dashboard" }
   }
 
   return result

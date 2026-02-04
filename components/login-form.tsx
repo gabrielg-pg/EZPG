@@ -2,6 +2,7 @@
 
 import type React from "react"
 import { useState, useTransition } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -16,6 +17,7 @@ export function LoginForm() {
   const [rememberMe, setRememberMe] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
+  const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -25,7 +27,11 @@ export function LoginForm() {
 
     startTransition(async () => {
       const result = await loginAction(formData)
-      if (result && !result.success) {
+      if (result && result.success && result.redirectTo) {
+        // Use router.push for client-side navigation after successful login
+        router.push(result.redirectTo)
+        router.refresh()
+      } else if (result && !result.success) {
         setError(result.error || "Erro ao fazer login")
       }
     })
