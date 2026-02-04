@@ -130,12 +130,14 @@ export async function getComercialUsers() {
   }
 
   try {
+    // Busca usuarios que tenham a role 'comercial' na tabela user_roles
     const users = await sql`
-  SELECT id, name, username, role 
-  FROM users 
-  WHERE role IN ('comercial', 'admin') AND status = 'ativo'
-  ORDER BY name ASC
-`
+      SELECT DISTINCT u.id, u.name, u.username, u.role 
+      FROM users u
+      INNER JOIN user_roles ur ON u.id = ur.user_id
+      WHERE ur.role = 'comercial' AND u.status = 'ativo'
+      ORDER BY u.name ASC
+    `
     return { success: true, users }
   } catch (error) {
     console.error("Get comercial users error:", error)

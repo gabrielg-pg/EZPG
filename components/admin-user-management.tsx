@@ -17,11 +17,12 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Plus, Pencil, Trash2, Search, Users, Shield, UserCheck, Loader2, Briefcase } from "lucide-react"
+import { Plus, Pencil, Trash2, Search, Users, Shield, UserCheck, Loader2, Briefcase, KeyRound, Mail, UserCog, Rocket } from "lucide-react"
 import { createUserAction } from "@/app/actions/auth-actions"
 import { updateUser, deleteUser } from "@/app/actions/user-actions"
+import { cn } from "@/lib/utils"
 
-type RoleType = "admin" | "comercial" | "manager" | "user"
+type RoleType = "admin" | "comercial" | "manager" | "user" | "zona_execucao"
 
 interface User {
   id: number
@@ -35,10 +36,11 @@ interface User {
 }
 
 const roleConfig = {
-  admin: { label: "Admin", color: "bg-red-500/20 text-red-500 border-red-500/30" },
-  comercial: { label: "Comercial", color: "bg-blue-500/20 text-blue-500 border-blue-500/30" },
-  manager: { label: "Gerente", color: "bg-primary/20 text-primary border-primary/30" },
-  user: { label: "Usuário", color: "bg-muted text-muted-foreground border-border" },
+  admin: { label: "Admin", color: "bg-red-500/15 text-red-400 border-red-500/25", icon: Shield, description: "Acesso total ao sistema" },
+  comercial: { label: "Comercial", color: "bg-blue-500/15 text-blue-400 border-blue-500/25", icon: Briefcase, description: "Gerencia reunioes e leads" },
+  manager: { label: "Gerente", color: "bg-primary/15 text-primary border-primary/25", icon: UserCog, description: "Gerencia equipe e lojas" },
+  user: { label: "Usuario", color: "bg-muted text-muted-foreground border-border", icon: Users, description: "Acesso basico ao sistema" },
+  zona_execucao: { label: "Zona de Execucao", color: "bg-emerald-500/15 text-emerald-400 border-emerald-500/25", icon: Rocket, description: "Dashboard, lojas e zona de execucao" },
 }
 
 export function AdminUserManagement({ initialUsers }: { initialUsers: User[] }) {
@@ -165,61 +167,61 @@ export function AdminUserManagement({ initialUsers }: { initialUsers: User[] }) 
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-foreground">Administração de Usuários</h2>
-          <p className="text-muted-foreground">Gerencie os usuários do sistema</p>
+        <div className="space-y-1">
+          <h2 className="text-2xl font-bold text-foreground">Gerenciar Usuarios</h2>
+          <p className="text-muted-foreground">Controle de acessos e permissoes do sistema</p>
         </div>
         <Button
           onClick={() => {
             resetForm()
             setIsCreateDialogOpen(true)
           }}
-          className="bg-primary hover:bg-primary/90 text-primary-foreground"
+          className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 rounded-xl h-11 px-5"
         >
           <Plus className="mr-2 h-4 w-4" />
-          Novo Usuário
+          Novo Usuario
         </Button>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <Card className="bg-card border-border">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-primary/20 flex items-center justify-center">
-                <Users className="h-5 w-5 text-primary" />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="bg-card/50 border-border backdrop-blur-sm hover:bg-card/70 transition-all duration-200">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center border border-primary/20">
+                <Users className="h-6 w-6 text-primary" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">{users.length}</p>
-                <p className="text-sm text-muted-foreground">Total de Usuários</p>
+                <p className="text-3xl font-bold text-foreground">{users.length}</p>
+                <p className="text-sm text-muted-foreground">Total de Usuarios</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-card border-border">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-red-500/20 flex items-center justify-center">
-                <Shield className="h-5 w-5 text-red-500" />
+        <Card className="bg-card/50 border-border backdrop-blur-sm hover:bg-card/70 transition-all duration-200">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-red-500/20 to-red-500/5 flex items-center justify-center border border-red-500/20">
+                <Shield className="h-6 w-6 text-red-400" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">{users.filter((u) => u.roles?.includes("admin") || u.role === "admin").length}</p>
+                <p className="text-3xl font-bold text-foreground">{users.filter((u) => u.roles?.includes("admin") || u.role === "admin").length}</p>
                 <p className="text-sm text-muted-foreground">Administradores</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-card border-border">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
-                <Briefcase className="h-5 w-5 text-blue-500" />
+        <Card className="bg-card/50 border-border backdrop-blur-sm hover:bg-card/70 transition-all duration-200">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-blue-500/20 to-blue-500/5 flex items-center justify-center border border-blue-500/20">
+                <Briefcase className="h-6 w-6 text-blue-400" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">
+                <p className="text-3xl font-bold text-foreground">
                   {users.filter((u) => u.roles?.includes("comercial") || u.role === "comercial").length}
                 </p>
                 <p className="text-sm text-muted-foreground">Comerciais</p>
@@ -227,15 +229,15 @@ export function AdminUserManagement({ initialUsers }: { initialUsers: User[] }) 
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-card border-border">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-green-500/20 flex items-center justify-center">
-                <UserCheck className="h-5 w-5 text-green-500" />
+        <Card className="bg-card/50 border-border backdrop-blur-sm hover:bg-card/70 transition-all duration-200">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-green-500/20 to-green-500/5 flex items-center justify-center border border-green-500/20">
+                <UserCheck className="h-6 w-6 text-green-400" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">{users.filter((u) => u.status === "ativo").length}</p>
-                <p className="text-sm text-muted-foreground">Usuários Ativos</p>
+                <p className="text-3xl font-bold text-foreground">{users.filter((u) => u.status === "ativo").length}</p>
+                <p className="text-sm text-muted-foreground">Usuarios Ativos</p>
               </div>
             </div>
           </CardContent>
@@ -243,92 +245,111 @@ export function AdminUserManagement({ initialUsers }: { initialUsers: User[] }) 
       </div>
 
       {/* Search and Table */}
-      <Card className="bg-card border-border">
-        <CardHeader>
+      <Card className="bg-card/50 border-border backdrop-blur-sm">
+        <CardHeader className="pb-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <CardTitle className="text-foreground">Usuários</CardTitle>
+              <CardTitle className="text-foreground text-lg">Lista de Usuarios</CardTitle>
               <CardDescription className="text-muted-foreground">
-                Lista de todos os usuários cadastrados
+                Gerencie permissoes e acessos dos usuarios
               </CardDescription>
             </div>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Buscar usuários..."
+                placeholder="Buscar por nome ou email..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 bg-secondary border-input text-foreground placeholder:text-muted-foreground w-full sm:w-64"
+                className="pl-10 bg-secondary/50 border-input text-foreground placeholder:text-muted-foreground w-full sm:w-72 h-10 rounded-xl"
               />
             </div>
           </div>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto rounded-xl border border-border">
             <Table>
               <TableHeader>
-                <TableRow className="border-border hover:bg-transparent">
-                  <TableHead className="text-muted-foreground">Nome</TableHead>
-                  <TableHead className="text-muted-foreground">Email</TableHead>
-                  <TableHead className="text-muted-foreground">Função</TableHead>
-                  <TableHead className="text-muted-foreground">Status</TableHead>
-                  <TableHead className="text-muted-foreground">Criado em</TableHead>
-                  <TableHead className="text-muted-foreground text-right">Ações</TableHead>
+                <TableRow className="border-border bg-muted/30 hover:bg-muted/30">
+                  <TableHead className="text-muted-foreground font-semibold">Usuario</TableHead>
+                  <TableHead className="text-muted-foreground font-semibold">Acessos</TableHead>
+                  <TableHead className="text-muted-foreground font-semibold">Status</TableHead>
+                  <TableHead className="text-muted-foreground font-semibold">Cadastro</TableHead>
+                  <TableHead className="text-muted-foreground font-semibold text-right">Acoes</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredUsers.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                      Nenhum usuário encontrado
+                    <TableCell colSpan={5} className="text-center text-muted-foreground py-12">
+                      <Users className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                      <p className="font-medium">Nenhum usuario encontrado</p>
+                      <p className="text-sm">Tente ajustar sua busca</p>
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredUsers.map((user) => (
-                    <TableRow key={user.id} className="border-border hover:bg-secondary/50">
-                      <TableCell className="text-foreground font-medium">{user.name}</TableCell>
-                      <TableCell className="text-muted-foreground">{user.email}</TableCell>
+                    <TableRow key={user.id} className="border-border hover:bg-muted/20 transition-colors">
                       <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                          {(user.roles || [user.role]).map((role) => (
-                            <Badge key={role} variant="outline" className={roleConfig[role]?.color || roleConfig.user.color}>
-                              {roleConfig[role]?.label || role}
-                            </Badge>
-                          ))}
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-foreground font-medium">{user.name}</span>
+                          <span className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Mail className="h-3 w-3" />
+                            {user.email}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1.5">
+                          {(user.roles || [user.role]).map((role) => {
+                            const config = roleConfig[role] || roleConfig.user
+                            const IconComponent = config.icon
+                            return (
+                              <Badge key={role} variant="outline" className={cn("gap-1", config.color)}>
+                                <IconComponent className="h-3 w-3" />
+                                {config.label}
+                              </Badge>
+                            )
+                          })}
                         </div>
                       </TableCell>
                       <TableCell>
                         <Badge
                           variant="outline"
-                          className={
+                          className={cn(
+                            "gap-1.5",
                             user.status === "ativo"
-                              ? "bg-green-500/20 text-green-500 border-green-500/30"
+                              ? "bg-green-500/15 text-green-400 border-green-500/25"
                               : "bg-muted text-muted-foreground border-border"
-                          }
+                          )}
                         >
+                          <div className={cn(
+                            "h-1.5 w-1.5 rounded-full",
+                            user.status === "ativo" ? "bg-green-400" : "bg-muted-foreground"
+                          )} />
                           {user.status === "ativo" ? "Ativo" : "Inativo"}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-muted-foreground">
+                      <TableCell className="text-muted-foreground text-sm">
                         {new Date(user.created_at).toLocaleDateString("pt-BR")}
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
+                        <div className="flex items-center justify-end gap-1">
                           <Button
                             variant="ghost"
-                            size="icon"
+                            size="sm"
                             onClick={() => openEditDialog(user)}
-                            className="text-muted-foreground hover:text-foreground hover:bg-secondary"
+                            className="text-muted-foreground hover:text-primary hover:bg-primary/10 gap-1.5 h-8"
                           >
-                            <Pencil className="h-4 w-4" />
+                            <KeyRound className="h-3.5 w-3.5" />
+                            <span className="hidden sm:inline">Editar Acesso</span>
                           </Button>
                           <Button
                             variant="ghost"
                             size="icon"
                             onClick={() => openDeleteDialog(user)}
-                            className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                            className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 h-8 w-8"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-3.5 w-3.5" />
                           </Button>
                         </div>
                       </TableCell>
@@ -343,105 +364,135 @@ export function AdminUserManagement({ initialUsers }: { initialUsers: User[] }) 
 
       {/* Create User Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="bg-card border-border text-foreground">
+        <DialogContent className="bg-card/95 backdrop-blur-xl border-border text-foreground max-w-lg">
           <DialogHeader>
-            <DialogTitle>Criar Novo Usuário</DialogTitle>
+            <DialogTitle className="flex items-center gap-2 text-xl">
+              <div className="h-8 w-8 rounded-lg bg-primary/20 flex items-center justify-center">
+                <Plus className="h-4 w-4 text-primary" />
+              </div>
+              Criar Novo Usuario
+            </DialogTitle>
             <DialogDescription className="text-muted-foreground">
-              Preencha os dados para criar um novo usuário
+              Preencha os dados para criar um novo usuario no sistema
             </DialogDescription>
           </DialogHeader>
           {error && (
-            <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+            <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm flex items-center gap-2">
+              <div className="h-2 w-2 rounded-full bg-destructive animate-pulse" />
               {error}
             </div>
           )}
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="create-name" className="text-foreground">
-                Nome
-              </Label>
-              <Input
-                id="create-name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="Nome completo"
-                className="bg-secondary border-input text-foreground placeholder:text-muted-foreground"
-              />
+          <div className="space-y-4 py-2">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="create-name" className="text-foreground font-medium">
+                  Nome Completo
+                </Label>
+                <Input
+                  id="create-name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="Ex: Joao Silva"
+                  className="bg-secondary/50 border-input text-foreground placeholder:text-muted-foreground h-10 rounded-xl"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="create-username" className="text-foreground font-medium">
+                  Usuario (login)
+                </Label>
+                <Input
+                  id="create-username"
+                  value={formData.username}
+                  onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                  placeholder="Ex: joao.silva"
+                  className="bg-secondary/50 border-input text-foreground placeholder:text-muted-foreground h-10 rounded-xl"
+                />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="create-username" className="text-foreground">
-                Usuário
-              </Label>
-              <Input
-                id="create-username"
-                value={formData.username}
-                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                placeholder="Nome de usuário"
-                className="bg-secondary border-input text-foreground placeholder:text-muted-foreground"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="create-email" className="text-foreground font-medium">
+                  Email
+                </Label>
+                <Input
+                  id="create-email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  placeholder="email@exemplo.com"
+                  className="bg-secondary/50 border-input text-foreground placeholder:text-muted-foreground h-10 rounded-xl"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="create-password" className="text-foreground font-medium">
+                  Senha
+                </Label>
+                <Input
+                  id="create-password"
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  placeholder="Senha segura"
+                  className="bg-secondary/50 border-input text-foreground placeholder:text-muted-foreground h-10 rounded-xl"
+                />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="create-email" className="text-foreground">
-                Email
+            <div className="space-y-3">
+              <Label className="text-foreground font-medium flex items-center gap-2">
+                <KeyRound className="h-4 w-4 text-primary" />
+                Niveis de Acesso
               </Label>
-              <Input
-                id="create-email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                placeholder="email@exemplo.com"
-                className="bg-secondary border-input text-foreground placeholder:text-muted-foreground"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="create-password" className="text-foreground">
-                Senha
-              </Label>
-              <Input
-                id="create-password"
-                type="password"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                placeholder="Senha do usuário"
-                className="bg-secondary border-input text-foreground placeholder:text-muted-foreground"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-foreground">
-                Funções
-              </Label>
-              <div className="grid grid-cols-2 gap-3 p-3 bg-secondary rounded-lg border border-input">
-                {(Object.entries(roleConfig) as [RoleType, { label: string; color: string }][]).map(([role, config]) => (
-                  <div key={role} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`create-role-${role}`}
-                      checked={formData.roles.includes(role)}
-                      onCheckedChange={() => toggleRole(role)}
-                      className="border-input data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-                    />
-                    <Label
-                      htmlFor={`create-role-${role}`}
-                      className="text-sm text-foreground cursor-pointer"
+              <div className="grid grid-cols-1 gap-2">
+                {(Object.entries(roleConfig) as [RoleType, typeof roleConfig.admin][]).map(([role, config]) => {
+                  const IconComponent = config.icon
+                  const isSelected = formData.roles.includes(role)
+                  return (
+                    <div 
+                      key={role} 
+                      onClick={() => toggleRole(role)}
+                      className={cn(
+                        "flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all duration-200",
+                        isSelected
+                          ? "border-primary/50 bg-primary/10"
+                          : "border-border bg-secondary/30 hover:bg-secondary/50"
+                      )}
                     >
-                      {config.label}
-                    </Label>
-                  </div>
-                ))}
+                      <Checkbox
+                        id={`create-role-${role}`}
+                        checked={isSelected}
+                        onCheckedChange={() => toggleRole(role)}
+                        className="border-input data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                      />
+                      <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center", isSelected ? "bg-primary/20" : "bg-muted")}>
+                        <IconComponent className={cn("h-4 w-4", isSelected ? "text-primary" : "text-muted-foreground")} />
+                      </div>
+                      <div className="flex-1">
+                        <Label
+                          htmlFor={`create-role-${role}`}
+                          className="text-sm text-foreground cursor-pointer font-medium"
+                        >
+                          {config.label}
+                        </Label>
+                        <p className="text-xs text-muted-foreground">{config.description}</p>
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="gap-2 sm:gap-0">
             <Button
               variant="outline"
               onClick={() => setIsCreateDialogOpen(false)}
-              className="border-border text-foreground hover:bg-secondary"
+              className="border-border text-foreground hover:bg-secondary rounded-xl"
             >
               Cancelar
             </Button>
             <Button
               onClick={handleCreate}
               disabled={isPending}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl shadow-lg shadow-primary/20"
             >
               {isPending ? (
                 <>
@@ -449,7 +500,7 @@ export function AdminUserManagement({ initialUsers }: { initialUsers: User[] }) 
                   Criando...
                 </>
               ) : (
-                "Criar Usuário"
+                "Criar Usuario"
               )}
             </Button>
           </DialogFooter>
@@ -458,97 +509,135 @@ export function AdminUserManagement({ initialUsers }: { initialUsers: User[] }) 
 
       {/* Edit User Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="bg-card border-border text-foreground">
+        <DialogContent className="bg-card/95 backdrop-blur-xl border-border text-foreground max-w-lg">
           <DialogHeader>
-            <DialogTitle>Editar Usuário</DialogTitle>
-            <DialogDescription className="text-muted-foreground">Atualize os dados do usuário</DialogDescription>
+            <DialogTitle className="flex items-center gap-2 text-xl">
+              <div className="h-8 w-8 rounded-lg bg-primary/20 flex items-center justify-center">
+                <KeyRound className="h-4 w-4 text-primary" />
+              </div>
+              Editar Acesso do Usuario
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              Atualize as informacoes e permissoes de acesso de <span className="text-foreground font-medium">{selectedUser?.name}</span>
+            </DialogDescription>
           </DialogHeader>
           {error && (
-            <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+            <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm flex items-center gap-2">
+              <div className="h-2 w-2 rounded-full bg-destructive animate-pulse" />
               {error}
             </div>
           )}
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="edit-name" className="text-foreground">
-                Nome
-              </Label>
-              <Input
-                id="edit-name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="bg-secondary border-input text-foreground"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-email" className="text-foreground">
-                Email
-              </Label>
-              <Input
-                id="edit-email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="bg-secondary border-input text-foreground"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-foreground">
-                Funções
-              </Label>
-              <div className="grid grid-cols-2 gap-3 p-3 bg-secondary rounded-lg border border-input">
-                {(Object.entries(roleConfig) as [RoleType, { label: string; color: string }][]).map(([role, config]) => (
-                  <div key={role} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`edit-role-${role}`}
-                      checked={formData.roles.includes(role)}
-                      onCheckedChange={() => toggleRole(role)}
-                      className="border-input data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-                    />
-                    <Label
-                      htmlFor={`edit-role-${role}`}
-                      className="text-sm text-foreground cursor-pointer"
-                    >
-                      {config.label}
-                    </Label>
-                  </div>
-                ))}
+          <div className="space-y-5 py-2">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-name" className="text-foreground font-medium">
+                  Nome
+                </Label>
+                <Input
+                  id="edit-name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="bg-secondary/50 border-input text-foreground h-10 rounded-xl"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-email" className="text-foreground font-medium">
+                  Email
+                </Label>
+                <Input
+                  id="edit-email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className="bg-secondary/50 border-input text-foreground h-10 rounded-xl"
+                />
               </div>
             </div>
+            
+            <div className="space-y-3">
+              <Label className="text-foreground font-medium flex items-center gap-2">
+                <KeyRound className="h-4 w-4 text-primary" />
+                Niveis de Acesso
+              </Label>
+              <div className="grid grid-cols-1 gap-2">
+                {(Object.entries(roleConfig) as [RoleType, typeof roleConfig.admin][]).map(([role, config]) => {
+                  const IconComponent = config.icon
+                  const isSelected = formData.roles.includes(role)
+                  return (
+                    <div 
+                      key={role} 
+                      onClick={() => toggleRole(role)}
+                      className={cn(
+                        "flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all duration-200",
+                        isSelected
+                          ? "border-primary/50 bg-primary/10"
+                          : "border-border bg-secondary/30 hover:bg-secondary/50"
+                      )}
+                    >
+                      <Checkbox
+                        id={`edit-role-${role}`}
+                        checked={isSelected}
+                        onCheckedChange={() => toggleRole(role)}
+                        className="border-input data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                      />
+                      <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center", isSelected ? "bg-primary/20" : "bg-muted")}>
+                        <IconComponent className={cn("h-4 w-4", isSelected ? "text-primary" : "text-muted-foreground")} />
+                      </div>
+                      <div className="flex-1">
+                        <Label
+                          htmlFor={`edit-role-${role}`}
+                          className="text-sm text-foreground cursor-pointer font-medium"
+                        >
+                          {config.label}
+                        </Label>
+                        <p className="text-xs text-muted-foreground">{config.description}</p>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
             <div className="space-y-2">
-              <Label htmlFor="edit-status" className="text-foreground">
-                Status
+              <Label htmlFor="edit-status" className="text-foreground font-medium">
+                Status da Conta
               </Label>
               <Select
                 value={formData.status}
                 onValueChange={(value) => setFormData({ ...formData, status: value as User["status"] })}
               >
-                <SelectTrigger className="bg-secondary border-input text-foreground">
+                <SelectTrigger className="bg-secondary/50 border-input text-foreground h-10 rounded-xl">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-popover border-border">
-                  <SelectItem value="ativo" className="text-popover-foreground">
-                    Ativo
+                <SelectContent className="bg-popover border-border rounded-xl">
+                  <SelectItem value="ativo" className="text-popover-foreground rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <div className="h-2 w-2 rounded-full bg-green-400" />
+                      Ativo
+                    </div>
                   </SelectItem>
-                  <SelectItem value="inativo" className="text-popover-foreground">
-                    Inativo
+                  <SelectItem value="inativo" className="text-popover-foreground rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <div className="h-2 w-2 rounded-full bg-muted-foreground" />
+                      Inativo
+                    </div>
                   </SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="gap-2 sm:gap-0">
             <Button
               variant="outline"
               onClick={() => setIsEditDialogOpen(false)}
-              className="border-border text-foreground hover:bg-secondary"
+              className="border-border text-foreground hover:bg-secondary rounded-xl"
             >
               Cancelar
             </Button>
             <Button
               onClick={handleEdit}
               disabled={isPending}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl shadow-lg shadow-primary/20"
             >
               {isPending ? (
                 <>
@@ -556,7 +645,7 @@ export function AdminUserManagement({ initialUsers }: { initialUsers: User[] }) 
                   Salvando...
                 </>
               ) : (
-                "Salvar Alterações"
+                "Salvar Alteracoes"
               )}
             </Button>
           </DialogFooter>
@@ -565,35 +654,40 @@ export function AdminUserManagement({ initialUsers }: { initialUsers: User[] }) 
 
       {/* Delete User Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="bg-card border-border text-foreground">
+        <DialogContent className="bg-card/95 backdrop-blur-xl border-border text-foreground max-w-md">
           <DialogHeader>
-            <DialogTitle>Excluir Usuário</DialogTitle>
+            <DialogTitle className="flex items-center gap-2 text-xl">
+              <div className="h-8 w-8 rounded-lg bg-destructive/20 flex items-center justify-center">
+                <Trash2 className="h-4 w-4 text-destructive" />
+              </div>
+              Excluir Usuario
+            </DialogTitle>
             <DialogDescription className="text-muted-foreground">
-              Tem certeza que deseja excluir o usuário <strong>{selectedUser?.name}</strong>? Esta ação não pode ser
-              desfeita.
+              Tem certeza que deseja excluir o usuario <span className="text-foreground font-medium">{selectedUser?.name}</span>? Esta acao nao pode ser desfeita.
             </DialogDescription>
           </DialogHeader>
           {error && (
-            <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+            <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm flex items-center gap-2">
+              <div className="h-2 w-2 rounded-full bg-destructive animate-pulse" />
               {error}
             </div>
           )}
-          <DialogFooter>
+          <DialogFooter className="gap-2 sm:gap-0">
             <Button
               variant="outline"
               onClick={() => setIsDeleteDialogOpen(false)}
-              className="border-border text-foreground hover:bg-secondary"
+              className="border-border text-foreground hover:bg-secondary rounded-xl"
             >
               Cancelar
             </Button>
-            <Button onClick={handleDelete} disabled={isPending} variant="destructive">
+            <Button onClick={handleDelete} disabled={isPending} variant="destructive" className="rounded-xl">
               {isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Excluindo...
                 </>
               ) : (
-                "Excluir Usuário"
+                "Excluir Usuario"
               )}
             </Button>
           </DialogFooter>

@@ -1,16 +1,15 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useTransition } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Eye, EyeOff, Loader2 } from "lucide-react"
-import { loginAction } from "@/app/actions/auth-actions"
+import { Eye, EyeOff, Loader2, Lock, User, ArrowUpRight } from "lucide-react"
 import Image from "next/image"
+import { loginAction } from "@/app/actions/auth-actions"
 
 export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false)
@@ -33,69 +32,77 @@ export function LoginForm() {
   }
 
   return (
-    <Card className="border-border bg-card">
-      <CardHeader className="space-y-4 text-center">
-        <div className="flex justify-center">
-          <Image
-            src="https://images2.imgbox.com/87/ff/17iPcwdM_o.png"
-            alt="Pro Growth"
-            width={180}
-            height={36}
-            className="h-9 w-auto"
-            priority
-          />
-        </div>
-        <div>
-          <CardTitle className="text-xl text-foreground">Bem-vindo de volta</CardTitle>
-          <CardDescription className="text-muted-foreground">
-            Entre com suas credenciais para acessar o sistema
-          </CardDescription>
+    <Card className="w-full max-w-md border-border bg-card/80 backdrop-blur-xl shadow-2xl shadow-primary/10">
+      <CardHeader className="space-y-4 text-center pb-2">
+        <div className="flex flex-col items-center gap-4">
+          <div className="relative">
+            <div className="absolute inset-0 bg-primary/30 blur-3xl rounded-full scale-150" />
+            <Image
+              src="https://i.imgur.com/jfNDVLp.png"
+              alt="Pro Growth Logo"
+              width={64}
+              height={64}
+              className="relative z-10 rounded-2xl shadow-xl shadow-primary/20"
+              priority
+            />
+          </div>
+          <div className="space-y-1">
+            <CardTitle className="text-xl font-bold text-foreground">Pro Growth</CardTitle>
+            <CardDescription className="text-muted-foreground text-sm">
+              Entre com suas credenciais para acessar
+            </CardDescription>
+          </div>
         </div>
       </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
+      <CardContent className="pt-4">
+        <form onSubmit={handleSubmit} className="space-y-5">
           {error && (
-            <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+            <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm flex items-center gap-2">
+              <div className="h-2 w-2 rounded-full bg-destructive animate-pulse" />
               {error}
             </div>
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="username" className="text-foreground">
-              Usuário
+            <Label htmlFor="username" className="text-foreground font-medium">
+              Usuario
             </Label>
-            <Input
-              id="username"
-              name="username"
-              type="text"
-              placeholder="Digite seu usuário"
-              required
-              className="bg-secondary border-input text-foreground placeholder:text-muted-foreground"
-            />
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                id="username"
+                name="username"
+                type="text"
+                placeholder="Digite seu usuario"
+                required
+                className="pl-10 h-12 bg-secondary/50 border-input rounded-xl"
+              />
+            </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password" className="text-foreground">
+            <Label htmlFor="password" className="text-foreground font-medium">
               Senha
             </Label>
             <div className="relative">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 id="password"
                 name="password"
                 type={showPassword ? "text" : "password"}
                 placeholder="Digite sua senha"
                 required
-                className="bg-secondary border-input text-foreground placeholder:text-muted-foreground pr-10"
+                className="pl-10 pr-10 h-12 bg-secondary/50 border-input rounded-xl"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1 rounded-md hover:bg-white/5"
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center gap-2">
             <Checkbox
               id="remember"
               checked={rememberMe}
@@ -108,12 +115,12 @@ export function LoginForm() {
           </div>
           <Button
             type="submit"
-            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+            className="w-full h-12 rounded-xl text-base font-semibold bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg shadow-primary/25 transition-all duration-200"
             disabled={isPending}
           >
             {isPending ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                 Entrando...
               </>
             ) : (

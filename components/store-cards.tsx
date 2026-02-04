@@ -257,15 +257,15 @@ export function StoreCards({ initialStores }: { initialStores: StoreData[] }) {
 }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
+        <div className="space-y-1">
           <h2 className="text-2xl font-bold text-foreground">Lojas em Onboarding</h2>
           <p className="text-muted-foreground">Gerencie o processo de onboarding das suas lojas</p>
         </div>
         <Link href="/nova-loja">
-          <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
+          <Button className="shadow-lg shadow-primary/20 rounded-xl h-11 px-5">
             <Plus className="mr-2 h-4 w-4" />
             Nova Loja
           </Button>
@@ -274,27 +274,27 @@ export function StoreCards({ initialStores }: { initialStores: StoreData[] }) {
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card className="bg-card border-border">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-primary/20 flex items-center justify-center">
-                <Store className="h-5 w-5 text-primary" />
+        <Card className="bg-card/50 border-border backdrop-blur-sm hover:bg-card/70 transition-all duration-200">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center border border-primary/20">
+                <Store className="h-6 w-6 text-primary" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">{stores.length}</p>
+                <p className="text-3xl font-bold text-foreground">{stores.length}</p>
                 <p className="text-sm text-muted-foreground">Total de Lojas</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-card border-border">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-yellow-500/20 flex items-center justify-center">
-                <Store className="h-5 w-5 text-yellow-500" />
+        <Card className="bg-card/50 border-border backdrop-blur-sm hover:bg-card/70 transition-all duration-200">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-yellow-500/20 to-yellow-500/5 flex items-center justify-center border border-yellow-500/20">
+                <Store className="h-6 w-6 text-yellow-400" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">
+                <p className="text-3xl font-bold text-foreground">
                   {stores.filter((s) => s.status === "em_andamento").length}
                 </p>
                 <p className="text-sm text-muted-foreground">Em Andamento</p>
@@ -302,17 +302,17 @@ export function StoreCards({ initialStores }: { initialStores: StoreData[] }) {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-card border-border">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-green-500/20 flex items-center justify-center">
-                <Store className="h-5 w-5 text-green-500" />
+        <Card className="bg-card/50 border-border backdrop-blur-sm hover:bg-card/70 transition-all duration-200">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-green-500/20 to-green-500/5 flex items-center justify-center border border-green-500/20">
+                <Store className="h-6 w-6 text-green-400" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">
+                <p className="text-3xl font-bold text-foreground">
                   {stores.filter((s) => s.status === "concluido").length}
                 </p>
-                <p className="text-sm text-muted-foreground">Concluídos</p>
+                <p className="text-sm text-muted-foreground">Concluidos</p>
               </div>
             </div>
           </CardContent>
@@ -321,13 +321,15 @@ export function StoreCards({ initialStores }: { initialStores: StoreData[] }) {
 
       {/* Store Cards Grid */}
       {stores.length === 0 ? (
-        <Card className="bg-card border-border">
-          <CardContent className="p-8 text-center">
-            <Store className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+        <Card className="bg-card/50 border-border backdrop-blur-sm">
+          <CardContent className="p-12 text-center">
+            <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+              <Store className="h-8 w-8 text-primary" />
+            </div>
             <h3 className="text-lg font-semibold text-foreground mb-2">Nenhuma loja cadastrada</h3>
-            <p className="text-muted-foreground mb-4">Comece cadastrando sua primeira loja</p>
+            <p className="text-muted-foreground mb-6">Comece cadastrando sua primeira loja para iniciar o onboarding</p>
             <Link href="/nova-loja">
-              <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
+              <Button className="shadow-lg shadow-primary/20 rounded-xl">
                 <Plus className="mr-2 h-4 w-4" />
                 Nova Loja
               </Button>
@@ -335,20 +337,20 @@ export function StoreCards({ initialStores }: { initialStores: StoreData[] }) {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
           {stores.map((store) => (
-            <Card key={store.id} className="bg-card border-border hover:border-primary/50 transition-colors">
-              <CardHeader className="pb-2">
+            <Card key={store.id} className="bg-card/50 border-border backdrop-blur-sm hover:bg-card/70 hover:border-primary/30 transition-all duration-300 group">
+              <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                   <div className="space-y-1">
-                    <CardTitle className="text-foreground">{store.name}</CardTitle>
+                    <CardTitle className="text-foreground group-hover:text-primary transition-colors">{store.name}</CardTitle>
                     <CardDescription className="text-muted-foreground">Loja #{store.store_number}</CardDescription>
                     {store.drive_link && (
                       <a
                         href={store.drive_link}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-xs text-primary hover:underline flex items-center gap-1"
+                        className="text-xs text-[#A855F7] hover:underline flex items-center gap-1"
                       >
                         <ExternalLink className="h-3 w-3" />
                         Link do Drive
@@ -357,7 +359,7 @@ export function StoreCards({ initialStores }: { initialStores: StoreData[] }) {
                   </div>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
+                      <Button variant="ghost" size="icon" className="text-[#9CA3AF] hover:text-white">
                         {isPending ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
@@ -365,30 +367,28 @@ export function StoreCards({ initialStores }: { initialStores: StoreData[] }) {
                         )}
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="bg-popover border-border">
-                      <DropdownMenuItem className="text-popover-foreground" onClick={() => handleViewStore(store.id)}>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleViewStore(store.id)}>
                         <Eye className="h-4 w-4 mr-2" />
                         Ver Detalhes
                       </DropdownMenuItem>
-                      <DropdownMenuItem className="text-popover-foreground" onClick={() => handleEditStore(store.id)}>
+                      <DropdownMenuItem onClick={() => handleEditStore(store.id)}>
                         <Edit className="h-4 w-4 mr-2" />
                         Editar
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
-                        className="text-popover-foreground"
                         onClick={() => handleUpdateProgress(store.id, Math.min(store.progress + 25, 100))}
                       >
                         Avançar progresso
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        className="text-popover-foreground"
                         onClick={() => handleUpdateProgress(store.id, 100)}
                       >
                         Marcar como 100%
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(store.id)}>
+                      <DropdownMenuItem className="text-red-400" onClick={() => handleDelete(store.id)}>
                         Excluir
                       </DropdownMenuItem>
                     </DropdownMenuContent>
@@ -396,7 +396,7 @@ export function StoreCards({ initialStores }: { initialStores: StoreData[] }) {
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                <div className="flex items-center gap-4 text-sm text-[#9CA3AF]">
                   <div className="flex items-center gap-1">
                     <MapPin className="h-4 w-4" />
                     <span className="capitalize">{store.region}</span>
@@ -406,20 +406,20 @@ export function StoreCards({ initialStores }: { initialStores: StoreData[] }) {
                 {/* Datas e Prazo */}
                 <div className="space-y-1 text-xs">
                   <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Cadastrado em:</span>
-                    <span className="text-foreground font-medium">
+                    <span className="text-[#9CA3AF]">Cadastrado em:</span>
+                    <span className="text-white font-medium">
                       {formatDateBRUtil(store.created_at)}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Entregar até:</span>
-                    <span className="text-foreground font-medium">
+                    <span className="text-[#9CA3AF]">Entregar até:</span>
+                    <span className="text-white font-medium">
                       {formatDateBRUtil(calculateDeliveryDate(store.created_at, store.plan))}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Prazo:</span>
-                    <span className="text-primary font-medium">
+                    <span className="text-[#9CA3AF]">Prazo:</span>
+                    <span className="text-[#A855F7] font-medium">
                       {getBusinessDaysByPlan(store.plan)} dias úteis
                     </span>
                   </div>
@@ -427,8 +427,8 @@ export function StoreCards({ initialStores }: { initialStores: StoreData[] }) {
 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Progresso</span>
-                    <span className="text-foreground font-medium">{store.progress}%</span>
+                    <span className="text-[#9CA3AF]">Progresso</span>
+                    <span className="text-white font-medium">{store.progress}%</span>
                   </div>
                   <Progress value={store.progress} className="h-2" />
                 </div>
@@ -438,15 +438,15 @@ export function StoreCards({ initialStores }: { initialStores: StoreData[] }) {
                     variant={statusConfig[store.status].variant}
                     className={
                       store.status === "concluido"
-                        ? "bg-green-500/20 text-green-500 border-green-500/30"
+                        ? "bg-green-500/20 text-green-400 border-green-500/30"
                         : store.status === "em_andamento"
-                          ? "bg-primary/20 text-primary border-primary/30"
-                          : "bg-muted text-muted-foreground"
+                          ? "bg-[rgba(139,92,246,0.2)] text-[#A855F7] border-[rgba(139,92,246,0.3)]"
+                          : "bg-[rgba(255,255,255,0.06)] text-[#9CA3AF]"
                     }
                   >
                     {statusConfig[store.status].label}
                   </Badge>
-                  <span className="text-xs text-muted-foreground">{store.plan}</span>
+                  <span className="text-xs text-[#9CA3AF]">{store.plan}</span>
                 </div>
 
                 {store.created_by_name && (
@@ -464,10 +464,10 @@ export function StoreCards({ initialStores }: { initialStores: StoreData[] }) {
       )}
 
       <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-        <DialogContent className="bg-card border-border max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-foreground">Detalhes da Loja</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-white">Detalhes da Loja</DialogTitle>
+            <DialogDescription className="text-[#9CA3AF]">
               {selectedStore?.store.name} - #{selectedStore?.store.store_number}
             </DialogDescription>
           </DialogHeader>
@@ -476,27 +476,27 @@ export function StoreCards({ initialStores }: { initialStores: StoreData[] }) {
             <div className="space-y-6">
               {/* Dados do Cliente */}
               <div className="space-y-3">
-                <h4 className="font-semibold text-foreground border-b border-border pb-2">Dados do Cliente</h4>
+                <h4 className="font-semibold text-white border-b border-[rgba(139,92,246,0.15)] pb-2">Dados do Cliente</h4>
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div>
-                    <span className="text-muted-foreground">Nome:</span>
-                    <p className="text-foreground font-medium">{selectedStore.customer.name}</p>
+                    <span className="text-[#9CA3AF]">Nome:</span>
+                    <p className="text-white font-medium">{selectedStore.customer.name}</p>
                   </div>
                   <div>
-                    <span className="text-muted-foreground">Data de Nascimento:</span>
-                    <p className="text-foreground font-medium">{formatDateBR(selectedStore.customer.birth_date)}</p>
+                    <span className="text-[#9CA3AF]">Data de Nascimento:</span>
+                    <p className="text-white font-medium">{formatDateBR(selectedStore.customer.birth_date)}</p>
                   </div>
                   <div>
-                    <span className="text-muted-foreground">CPF:</span>
-                    <p className="text-foreground font-medium">{selectedStore.customer.cpf}</p>
+                    <span className="text-[#9CA3AF]">CPF:</span>
+                    <p className="text-white font-medium">{selectedStore.customer.cpf}</p>
                   </div>
                   <div>
-                    <span className="text-muted-foreground">CEP:</span>
-                    <p className="text-foreground font-medium">{selectedStore.customer.cep}</p>
+                    <span className="text-[#9CA3AF]">CEP:</span>
+                    <p className="text-white font-medium">{selectedStore.customer.cep}</p>
                   </div>
                   <div className="col-span-2">
-                    <span className="text-muted-foreground">Endereço:</span>
-                    <p className="text-foreground font-medium">
+                    <span className="text-[#9CA3AF]">Endereço:</span>
+                    <p className="text-white font-medium">
                       {selectedStore.customer.address}, {selectedStore.customer.address_number}
                     </p>
                   </div>
@@ -505,25 +505,25 @@ export function StoreCards({ initialStores }: { initialStores: StoreData[] }) {
 
               {/* Drive e Plano */}
               <div className="space-y-3">
-                <h4 className="font-semibold text-foreground border-b border-border pb-2">Informações da Loja</h4>
+                <h4 className="font-semibold text-white border-b border-[rgba(139,92,246,0.15)] pb-2">Informações da Loja</h4>
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div>
-                    <span className="text-muted-foreground">Plano:</span>
-                    <p className="text-foreground font-medium">{selectedStore.store.plan}</p>
+                    <span className="text-[#9CA3AF]">Plano:</span>
+                    <p className="text-white font-medium">{selectedStore.store.plan}</p>
                   </div>
                   <div>
-                    <span className="text-muted-foreground">Região:</span>
-                    <p className="text-foreground font-medium capitalize">{selectedStore.store.region}</p>
+                    <span className="text-[#9CA3AF]">Região:</span>
+                    <p className="text-white font-medium capitalize">{selectedStore.store.region}</p>
                   </div>
                   <div className="col-span-2">
-                    <span className="text-muted-foreground">Link do Drive:</span>
-                    <p className="text-foreground font-medium">
+                    <span className="text-[#9CA3AF]">Link do Drive:</span>
+                    <p className="text-white font-medium">
                       {selectedStore.store.drive_link ? (
                         <a
                           href={selectedStore.store.drive_link}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-primary hover:underline"
+                          className="text-[#A855F7] hover:underline"
                         >
                           {selectedStore.store.drive_link}
                         </a>
@@ -537,20 +537,20 @@ export function StoreCards({ initialStores }: { initialStores: StoreData[] }) {
 
               {/* Contas */}
               <div className="space-y-3">
-                <h4 className="font-semibold text-foreground border-b border-border pb-2">Dados das Contas</h4>
+                <h4 className="font-semibold text-white border-b border-[rgba(139,92,246,0.15)] pb-2">Dados das Contas</h4>
                 {selectedStore.accounts
                   .filter((a) => a.enabled)
                   .map((account) => (
-                    <div key={account.account_type} className="p-3 bg-secondary/50 rounded-lg">
-                      <p className="font-medium text-foreground capitalize mb-2">{account.account_type}</p>
+                    <div key={account.account_type} className="p-3 bg-[rgba(139,92,246,0.1)] rounded-lg border border-[rgba(139,92,246,0.15)]">
+                      <p className="font-medium text-white capitalize mb-2">{account.account_type}</p>
                       <div className="grid grid-cols-2 gap-2 text-sm">
                         <div>
-                          <span className="text-muted-foreground">Login:</span>
-                          <p className="text-foreground">{account.login}</p>
+                          <span className="text-[#9CA3AF]">Login:</span>
+                          <p className="text-white">{account.login}</p>
                         </div>
                         <div>
-                          <span className="text-muted-foreground">Senha:</span>
-                          <p className="text-foreground">{account.password}</p>
+                          <span className="text-[#9CA3AF]">Senha:</span>
+                          <p className="text-white">{account.password}</p>
                         </div>
                       </div>
                     </div>
@@ -559,11 +559,11 @@ export function StoreCards({ initialStores }: { initialStores: StoreData[] }) {
 
               {/* Texto Gerado */}
               <div className="space-y-3">
-                <h4 className="font-semibold text-foreground border-b border-border pb-2">Texto Gerado</h4>
+                <h4 className="font-semibold text-white border-b border-[rgba(139,92,246,0.15)] pb-2">Texto Gerado</h4>
                 <Textarea
                   value={generateRawText(selectedStore)}
                   readOnly
-                  className="h-48 bg-secondary border-input text-foreground text-xs font-mono"
+                  className="h-48 text-xs font-mono"
                 />
               </div>
             </div>
@@ -571,18 +571,18 @@ export function StoreCards({ initialStores }: { initialStores: StoreData[] }) {
 
           <DialogFooter>
             {selectedStore?.store.status !== "concluido" && (
-  <Button
-    onClick={handleMarkAsConcluded}
-    disabled={isPending}
-    className="bg-green-600/80 hover:bg-green-600 text-white"
-  >
-    Marcar como concluída
-  </Button>
-)}
+              <Button
+                onClick={handleMarkAsConcluded}
+                disabled={isPending}
+                className="bg-green-600/80 hover:bg-green-600 text-white"
+              >
+                Marcar como concluída
+              </Button>
+            )}
             <Button variant="outline" onClick={() => setViewDialogOpen(false)}>
               Fechar
             </Button>
-            <Button onClick={handleCopyRaw} className="bg-primary hover:bg-primary/90">
+            <Button onClick={handleCopyRaw}>
               <Copy className="h-4 w-4 mr-2" />
               {copySuccess ? "Copiado!" : "Copiar"}
             </Button>
@@ -591,35 +591,32 @@ export function StoreCards({ initialStores }: { initialStores: StoreData[] }) {
       </Dialog>
 
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="bg-card border-border">
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle className="text-foreground">Editar Loja</DialogTitle>
-            <DialogDescription>Edite as informações da loja</DialogDescription>
+            <DialogTitle className="text-white">Editar Loja</DialogTitle>
+            <DialogDescription className="text-[#9CA3AF]">Edite as informações da loja</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label className="text-foreground">Nome da Loja</Label>
+              <Label className="text-white">Nome da Loja</Label>
               <Input
                 value={editFormData.name || ""}
                 onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
-                className="bg-secondary border-input text-foreground"
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-foreground">Número da Loja</Label>
+              <Label className="text-white">Número da Loja</Label>
               <Input
                 value={editFormData.store_number || ""}
                 onChange={(e) => setEditFormData({ ...editFormData, store_number: e.target.value })}
-                className="bg-secondary border-input text-foreground"
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-foreground">Link do Drive</Label>
+              <Label className="text-white">Link do Drive</Label>
               <Input
                 value={editFormData.drive_link || ""}
                 onChange={(e) => setEditFormData({ ...editFormData, drive_link: e.target.value })}
-                className="bg-secondary border-input text-foreground"
                 placeholder="https://drive.google.com/..."
               />
             </div>
@@ -629,7 +626,7 @@ export function StoreCards({ initialStores }: { initialStores: StoreData[] }) {
             <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
               Cancelar
             </Button>
-            <Button onClick={handleSaveEdit} disabled={isPending} className="bg-primary hover:bg-primary/90">
+            <Button onClick={handleSaveEdit} disabled={isPending}>
               {isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
               Salvar
             </Button>

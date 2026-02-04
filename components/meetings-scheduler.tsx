@@ -318,42 +318,45 @@ export function MeetingsScheduler({ currentUserId }: { currentUserId: number }) 
 
   return (
     <div className="space-y-6">
-      {/* Header com navegação de data */}
-      <Card className="border-border bg-card">
+      {/* Header com navegacao de data */}
+      <Card className="bg-card/50 border-border backdrop-blur-sm">
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2 text-foreground">
-              <Calendar className="h-5 w-5 text-primary" />
-              Agenda de Reuniões
-            </CardTitle>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-foreground text-xl">
+                <div className="h-10 w-10 rounded-xl bg-primary/20 flex items-center justify-center">
+                  <Calendar className="h-5 w-5 text-primary" />
+                </div>
+                Agenda de Reunioes
+              </CardTitle>
+              <p className="text-muted-foreground capitalize mt-1 ml-12">{formatDateBR(selectedDate)}</p>
+            </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="icon" onClick={() => changeDate(-1)}>
+              <Button variant="outline" size="icon" onClick={() => changeDate(-1)} className="rounded-xl h-10 w-10">
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <div className="px-3 py-2 bg-secondary rounded-lg text-sm font-medium text-foreground min-w-[140px] text-center">
+              <div className="px-4 py-2.5 bg-primary/10 border border-primary/20 rounded-xl text-sm font-semibold text-foreground min-w-[140px] text-center">
                 {formatDateShort(selectedDate)}
               </div>
-              <Button variant="outline" size="icon" onClick={() => changeDate(1)}>
+              <Button variant="outline" size="icon" onClick={() => changeDate(1)} className="rounded-xl h-10 w-10">
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
           </div>
-          <p className="text-muted-foreground capitalize">{formatDateBR(selectedDate)}</p>
         </CardHeader>
       </Card>
 
-      {/* Grade de horários */}
-      <Card className="border-border bg-card">
+      {/* Grade de horarios */}
+      <Card className="bg-card/50 border-border backdrop-blur-sm">
         <CardHeader>
           <CardTitle className="text-foreground flex items-center gap-2">
             <Clock className="h-5 w-5 text-primary" />
-            Horários Disponíveis
+            Horarios Disponiveis
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
             {TIME_SLOTS.map((time) => {
-              // ✅ Agora pode ter mais de uma reunião por horário
               const meetingsAtTime = meetings.filter((m) => m.meeting_time === time + ":00")
               const isBooked = meetingsAtTime.length > 0
               const firstMeeting = meetingsAtTime[0]
@@ -362,19 +365,18 @@ export function MeetingsScheduler({ currentUserId }: { currentUserId: number }) 
                 <div
                   key={time}
                   className={cn(
-                    "h-auto py-3 flex flex-col items-start gap-1 relative rounded-md border cursor-pointer transition-colors",
+                    "h-auto py-3 flex flex-col items-start gap-1.5 relative rounded-xl border cursor-pointer transition-all duration-200",
                     isBooked
-                      ? "border-primary/50 bg-primary/5 hover:bg-primary/10"
-                      : "border-input bg-background hover:bg-accent hover:text-accent-foreground",
+                      ? "border-primary/40 bg-primary/10 hover:bg-primary/15"
+                      : "border-border bg-secondary/30 hover:bg-secondary/50 hover:border-primary/30",
                   )}
-                  // ✅ clicar no slot abre CRIAÇÃO (não edição)
                   onClick={() => handleCreateAtSlot(time)}
                 >
                   <div className="w-full px-3">
                     <span
                       className={cn(
                         "text-sm font-bold px-2 py-0.5 rounded-full",
-                        isBooked ? "bg-primary/20 text-primary" : "text-foreground",
+                        isBooked ? "bg-[rgba(139,92,246,0.2)] text-[#A855F7]" : "text-white",
                       )}
                     >
                       {time}
@@ -384,7 +386,7 @@ export function MeetingsScheduler({ currentUserId }: { currentUserId: number }) 
                   <div className="w-full px-3">
                     {isBooked ? (
                       <>
-                        <span className="text-xs text-muted-foreground truncate block w-full text-left">
+                        <span className="text-xs text-[#9CA3AF] truncate block w-full text-left">
                           {firstMeeting.lead_name}
                           {meetingsAtTime.length > 1 ? ` (+${meetingsAtTime.length - 1})` : ""}
                         </span>
@@ -397,13 +399,13 @@ export function MeetingsScheduler({ currentUserId }: { currentUserId: number }) 
                           </Badge>
                         </div>
                         <div className="flex items-center justify-between mt-2 w-full">
-                          <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                          <span className="text-[10px] text-[#9CA3AF] flex items-center gap-1">
                             <Plus className="h-3 w-3" /> Adicionar
                           </span>
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-6 px-2 text-xs bg-secondary/80 hover:bg-secondary"
+                            className="h-6 px-2 text-xs bg-[rgba(139,92,246,0.15)] hover:bg-[rgba(139,92,246,0.25)] text-white"
                             onClick={(e) => handleOpenDetails(time, e)}
                           >
                             <Eye className="h-3 w-3 mr-1" />
@@ -412,7 +414,7 @@ export function MeetingsScheduler({ currentUserId }: { currentUserId: number }) 
                         </div>
                       </>
                     ) : (
-                      <span className="text-xs text-muted-foreground flex items-center gap-1">
+                      <span className="text-xs text-[#9CA3AF] flex items-center gap-1">
                         <Plus className="h-3 w-3" /> Disponível
                       </span>
                     )}
@@ -424,25 +426,25 @@ export function MeetingsScheduler({ currentUserId }: { currentUserId: number }) 
         </CardContent>
       </Card>
 
-      {/* Lista de reuniões do dia */}
+      {/* Lista de reunioes do dia */}
       {meetings.length > 0 && (
-        <Card className="border-border bg-card">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-foreground">Reuniões do Dia ({meetings.length})</CardTitle>
+            <CardTitle className="text-white">Reunioes do Dia ({meetings.length})</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               {meetings.map((meeting) => (
                 <div
                   key={meeting.id}
-                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-lg bg-secondary/50 border border-border"
+                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-lg bg-[rgba(139,92,246,0.08)] border border-[rgba(139,92,246,0.15)]"
                 >
                   <div className="flex-1 space-y-2">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-bold text-lg text-primary bg-primary/10 px-3 py-1 rounded-full">
+                      <span className="font-bold text-lg text-[#A855F7] bg-[rgba(139,92,246,0.2)] px-3 py-1 rounded-full">
                         {meeting.meeting_time.slice(0, 5)}
                       </span>
-                      <span className="font-semibold text-foreground">{meeting.lead_name}</span>
+                      <span className="font-semibold text-white">{meeting.lead_name}</span>
                       <Badge variant="outline" className={getReasonColor(meeting.reason)}>
                         {meeting.reason}
                       </Badge>

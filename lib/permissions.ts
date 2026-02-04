@@ -8,6 +8,11 @@ export function isComercial(roles: string | string[]) {
   return rolesArray.includes("comercial")
 }
 
+export function isZonaExecucao(roles: string | string[]) {
+  const rolesArray = Array.isArray(roles) ? roles : [roles]
+  return rolesArray.includes("zona_execucao")
+}
+
 export function hasRole(roles: string | string[], role: string) {
   const rolesArray = Array.isArray(roles) ? roles : [roles]
   return rolesArray.includes(role)
