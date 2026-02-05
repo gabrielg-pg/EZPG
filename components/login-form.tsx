@@ -2,16 +2,18 @@
 
 import type React from "react"
 import { useState, useTransition } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Eye, EyeOff, Loader2, Lock, User, ArrowUpRight } from "lucide-react"
+import { Eye, EyeOff, Loader2, Lock, User } from "lucide-react"
 import Image from "next/image"
 import { loginAction } from "@/app/actions/auth-actions"
 
 export function LoginForm() {
+  const router = useRouter()
   const [showPassword, setShowPassword] = useState(false)
   const [rememberMe, setRememberMe] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -25,7 +27,10 @@ export function LoginForm() {
 
     startTransition(async () => {
       const result = await loginAction(formData)
-      if (result && !result.success) {
+      if (result && result.success && result.redirectTo) {
+        router.push(result.redirectTo)
+        router.refresh()
+      } else if (result && !result.success) {
         setError(result.error || "Erro ao fazer login")
       }
     })

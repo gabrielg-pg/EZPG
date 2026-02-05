@@ -9,21 +9,18 @@ import type { StoreData } from "@/types/store"
 export default async function DashboardPage() {
   const user = await requireAuth()
 
-  // ✅ garante que roles seja sempre um array
-  const roles = Array.isArray((user as any).roles)
-    ? ((user as any).roles as string[]).map((r) => String(r).toLowerCase())
-    : user.role
-      ? [String(user.role).toLowerCase()]
-      : []
+  // Normaliza a role do usuário
+  const userRole = user.role?.toLowerCase() || ""
+  const roles = [userRole]
 
-  // 🔁 Comercial (sem admin) → reuniões
-  if (roles.includes("comercial") && !roles.includes("admin")) {
+  // Comercial vai para reuniões
+  if (userRole === "comercial") {
     redirect("/reunioes")
   }
 
-  // 🚫 Quem não é admin não acessa o dashboard
-  if (!roles.includes("admin")) {
-    redirect("/login")
+  // Somente admin acessa o dashboard
+  if (userRole !== "admin" && userRole !== "zona_execucao") {
+    redirect("/zona-de-execucao")
   }
 
   const stores = (await getStores()) as StoreData[]

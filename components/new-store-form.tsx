@@ -96,7 +96,7 @@ function validateStep(step: number, formData: FormData): string | null {
     if (!formData.birthDate) return "Data de nascimento é obrigatória"
     if (!formData.cpf.trim()) return "CPF é obrigatório"
     if (!formData.address.trim()) return "Endereço é obrigatório"
-    if (!formData.cep.trim()) return "CEP é obrigatório"
+    if (!formData.cep.trim()) return "CEP �� obrigatório"
   }
   if (step === 3) {
     if (!formData.plan) return "Selecione um plano"

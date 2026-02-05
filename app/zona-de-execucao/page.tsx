@@ -7,13 +7,11 @@ import { ExecutionZoneCards } from "@/components/execution-zone-cards"
 export default async function ZonaDeExecucaoPage() {
   const user = await requireAuth()
 
-  const roles = Array.isArray((user as any).roles)
-    ? ((user as any).roles as string[]).map((r) => String(r).toLowerCase())
-    : user.role
-      ? [String(user.role).toLowerCase()]
-      : []
+  const userRole = user.role?.toLowerCase() || ""
+  const roles = [userRole]
 
-  if (!roles.includes("admin") && !roles.includes("comercial")) {
+  // Acesso permitido para admin, comercial e zona_execucao
+  if (!["admin", "comercial", "zona_execucao"].includes(userRole)) {
     redirect("/login")
   }
 
