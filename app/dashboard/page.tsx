@@ -13,14 +13,9 @@ export default async function DashboardPage() {
   const userRole = user.role?.toLowerCase() || ""
   const roles = [userRole]
 
-  // Comercial vai para reuniões
-  if (userRole === "comercial") {
-    redirect("/reunioes")
-  }
-
-  // Somente admin acessa o dashboard
-  if (userRole !== "admin" && userRole !== "zona_execucao") {
-    redirect("/zona-de-execucao")
+  // Admin, Comercial e Zona de Execução podem acessar o dashboard
+  if (userRole !== "admin" && userRole !== "comercial" && userRole !== "zona_execucao") {
+    redirect("/login")
   }
 
   const stores = (await getStores()) as StoreData[]

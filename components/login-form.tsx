@@ -26,12 +26,20 @@ export function LoginForm() {
     const formData = new FormData(e.currentTarget)
 
     startTransition(async () => {
-      const result = await loginAction(formData)
-      if (result && result.success && result.redirectTo) {
-        router.push(result.redirectTo)
-        router.refresh()
-      } else if (result && !result.success) {
-        setError(result.error || "Erro ao fazer login")
+      try {
+        console.log("[v0] Starting login...")
+        const result = await loginAction(formData)
+        console.log("[v0] Login result:", result)
+        
+        if (result && result.success && result.redirectTo) {
+          console.log("[v0] Redirecting to:", result.redirectTo)
+          window.location.href = result.redirectTo
+        } else if (result && !result.success) {
+          setError(result.error || "Erro ao fazer login")
+        }
+      } catch (err) {
+        console.error("[v0] Login error:", err)
+        setError("Erro ao fazer login")
       }
     })
   }

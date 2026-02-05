@@ -5,30 +5,40 @@ import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 
 export async function loginAction(formData: FormData): Promise<{ success: boolean; error?: string; redirectTo?: string }> {
-  // Initialize admin user if not exists
-  await initializeAdminUser()
-
-  const username = formData.get("username") as string
-  const password = formData.get("password") as string
-
-  const result = await login(username, password)
-
-  if (result.success) {
-    // Get user session to determine redirect
-    const { user } = await getSession()
-    const role = user?.role?.toLowerCase() || ""
+  try {
+    console.log("[v0] loginAction started")
     
-    let redirectTo = "/dashboard"
-    if (role === "comercial") {
-      redirectTo = "/reunioes"
-    } else if (role !== "admin") {
-      redirectTo = "/zona-de-execucao"
+    // Initialize admin user if not exists
+    await initializeAdminUser()
+
+    const username = formData.get("username") as string
+    const password = formData.get("password") as string
+    
+    console.log("[v0] Attempting login for:", username)
+
+    const result = await login(username, password)
+    console.log("[v0] Login result:", result)
+
+    if (result.success) {
+      // Get user session to determine redirect
+      const { user } = await getSession()
+      console.log("[v0] User session:", user)
+      const role = user?.role?.toLowerCase() || ""
+      
+      let redirectTo = "/dashboard"
+      if (role !== "admin" && role !== "comercial" && role !== "zona_execucao") {
+        redirectTo = "/login"
+      }
+      
+      console.log("[v0] Redirect to:", redirectTo)
+      return { success: true, redirectTo }
     }
-    
-    return { success: true, redirectTo }
-  }
 
-  return result
+    return result
+  } catch (error) {
+    console.error("[v0] loginAction error:", error)
+    return { success: false, error: "Erro interno ao fazer login" }
+  }
 }
 
 export async function logoutAction() {
