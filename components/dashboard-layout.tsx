@@ -22,7 +22,7 @@ export function DashboardLayout({ children, userRoles = ["user"] }: DashboardLay
   const pathname = usePathname()
 
   const navigation = [
-    { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["admin", "comercial", "zona_execucao"] },
+    { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["admin", "zona_execucao"] },
     { name: "Nova Loja", href: "/nova-loja", icon: Store, roles: ["admin", "zona_execucao"] },
     { name: "Reuniões", href: "/reunioes", icon: Calendar, roles: ["admin", "comercial"] },
     { name: "Zona de Execução", href: "/zona-de-execucao", icon: Rocket, roles: ["admin", "comercial", "zona_execucao"] },
