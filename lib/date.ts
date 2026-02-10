@@ -26,11 +26,15 @@ export function addBusinessDays(date: Date, days: number): Date {
 export function getBusinessDaysByPlan(plan: string): number {
   switch (plan) {
     case "Start PRO GROWTH":
+    case "Start Growth":
       return 7
     case "Pro VÉRTEBRA":
+    case "Pro Vértebra":
       return 10
     case "Scale VÉRTEBRA+ BR":
+    case "Scale Vértebra":
     case "Scale VÉRTEBRA+ GLOBAL":
+    case "Scale Global":
       return 15
     default:
       return 7

@@ -10,4 +10,8 @@ export interface StoreData {
   customer_name?: string
   drive_link?: string
   created_by_name?: string
+  niche?: string
+  num_products?: number
+  country?: string
+  language?: string
 }

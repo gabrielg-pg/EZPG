@@ -13,7 +13,7 @@ export async function getStores() {
     FROM stores s
     LEFT JOIN customers c ON c.store_id = s.id
     LEFT JOIN users u ON s.created_by = u.id
-    ORDER BY s.created_at DESC
+    ORDER BY CAST(s.store_number AS INTEGER) DESC
   `
 
   return stores
@@ -31,6 +31,10 @@ export async function createStore(data: {
   addressNumber: string
   cep: string
   driveLink?: string
+  niche?: string
+  numProducts?: number
+  country?: string
+  language?: string
   accounts: Record<string, { login: string; password: string; enabled: boolean }>
 }) {
   const { user } = await getSession()
@@ -40,8 +44,8 @@ export async function createStore(data: {
 
   try {
     const storeResult = await sql`
-      INSERT INTO stores (name, store_number, region, plan, progress, status, created_by, drive_link)
-VALUES (${data.storeName}, ${data.storeNumber}, ${data.region}, ${data.plan}, 25, 'em_andamento', ${user.id}, ${data.driveLink || null})
+      INSERT INTO stores (name, store_number, region, plan, progress, status, created_by, drive_link, niche, num_products, country, language)
+      VALUES (${data.storeName}, ${data.storeNumber}, ${data.region}, ${data.plan}, 25, 'em_andamento', ${user.id}, ${data.driveLink || null}, ${data.niche || null}, ${data.numProducts || null}, ${data.country || null}, ${data.language || null})
       RETURNING id
     `
 
@@ -123,6 +127,19 @@ export async function updateStore(
     name: string
     store_number: string
     drive_link: string
+    region: string
+    plan: string
+    niche: string
+    num_products: number
+    country: string
+    language: string
+    customer_name: string
+    birth_date: string
+    cpf: string
+    address: string
+    address_number: string
+    cep: string
+    accounts: Array<{ account_type: string; login: string; password: string; enabled: boolean }>
   }>,
 ) {
   const { user } = await getSession()
@@ -134,12 +151,48 @@ export async function updateStore(
     await sql`
       UPDATE stores 
       SET 
-        name = COALESCE(${data.name}, name),
-        store_number = COALESCE(${data.store_number}, store_number),
-        drive_link = COALESCE(${data.drive_link}, drive_link),
+        name = COALESCE(${data.name ?? null}, name),
+        store_number = COALESCE(${data.store_number ?? null}, store_number),
+        drive_link = COALESCE(${data.drive_link ?? null}, drive_link),
+        region = COALESCE(${data.region ?? null}, region),
+        plan = COALESCE(${data.plan ?? null}, plan),
+        niche = COALESCE(${data.niche ?? null}, niche),
+        num_products = COALESCE(${data.num_products ?? null}, num_products),
+        country = COALESCE(${data.country ?? null}, country),
+        language = COALESCE(${data.language ?? null}, language),
         updated_at = NOW()
       WHERE id = ${storeId}
     `
+
+    // Update customer data if provided
+    if (data.customer_name || data.birth_date || data.cpf || data.address || data.address_number || data.cep) {
+      await sql`
+        UPDATE customers 
+        SET 
+          name = COALESCE(${data.customer_name ?? null}, name),
+          birth_date = COALESCE(${data.birth_date ?? null}, birth_date),
+          cpf = COALESCE(${data.cpf ?? null}, cpf),
+          address = COALESCE(${data.address ?? null}, address),
+          address_number = COALESCE(${data.address_number ?? null}, address_number),
+          cep = COALESCE(${data.cep ?? null}, cep)
+        WHERE store_id = ${storeId}
+      `
+    }
+
+    // Update accounts if provided
+    if (data.accounts && data.accounts.length > 0) {
+      // Delete existing accounts
+      await sql`DELETE FROM store_accounts WHERE store_id = ${storeId}`
+      // Insert new accounts
+      for (const account of data.accounts) {
+        if (account.enabled) {
+          await sql`
+            INSERT INTO store_accounts (store_id, account_type, login, password, enabled)
+            VALUES (${storeId}, ${account.account_type}, ${account.login}, ${account.password}, true)
+          `
+        }
+      }
+    }
 
     revalidatePath("/dashboard")
     return { success: true }

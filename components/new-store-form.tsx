@@ -36,28 +36,28 @@ const steps = [
 ]
 
 const plans = [
-  { id: "Start PRO GROWTH", name: "Start PRO GROWTH", products: 30, icon: TrendingUp, color: "text-emerald-500" },
-  { id: "Pro VÉRTEBRA", name: "Pro VÉRTEBRA", products: 50, icon: Brain, color: "text-purple-500" },
-  { id: "Scale VÉRTEBRA+ BR", name: "Scale VÉRTEBRA+ BR", products: 100, icon: Rocket, color: "text-blue-500" },
-  { id: "Scale VÉRTEBRA+ GLOBAL", name: "Scale VÉRTEBRA+ GLOBAL", products: 100, icon: Zap, color: "text-orange-500" },
+  { id: "Start Growth", name: "Start Growth", icon: TrendingUp, color: "text-emerald-500" },
+  { id: "Pro Vértebra", name: "Pro Vértebra", icon: Brain, color: "text-purple-500" },
+  { id: "Scale Vértebra", name: "Scale Vértebra", icon: Rocket, color: "text-blue-500" },
+  { id: "Scale Global", name: "Scale Global", icon: Zap, color: "text-orange-500" },
 ]
 
-const accountsBrasil = [
+const accountsBRPlans = [
   { id: "gmail", name: "Gmail" },
   { id: "shopify", name: "Shopify" },
+  { id: "hostinger", name: "Hostinger" },
   { id: "yampi", name: "Yampi" },
-  { id: "hostinger", name: "Hostinger" },
   { id: "appmax", name: "Appmax" },
-  { id: "hypersku", name: "HyperSKU" },
+  { id: "aliexpress", name: "Aliexpress" },
   { id: "dsers", name: "DSers" },
 ]
 
-const accountsGlobal = [
-  { id: "hostinger", name: "Hostinger" },
-  { id: "hypersku", name: "HyperSKU" },
-  { id: "shopify", name: "Shopify" },
+const accountsGlobalPlan = [
   { id: "gmail", name: "Gmail" },
-  { id: "dsers", name: "DSers" },
+  { id: "shopify", name: "Shopify" },
+  { id: "hostinger", name: "Hostinger" },
+  { id: "1st_information", name: "1ST Information" },
+  { id: "hypersku", name: "HyperSKU" },
 ]
 
 interface FormData {
@@ -72,11 +72,22 @@ interface FormData {
   cep: string
   plan: string
   driveLink: string
+  niche: string
+  numProducts: string
+  country: string
+  language: string
   accounts: Record<string, { login: string; password: string; enabled: boolean }>
 }
 
-function initializeAccounts(region: "brasil" | "global") {
-  const accounts = region === "brasil" ? accountsBrasil : accountsGlobal
+function getAccountsForPlan(plan: string) {
+  if (plan === "Scale Global") {
+    return accountsGlobalPlan
+  }
+  return accountsBRPlans
+}
+
+function initializeAccounts(plan: string) {
+  const accounts = getAccountsForPlan(plan)
   return accounts.reduce(
     (acc, account) => ({
       ...acc,
@@ -96,13 +107,19 @@ function validateStep(step: number, formData: FormData): string | null {
     if (!formData.birthDate) return "Data de nascimento é obrigatória"
     if (!formData.cpf.trim()) return "CPF é obrigatório"
     if (!formData.address.trim()) return "Endereço é obrigatório"
-    if (!formData.cep.trim()) return "CEP �� obrigatório"
+    if (!formData.cep.trim()) return "CEP é obrigatório"
   }
   if (step === 3) {
     if (!formData.plan) return "Selecione um plano"
+    if (!formData.numProducts.trim()) return "Número de produtos é obrigatório"
+    if (!formData.niche.trim()) return "Nicho da loja é obrigatório"
+    if (formData.region === "global") {
+      if (!formData.country.trim()) return "País é obrigatório para lojas globais"
+      if (!formData.language.trim()) return "Idioma é obrigatório para lojas globais"
+    }
   }
   if (step === 4) {
-    const accounts = formData.region === "brasil" ? accountsBrasil : accountsGlobal
+    const accounts = getAccountsForPlan(formData.plan)
     const enabledAccounts = accounts.filter((acc) => formData.accounts[acc.id]?.enabled)
     if (enabledAccounts.length === 0) return "Ative pelo menos uma conta"
     for (const acc of enabledAccounts) {
@@ -160,11 +177,15 @@ export function NewStoreForm() {
     cep: "",
     plan: "",
     driveLink: "",
-    accounts: initializeAccounts("brasil"),
+    niche: "",
+    numProducts: "",
+    country: "",
+    language: "",
+    accounts: initializeAccounts(""),
   })
   const router = useRouter()
 
-  const currentAccounts = formData.region === "brasil" ? accountsBrasil : accountsGlobal
+  const currentAccounts = getAccountsForPlan(formData.plan)
 
   const updateFormData = (field: string, value: unknown) => {
     setFormData((prev) => {
@@ -173,7 +194,15 @@ export function NewStoreForm() {
         return {
           ...prev,
           region: regionValue,
-          accounts: initializeAccounts(regionValue),
+          country: regionValue === "brasil" ? "" : prev.country,
+          language: regionValue === "brasil" ? "" : prev.language,
+        }
+      }
+      if (field === "plan") {
+        return {
+          ...prev,
+          plan: value as string,
+          accounts: initializeAccounts(value as string),
         }
       }
       return { ...prev, [field]: value }
@@ -219,6 +248,7 @@ export function NewStoreForm() {
       const dataToSave = {
         ...formData,
         birthDate: parseDateBRToISO(formData.birthDate),
+        numProducts: parseInt(formData.numProducts) || 0,
       }
       const result = await createStore(dataToSave)
       if (result.success) {
@@ -283,7 +313,7 @@ export function NewStoreForm() {
           <CardDescription className="text-muted-foreground">
             {currentStep === 1 && "Informações básicas da loja"}
             {currentStep === 2 && "Dados do cliente responsável"}
-            {currentStep === 3 && "Selecione o plano desejado"}
+            {currentStep === 3 && "Selecione o plano e configure detalhes"}
             {currentStep === 4 && "Configure as contas de integração"}
           </CardDescription>
         </CardHeader>
@@ -366,6 +396,36 @@ export function NewStoreForm() {
                   </Label>
                 </RadioGroup>
               </div>
+
+              {/* Country and Language for Global region */}
+              {formData.region === "global" && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="country" className="text-foreground">
+                      País *
+                    </Label>
+                    <Input
+                      id="country"
+                      value={formData.country}
+                      onChange={(e) => updateFormData("country", e.target.value)}
+                      placeholder="Ex: Estados Unidos"
+                      className="bg-secondary border-input text-foreground placeholder:text-muted-foreground"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="language" className="text-foreground">
+                      Idioma *
+                    </Label>
+                    <Input
+                      id="language"
+                      value={formData.language}
+                      onChange={(e) => updateFormData("language", e.target.value)}
+                      placeholder="Ex: Inglês"
+                      className="bg-secondary border-input text-foreground placeholder:text-muted-foreground"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -455,45 +515,75 @@ export function NewStoreForm() {
             </div>
           )}
 
-          {/* Step 3: Plan Selection */}
+          {/* Step 3: Plan Selection + Niche + Products */}
           {currentStep === 3 && (
-            <RadioGroup
-              value={formData.plan}
-              onValueChange={(value) => updateFormData("plan", value)}
-              className="grid grid-cols-1 sm:grid-cols-2 gap-4"
-            >
-              {plans.map((plan) => {
-                const IconComponent = plan.icon
-                return (
-                  <Label
-                    key={plan.id}
-                    htmlFor={plan.id}
-                    className={cn(
-                      "flex flex-col p-4 rounded-lg border-2 cursor-pointer transition-colors",
-                      formData.plan === plan.id
-                        ? "border-primary bg-primary/10"
-                        : "border-border bg-secondary hover:border-primary/50",
-                    )}
-                  >
-                    <div className="flex items-center gap-2 mb-2">
-                      <RadioGroupItem value={plan.id} id={plan.id} className="border-input" />
-                      <IconComponent className={cn("h-5 w-5", plan.color)} />
-                      <span className="text-foreground font-medium">{plan.name}</span>
-                    </div>
-                    <div className="pl-6">
-                      <Badge variant="secondary" className="bg-primary/20 text-primary border-0">
-                        {plan.products} produtos
-                      </Badge>
-                    </div>
+            <div className="space-y-6">
+              <div className="space-y-3">
+                <Label className="text-foreground font-medium">Selecione o Plano *</Label>
+                <RadioGroup
+                  value={formData.plan}
+                  onValueChange={(value) => updateFormData("plan", value)}
+                  className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+                >
+                  {plans.map((plan) => {
+                    const IconComponent = plan.icon
+                    return (
+                      <Label
+                        key={plan.id}
+                        htmlFor={plan.id}
+                        className={cn(
+                          "flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-colors",
+                          formData.plan === plan.id
+                            ? "border-primary bg-primary/10"
+                            : "border-border bg-secondary hover:border-primary/50",
+                        )}
+                      >
+                        <RadioGroupItem value={plan.id} id={plan.id} className="border-input" />
+                        <IconComponent className={cn("h-5 w-5", plan.color)} />
+                        <span className="text-foreground font-medium">{plan.name}</span>
+                      </Label>
+                    )
+                  })}
+                </RadioGroup>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="numProducts" className="text-foreground">
+                    Número de Produtos *
                   </Label>
-                )
-              })}
-            </RadioGroup>
+                  <Input
+                    id="numProducts"
+                    type="number"
+                    min="1"
+                    value={formData.numProducts}
+                    onChange={(e) => updateFormData("numProducts", e.target.value)}
+                    placeholder="Ex: 30"
+                    className="bg-secondary border-input text-foreground placeholder:text-muted-foreground"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="niche" className="text-foreground">
+                    Nicho da Loja *
+                  </Label>
+                  <Input
+                    id="niche"
+                    value={formData.niche}
+                    onChange={(e) => updateFormData("niche", e.target.value)}
+                    placeholder="Ex: Moda, Eletrônicos..."
+                    className="bg-secondary border-input text-foreground placeholder:text-muted-foreground"
+                  />
+                </div>
+              </div>
+            </div>
           )}
 
-          {/* Step 4: Account Checklist - Agora usa currentAccounts baseado na região */}
+          {/* Step 4: Account Checklist based on selected plan */}
           {currentStep === 4 && (
             <div className="space-y-4">
+              {!formData.plan && (
+                <p className="text-muted-foreground text-sm">Volte ao passo anterior e selecione um plano.</p>
+              )}
               {currentAccounts.map((account) => (
                 <Card
                   key={account.id}
