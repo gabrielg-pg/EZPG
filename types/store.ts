@@ -14,4 +14,5 @@ export interface StoreData {
   num_products?: number
   country?: string
   language?: string
+  logo_references_url?: string
 }

@@ -35,6 +35,7 @@ import {
   ShoppingBag,
   Tag,
   Languages,
+  Download,
 } from "lucide-react"
 import {
   DropdownMenu,
@@ -63,6 +64,7 @@ interface StoreData {
   num_products?: number
   country?: string
   language?: string
+  logo_references_url?: string
 }
 
 interface StoreDetails {
@@ -548,6 +550,17 @@ export function StoreCards({ initialStores }: { initialStores: StoreData[] }) {
                         Link do Drive
                       </a>
                     )}
+                    {store.logo_references_url && (
+                      <a
+                        href={store.logo_references_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-emerald-400 hover:underline flex items-center gap-1"
+                      >
+                        <Download className="h-3 w-3" />
+                        Baixar Referências
+                      </a>
+                    )}
                   </div>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -754,6 +767,22 @@ export function StoreCards({ initialStores }: { initialStores: StoreData[] }) {
                       )}
                     </p>
                   </div>
+                  {selectedStore.store.logo_references_url && (
+                    <div className="col-span-2">
+                      <span className="text-muted-foreground">Referências de Logo:</span>
+                      <p className="text-foreground font-medium">
+                        <a
+                          href={selectedStore.store.logo_references_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-emerald-400 hover:underline flex items-center gap-1.5"
+                        >
+                          <Download className="h-3.5 w-3.5" />
+                          Baixar Referências
+                        </a>
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
 
