@@ -3,6 +3,14 @@ import { type NextRequest, NextResponse } from "next/server"
 
 export async function POST(request: NextRequest) {
   try {
+    if (!process.env.BLOB_READ_WRITE_TOKEN) {
+      console.error("[v0] BLOB_READ_WRITE_TOKEN is not set")
+      return NextResponse.json(
+        { error: "Configuração de upload não encontrada. Verifique a integração Blob." },
+        { status: 500 },
+      )
+    }
+
     const formData = await request.formData()
     const file = formData.get("file") as File
 
@@ -44,7 +52,9 @@ export async function POST(request: NextRequest) {
       type: file.type,
     })
   } catch (error) {
-    console.error("Upload error:", error)
-    return NextResponse.json({ error: "Erro ao fazer upload" }, { status: 500 })
+    console.error("[v0] Upload error:", error)
+    const errorMessage = error instanceof Error ? error.message : "Unknown error"
+    console.error("[v0] Upload error message:", errorMessage)
+    return NextResponse.json({ error: `Erro ao fazer upload: ${errorMessage}` }, { status: 500 })
   }
 }
