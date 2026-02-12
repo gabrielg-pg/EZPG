@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useTransition, useRef, useCallback } from "react"
+import { useState, useTransition, useRef, useCallback, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -191,6 +191,15 @@ export function NewStoreForm() {
   const [uploadedFile, setUploadedFile] = useState<{ url: string; name: string; size: number } | null>(null)
   const [isUploading, setIsUploading] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
+  const [uploadAvailable, setUploadAvailable] = useState(true)
+
+  // Check if upload is available on mount
+  useEffect(() => {
+    fetch("/api/upload/check").then(res => {
+      if (!res.ok) setUploadAvailable(false)
+    }).catch(() => setUploadAvailable(false))
+  }, [])
 
   const handleFileUpload = useCallback(async (file: File) => {
     const allowedTypes = [
@@ -198,28 +207,28 @@ export function NewStoreForm() {
       "application/pdf", "application/zip", "application/x-zip-compressed",
     ]
     if (!allowedTypes.includes(file.type)) {
-      setError("Tipo de arquivo não permitido. Use imagens, PDF ou ZIP.")
+      setUploadError("Tipo de arquivo não permitido. Use imagens, PDF ou ZIP.")
       return
     }
     if (file.size > 10 * 1024 * 1024) {
-      setError("Arquivo muito grande. Máximo: 10MB")
+      setUploadError("Arquivo muito grande. Máximo: 10MB")
       return
     }
 
     setIsUploading(true)
-    setError(null)
+    setUploadError(null)
     try {
       const formDataUpload = new FormData()
       formDataUpload.append("file", file)
       const response = await fetch("/api/upload", { method: "POST", body: formDataUpload })
       const result = await response.json()
       if (!response.ok) {
-        setError(result.error || "Erro ao fazer upload")
+        setUploadError(result.error || "Erro ao fazer upload")
         return
       }
       setUploadedFile({ url: result.url, name: result.filename, size: result.size })
     } catch {
-      setError("Erro ao fazer upload do arquivo")
+      setUploadError("Erro ao fazer upload do arquivo")
     } finally {
       setIsUploading(false)
     }
@@ -425,71 +434,76 @@ export function NewStoreForm() {
               </div>
 
               {/* Logo References Upload */}
-              <div className="space-y-2">
-                <Label className="text-foreground">Referências de Logo</Label>
-                {uploadedFile ? (
-                  <div className="flex items-center gap-3 p-3 rounded-lg border border-primary/30 bg-primary/5">
-                    <FileImage className="h-5 w-5 text-primary shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-foreground font-medium truncate">{uploadedFile.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {(uploadedFile.size / 1024).toFixed(1)} KB
-                      </p>
+              {uploadAvailable && (
+                <div className="space-y-2">
+                  <Label className="text-foreground">Referências de Logo</Label>
+                  {uploadedFile ? (
+                    <div className="flex items-center gap-3 p-3 rounded-lg border border-primary/30 bg-primary/5">
+                      <FileImage className="h-5 w-5 text-primary shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-foreground font-medium truncate">{uploadedFile.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {(uploadedFile.size / 1024).toFixed(1)} KB
+                        </p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0"
+                        onClick={handleRemoveFile}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
                     </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0"
-                      onClick={handleRemoveFile}
+                  ) : (
+                    <div
+                      onDrop={handleDrop}
+                      onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
+                      onClick={() => fileInputRef.current?.click()}
+                      className={cn(
+                        "flex flex-col items-center justify-center gap-2 p-6 rounded-lg border-2 border-dashed cursor-pointer transition-colors",
+                        isDragging
+                          ? "border-primary bg-primary/10"
+                          : "border-border bg-secondary hover:border-primary/50 hover:bg-secondary/80",
+                      )}
                     >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ) : (
-                  <div
-                    onDrop={handleDrop}
-                    onDragOver={handleDragOver}
-                    onDragLeave={handleDragLeave}
-                    onClick={() => fileInputRef.current?.click()}
-                    className={cn(
-                      "flex flex-col items-center justify-center gap-2 p-6 rounded-lg border-2 border-dashed cursor-pointer transition-colors",
-                      isDragging
-                        ? "border-primary bg-primary/10"
-                        : "border-border bg-secondary hover:border-primary/50 hover:bg-secondary/80",
-                    )}
-                  >
-                    {isUploading ? (
-                      <>
-                        <Loader2 className="h-8 w-8 text-primary animate-spin" />
-                        <p className="text-sm text-muted-foreground">Enviando...</p>
-                      </>
-                    ) : (
-                      <>
-                        <Upload className="h-8 w-8 text-muted-foreground" />
-                        <div className="text-center">
-                          <p className="text-sm text-foreground font-medium">
-                            Arraste um arquivo ou clique para selecionar
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Imagens, PDF ou ZIP (max. 10MB)
-                          </p>
-                        </div>
-                      </>
-                    )}
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      className="hidden"
-                      accept="image/*,.pdf,.zip"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0]
-                        if (file) handleFileUpload(file)
-                      }}
-                    />
-                  </div>
-                )}
-              </div>
+                      {isUploading ? (
+                        <>
+                          <Loader2 className="h-8 w-8 text-primary animate-spin" />
+                          <p className="text-sm text-muted-foreground">Enviando...</p>
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="h-8 w-8 text-muted-foreground" />
+                          <div className="text-center">
+                            <p className="text-sm text-foreground font-medium">
+                              Arraste um arquivo ou clique para selecionar
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Imagens, PDF ou ZIP (max. 10MB)
+                            </p>
+                          </div>
+                        </>
+                      )}
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        className="hidden"
+                        accept="image/*,.pdf,.zip"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0]
+                          if (file) handleFileUpload(file)
+                        }}
+                      />
+                    </div>
+                  )}
+                  {uploadError && (
+                    <p className="text-xs text-destructive mt-1">{uploadError}</p>
+                  )}
+                </div>
+              )}
 
               <div className="space-y-3">
                 <Label className="text-foreground">Região *</Label>
