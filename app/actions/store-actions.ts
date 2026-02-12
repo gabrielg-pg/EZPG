@@ -3,6 +3,7 @@
 import { sql } from "@/lib/db"
 import { getSession } from "@/lib/auth"
 import { revalidatePath } from "next/cache"
+import { del } from "@vercel/blob"
 
 export async function getStores() {
   const { user } = await getSession()
@@ -35,6 +36,7 @@ export async function createStore(data: {
   numProducts?: number
   country?: string
   language?: string
+  logoReferencesUrl?: string
   accounts: Record<string, { login: string; password: string; enabled: boolean }>
 }) {
   const { user } = await getSession()
@@ -44,8 +46,8 @@ export async function createStore(data: {
 
   try {
     const storeResult = await sql`
-      INSERT INTO stores (name, store_number, region, plan, progress, status, created_by, drive_link, niche, num_products, country, language)
-      VALUES (${data.storeName}, ${data.storeNumber}, ${data.region}, ${data.plan}, 25, 'em_andamento', ${user.id}, ${data.driveLink || null}, ${data.niche || null}, ${data.numProducts || null}, ${data.country || null}, ${data.language || null})
+      INSERT INTO stores (name, store_number, region, plan, progress, status, created_by, drive_link, niche, num_products, country, language, logo_references_url)
+      VALUES (${data.storeName}, ${data.storeNumber}, ${data.region}, ${data.plan}, 25, 'em_andamento', ${user.id}, ${data.driveLink || null}, ${data.niche || null}, ${data.numProducts || null}, ${data.country || null}, ${data.language || null}, ${data.logoReferencesUrl || null})
       RETURNING id
     `
 
@@ -237,7 +239,22 @@ export async function deleteStore(storeId: number) {
   }
 
   try {
+    // Get the store's logo reference URL to delete from blob storage
+    const storeResult = await sql`SELECT logo_references_url FROM stores WHERE id = ${storeId}`
+    const logoUrl = storeResult[0]?.logo_references_url
+
     await sql`DELETE FROM stores WHERE id = ${storeId}`
+
+    // Delete blob file if it exists
+    if (logoUrl) {
+      try {
+        await del(logoUrl)
+      } catch (blobError) {
+        console.error("Error deleting blob:", blobError)
+        // Don't fail the store deletion if blob deletion fails
+      }
+    }
+
     revalidatePath("/dashboard")
     return { success: true }
   } catch (error) {
