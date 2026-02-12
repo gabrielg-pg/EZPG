@@ -1,16 +1,26 @@
 import { put } from "@vercel/blob"
 import { type NextRequest, NextResponse } from "next/server"
 
+export const runtime = "edge"
+
 export async function POST(request: NextRequest) {
   try {
+    const token = process.env.BLOB_READ_WRITE_TOKEN
+    if (!token) {
+      return NextResponse.json(
+        { error: "Configuração de upload não encontrada. Verifique a integração Blob." },
+        { status: 500 },
+      )
+    }
+
     const formData = await request.formData()
     const file = formData.get("file") as File
 
-    if (!file) {
+    if (!file || !file.name) {
       return NextResponse.json({ error: "Nenhum arquivo enviado" }, { status: 400 })
     }
 
-    // Validate file type (images and common reference formats)
+    // Validate file type
     const allowedTypes = [
       "image/jpeg",
       "image/png",
@@ -33,8 +43,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Arquivo muito grande. Máximo: 10MB" }, { status: 400 })
     }
 
-    const blob = await put(`logo-references/${Date.now()}-${file.name}`, file, {
+    // Sanitize filename
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_")
+    const pathname = `logo-references/${Date.now()}-${safeName}`
+
+    const blob = await put(pathname, file, {
       access: "public",
+      token,
     })
 
     return NextResponse.json({
@@ -44,7 +59,8 @@ export async function POST(request: NextRequest) {
       type: file.type,
     })
   } catch (error) {
-    console.error("Upload error:", error)
-    return NextResponse.json({ error: "Erro ao fazer upload" }, { status: 500 })
+    console.error("[v0] Upload error:", error)
+    const errorMessage = error instanceof Error ? error.message : "Unknown error"
+    return NextResponse.json({ error: `Erro ao fazer upload: ${errorMessage}` }, { status: 500 })
   }
 }
