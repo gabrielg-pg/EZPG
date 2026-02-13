@@ -37,6 +37,7 @@ export async function createStore(data: {
   country?: string
   language?: string
   logoReferencesUrl?: string
+  collections?: string
   accounts: Record<string, { login: string; password: string; enabled: boolean }>
 }) {
   const { user } = await getSession()
@@ -46,8 +47,8 @@ export async function createStore(data: {
 
   try {
     const storeResult = await sql`
-      INSERT INTO stores (name, store_number, region, plan, progress, status, created_by, drive_link, niche, num_products, country, language, logo_references_url)
-      VALUES (${data.storeName}, ${data.storeNumber}, ${data.region}, ${data.plan}, 25, 'em_andamento', ${user.id}, ${data.driveLink || null}, ${data.niche || null}, ${data.numProducts || null}, ${data.country || null}, ${data.language || null}, ${data.logoReferencesUrl || null})
+      INSERT INTO stores (name, store_number, region, plan, progress, status, created_by, drive_link, niche, num_products, country, language, logo_references_url, collections)
+      VALUES (${data.storeName}, ${data.storeNumber}, ${data.region}, ${data.plan}, 25, 'em_andamento', ${user.id}, ${data.driveLink || null}, ${data.niche || null}, ${data.numProducts || null}, ${data.country || null}, ${data.language || null}, ${data.logoReferencesUrl || null}, ${data.collections || null})
       RETURNING id
     `
 
@@ -134,8 +135,9 @@ export async function updateStore(
     niche: string
     num_products: number
     country: string
-    language: string
-    customer_name: string
+  language: string
+  collections: string
+  customer_name: string
     birth_date: string
     cpf: string
     address: string
@@ -162,6 +164,7 @@ export async function updateStore(
         num_products = COALESCE(${data.num_products ?? null}, num_products),
         country = COALESCE(${data.country ?? null}, country),
         language = COALESCE(${data.language ?? null}, language),
+        collections = COALESCE(${data.collections ?? null}, collections),
         updated_at = NOW()
       WHERE id = ${storeId}
     `

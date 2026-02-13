@@ -15,4 +15,5 @@ export interface StoreData {
   country?: string
   language?: string
   logo_references_url?: string
+  collections?: string
 }

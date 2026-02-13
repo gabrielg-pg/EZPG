@@ -65,6 +65,7 @@ interface StoreData {
   country?: string
   language?: string
   logo_references_url?: string
+  collections?: string
 }
 
 interface StoreDetails {
@@ -180,7 +181,7 @@ PLANO: ${store.plan}
 PRODUTOS: ${store.num_products || "-"}
 NICHO: ${store.niche || "-"}
 REGIÃO: ${store.region === "global" ? `Global - ${store.country || ""} (${store.language || ""})` : "Brasil"}
-
+${store.collections ? `\nCOLEÇÕES:\n${store.collections}` : ""}
 DADOS CONTAS:
 
 ${accountsText}`
@@ -226,6 +227,7 @@ interface EditFormState {
   num_products: string
   country: string
   language: string
+  collections: string
   customer_name: string
   birth_date: string
   cpf: string
@@ -251,6 +253,7 @@ export function StoreCards({ initialStores }: { initialStores: StoreData[] }) {
     num_products: "",
     country: "",
     language: "",
+    collections: "",
     customer_name: "",
     birth_date: "",
     cpf: "",
@@ -341,6 +344,7 @@ export function StoreCards({ initialStores }: { initialStores: StoreData[] }) {
           num_products: details.store.num_products?.toString() || "",
           country: details.store.country || "",
           language: details.store.language || "",
+          collections: details.store.collections || "",
           customer_name: details.customer.name || "",
           birth_date: details.customer.birth_date ? formatDateBR(details.customer.birth_date) : "",
           cpf: details.customer.cpf || "",
@@ -375,6 +379,7 @@ export function StoreCards({ initialStores }: { initialStores: StoreData[] }) {
         num_products: parseInt(editForm.num_products) || undefined,
         country: editForm.country,
         language: editForm.language,
+        collections: editForm.collections,
         customer_name: editForm.customer_name,
         cpf: editForm.cpf,
         address: editForm.address,
@@ -786,6 +791,21 @@ export function StoreCards({ initialStores }: { initialStores: StoreData[] }) {
                 </div>
               </div>
 
+              {/* Collections */}
+              {selectedStore.store.collections && (
+                <div className="space-y-3">
+                  <h4 className="font-semibold text-foreground border-b border-primary/15 pb-2">Coleções da Loja</h4>
+                  <div className="space-y-1.5">
+                    {selectedStore.store.collections.split("\n").filter(Boolean).map((collection: string, i: number) => (
+                      <div key={i} className="flex items-center gap-2.5 text-sm">
+                        <span className="h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
+                        <span className="text-foreground">{collection.trim()}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Accounts */}
               <div className="space-y-3">
                 <h4 className="font-semibold text-foreground border-b border-primary/15 pb-2">Dados das Contas</h4>
@@ -1004,6 +1024,16 @@ export function StoreCards({ initialStores }: { initialStores: StoreData[] }) {
                       placeholder="Ex: Moda, Eletrônicos..."
                     />
                   </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-foreground text-sm">Coleções da Loja</Label>
+                  <Textarea
+                    value={editForm.collections}
+                    onChange={(e) => setEditForm({ ...editForm, collections: e.target.value })}
+                    placeholder={"Escreva uma coleção por linha\nEx:\nCamisetas\nCalças\nAcessórios"}
+                    rows={5}
+                    className="resize-y min-h-[100px]"
+                  />
                 </div>
               </div>
 
