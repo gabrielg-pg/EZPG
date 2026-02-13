@@ -79,8 +79,9 @@ interface FormData {
   numProducts: string
   country: string
   language: string
+  collections: string
   accounts: Record<string, { login: string; password: string; enabled: boolean }>
-}
+  }
 
 function getAccountsForPlan(plan: string) {
   if (plan === "Scale Global") {
@@ -183,8 +184,9 @@ export function NewStoreForm() {
     niche: "",
     numProducts: "",
     country: "",
-    language: "",
-    accounts: initializeAccounts(""),
+  language: "",
+  collections: "",
+  accounts: initializeAccounts(""),
   })
   const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -321,6 +323,7 @@ export function NewStoreForm() {
         birthDate: parseDateBRToISO(formData.birthDate),
         numProducts: parseInt(formData.numProducts) || 0,
         logoReferencesUrl: uploadedFile?.url || undefined,
+        collections: formData.collections.trim() || undefined,
       }
       const result = await createStore(dataToSave)
       if (result.success) {
@@ -504,6 +507,18 @@ export function NewStoreForm() {
                   )}
                 </div>
               )}
+
+              {/* Collections */}
+              <div className="space-y-2">
+                <Label className="text-foreground">Coleções da Loja</Label>
+                <textarea
+                  value={formData.collections}
+                  onChange={(e) => updateFormData("collections", e.target.value)}
+                  placeholder={"Escreva uma coleção por linha\nEx:\nCamisetas\nCalças\nAcessórios"}
+                  rows={6}
+                  className="flex w-full rounded-md border border-border bg-secondary px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background resize-y min-h-[120px]"
+                />
+              </div>
 
               <div className="space-y-3">
                 <Label className="text-foreground">Região *</Label>
