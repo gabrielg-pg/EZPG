@@ -75,7 +75,7 @@ export async function updateUser(
   }
 }
 
-export async function deleteUser(userId: number) {
+export async function deleteUser(userId: number, transferToUserId: number) {
   const { user } = await getSession()
   if (!user || !user.role.includes("admin")) {
     return { success: false, error: "Não autorizado" }
@@ -86,9 +86,32 @@ export async function deleteUser(userId: number) {
     return { success: false, error: "Não é possível excluir o próprio usuário" }
   }
 
+  if (!transferToUserId) {
+    return { success: false, error: "Selecione um usuário para transferir os dados" }
+  }
+
+  if (transferToUserId === userId) {
+    return { success: false, error: "Não é possível transferir para o mesmo usuário" }
+  }
+
   try {
+    // Transfer stores created by the user
+    await sql`UPDATE stores SET created_by = ${transferToUserId} WHERE created_by = ${userId}`
+
+    // Transfer meetings where user is attendant
+    await sql`UPDATE meetings SET attendant_user_id = ${transferToUserId} WHERE attendant_user_id = ${userId}`
+
+    // Transfer meetings where user is performer
+    await sql`UPDATE meetings SET performer_user_id = ${transferToUserId} WHERE performer_user_id = ${userId}`
+
+    // Delete user roles
+    await sql`DELETE FROM user_roles WHERE user_id = ${userId}`
+
+    // Delete the user
     await sql`DELETE FROM users WHERE id = ${userId}`
+
     revalidatePath("/admin")
+    revalidatePath("/dashboard")
     return { success: true }
   } catch (error) {
     console.error("Delete user error:", error)

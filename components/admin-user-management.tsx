@@ -17,7 +17,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Plus, Pencil, Trash2, Search, Users, Shield, UserCheck, Loader2, Briefcase, KeyRound, Mail, UserCog, Rocket } from "lucide-react"
+import { Plus, Pencil, Trash2, Search, Users, Shield, UserCheck, Loader2, Briefcase, KeyRound, Mail, UserCog, Rocket, ArrowRightLeft } from "lucide-react"
 import { createUserAction } from "@/app/actions/auth-actions"
 import { updateUser, deleteUser } from "@/app/actions/user-actions"
 import { cn } from "@/lib/utils"
@@ -50,6 +50,7 @@ export function AdminUserManagement({ initialUsers }: { initialUsers: User[] }) 
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
+  const [transferToUserId, setTransferToUserId] = useState<string>("")
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
   const [formData, setFormData] = useState({
@@ -132,14 +133,19 @@ export function AdminUserManagement({ initialUsers }: { initialUsers: User[] }) 
 
   const handleDelete = () => {
     if (!selectedUser) return
+    if (!transferToUserId) {
+      setError("Selecione um usuario para transferir os dados")
+      return
+    }
 
     startTransition(async () => {
-      const result = await deleteUser(selectedUser.id)
+      const result = await deleteUser(selectedUser.id, parseInt(transferToUserId))
 
       if (result.success) {
         setUsers(users.filter((user) => user.id !== selectedUser.id))
         setIsDeleteDialogOpen(false)
         setSelectedUser(null)
+        setTransferToUserId("")
       } else {
         setError(result.error || "Erro ao excluir usuário")
       }
@@ -162,6 +168,7 @@ export function AdminUserManagement({ initialUsers }: { initialUsers: User[] }) 
 
   const openDeleteDialog = (user: User) => {
     setSelectedUser(user)
+    setTransferToUserId("")
     setError(null)
     setIsDeleteDialogOpen(true)
   }
@@ -672,6 +679,34 @@ export function AdminUserManagement({ initialUsers }: { initialUsers: User[] }) 
               {error}
             </div>
           )}
+          <div className="space-y-4 py-2">
+            <div className="p-3 rounded-xl bg-primary/5 border border-primary/20">
+              <div className="flex items-center gap-2 mb-2">
+                <ArrowRightLeft className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium text-foreground">Transferir dados para</span>
+              </div>
+              <p className="text-xs text-muted-foreground mb-3">
+                Todas as lojas, reunioes e demais registros de <span className="text-foreground font-medium">{selectedUser?.name}</span> serao transferidos para o usuario selecionado.
+              </p>
+              <Select value={transferToUserId} onValueChange={setTransferToUserId}>
+                <SelectTrigger className="bg-secondary/50 border-input text-foreground h-10 rounded-xl">
+                  <SelectValue placeholder="Selecione um usuario..." />
+                </SelectTrigger>
+                <SelectContent className="bg-popover border-border rounded-xl">
+                  {users
+                    .filter((u) => selectedUser && u.id !== selectedUser.id)
+                    .map((u) => (
+                      <SelectItem key={u.id} value={String(u.id)} className="text-popover-foreground rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{u.name}</span>
+                          <span className="text-xs text-muted-foreground">({u.email})</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button
               variant="outline"
@@ -680,14 +715,14 @@ export function AdminUserManagement({ initialUsers }: { initialUsers: User[] }) 
             >
               Cancelar
             </Button>
-            <Button onClick={handleDelete} disabled={isPending} variant="destructive" className="rounded-xl">
+            <Button onClick={handleDelete} disabled={isPending || !transferToUserId} variant="destructive" className="rounded-xl">
               {isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Excluindo...
                 </>
               ) : (
-                "Excluir Usuario"
+                "Excluir e Transferir"
               )}
             </Button>
           </DialogFooter>
