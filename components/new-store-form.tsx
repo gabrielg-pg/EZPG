@@ -80,6 +80,7 @@ interface FormData {
   country: string
   language: string
   collections: string
+  storePolicies: string
   accounts: Record<string, { login: string; password: string; enabled: boolean }>
   }
 
@@ -186,6 +187,7 @@ export function NewStoreForm() {
     country: "",
   language: "",
   collections: "",
+  storePolicies: "",
   accounts: initializeAccounts(""),
   })
   const router = useRouter()
@@ -324,6 +326,7 @@ export function NewStoreForm() {
         numProducts: parseInt(formData.numProducts) || 0,
         logoReferencesUrl: uploadedFile?.url || undefined,
         collections: formData.collections.trim() || undefined,
+        storePolicies: formData.storePolicies.trim() || undefined,
       }
       const result = await createStore(dataToSave)
       if (result.success) {
@@ -515,6 +518,18 @@ export function NewStoreForm() {
                   value={formData.collections}
                   onChange={(e) => updateFormData("collections", e.target.value)}
                   placeholder={"Escreva uma coleção por linha\nEx:\nCamisetas\nCalças\nAcessórios"}
+                  rows={6}
+                  className="flex w-full rounded-md border border-border bg-secondary px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background resize-y min-h-[120px]"
+                />
+              </div>
+
+              {/* Store Policies */}
+              <div className="space-y-2">
+                <Label className="text-foreground">Informações da Loja</Label>
+                <textarea
+                  value={formData.storePolicies}
+                  onChange={(e) => updateFormData("storePolicies", e.target.value)}
+                  placeholder={"Escreva uma informação por linha\nEx:\nFrete grátis acima de R$200\nParcelamento em até 12x\n10% de desconto no PIX"}
                   rows={6}
                   className="flex w-full rounded-md border border-border bg-secondary px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background resize-y min-h-[120px]"
                 />
