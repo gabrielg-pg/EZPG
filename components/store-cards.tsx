@@ -66,6 +66,7 @@ interface StoreData {
   language?: string
   logo_references_url?: string
   collections?: string
+  store_policies?: string
 }
 
 interface StoreDetails {
@@ -182,6 +183,7 @@ PRODUTOS: ${store.num_products || "-"}
 NICHO: ${store.niche || "-"}
 REGIÃO: ${store.region === "global" ? `Global - ${store.country || ""} (${store.language || ""})` : "Brasil"}
 ${store.collections ? `\nCOLEÇÕES:\n${store.collections}` : ""}
+${store.store_policies ? `\nINFORMAÇÕES DA LOJA:\n${store.store_policies}` : ""}
 DADOS CONTAS:
 
 ${accountsText}`
@@ -228,6 +230,7 @@ interface EditFormState {
   country: string
   language: string
   collections: string
+  store_policies: string
   customer_name: string
   birth_date: string
   cpf: string
@@ -254,6 +257,7 @@ export function StoreCards({ initialStores }: { initialStores: StoreData[] }) {
     country: "",
     language: "",
     collections: "",
+    store_policies: "",
     customer_name: "",
     birth_date: "",
     cpf: "",
@@ -345,6 +349,7 @@ export function StoreCards({ initialStores }: { initialStores: StoreData[] }) {
           country: details.store.country || "",
           language: details.store.language || "",
           collections: details.store.collections || "",
+          store_policies: details.store.store_policies || "",
           customer_name: details.customer.name || "",
           birth_date: details.customer.birth_date ? formatDateBR(details.customer.birth_date) : "",
           cpf: details.customer.cpf || "",
@@ -380,6 +385,7 @@ export function StoreCards({ initialStores }: { initialStores: StoreData[] }) {
         country: editForm.country,
         language: editForm.language,
         collections: editForm.collections,
+        store_policies: editForm.store_policies,
         customer_name: editForm.customer_name,
         cpf: editForm.cpf,
         address: editForm.address,
@@ -806,6 +812,21 @@ export function StoreCards({ initialStores }: { initialStores: StoreData[] }) {
                 </div>
               )}
 
+              {/* Store Policies */}
+              {selectedStore.store.store_policies && (
+                <div className="space-y-3">
+                  <h4 className="font-semibold text-foreground border-b border-primary/15 pb-2">Informações da Loja</h4>
+                  <div className="space-y-1.5">
+                    {selectedStore.store.store_policies.split("\n").filter(Boolean).map((policy: string, i: number) => (
+                      <div key={i} className="flex items-center gap-2.5 text-sm">
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shrink-0" />
+                        <span className="text-foreground">{policy.trim()}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Accounts */}
               <div className="space-y-3">
                 <h4 className="font-semibold text-foreground border-b border-primary/15 pb-2">Dados das Contas</h4>
@@ -1031,6 +1052,16 @@ export function StoreCards({ initialStores }: { initialStores: StoreData[] }) {
                     value={editForm.collections}
                     onChange={(e) => setEditForm({ ...editForm, collections: e.target.value })}
                     placeholder={"Escreva uma coleção por linha\nEx:\nCamisetas\nCalças\nAcessórios"}
+                    rows={5}
+                    className="resize-y min-h-[100px]"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-foreground text-sm">Informações da Loja</Label>
+                  <Textarea
+                    value={editForm.store_policies}
+                    onChange={(e) => setEditForm({ ...editForm, store_policies: e.target.value })}
+                    placeholder={"Escreva uma informação por linha\nEx:\nFrete grátis acima de R$200\nParcelamento em até 12x\n10% de desconto no PIX"}
                     rows={5}
                     className="resize-y min-h-[100px]"
                   />
