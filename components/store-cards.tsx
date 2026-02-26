@@ -120,6 +120,7 @@ const accountsBRPlans = [
   { id: "appmax", name: "Appmax" },
   { id: "aliexpress", name: "Aliexpress" },
   { id: "dsers", name: "DSers" },
+  { id: "melhor_envio", name: "Melhor Envio" },
 ]
 
 const accountsGlobalPlan = [
