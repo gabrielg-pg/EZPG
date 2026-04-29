@@ -82,7 +82,11 @@ export async function createDemanda(data: {
 
   const isAdmin = await isDemandasAdmin()
   if (!isAdmin) {
-    return { success: false, error: "Sem permissão" }
+    return { success: false, error: "Sem permissão para criar tarefas" }
+  }
+
+  if (!data.member_id || !data.title || !data.label) {
+    return { success: false, error: "Dados incompletos" }
   }
 
   try {
@@ -93,9 +97,10 @@ export async function createDemanda(data: {
 
     revalidatePath("/demandas")
     return { success: true }
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Create demanda error:", error)
-    return { success: false, error: "Erro ao criar demanda" }
+    const errorMessage = error instanceof Error ? error.message : "Erro desconhecido"
+    return { success: false, error: `Erro ao criar demanda: ${errorMessage}` }
   }
 }
 

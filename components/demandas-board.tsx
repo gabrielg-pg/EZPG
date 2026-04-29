@@ -64,6 +64,7 @@ export function DemandasBoard({ initialDemandas, completedToday, isAdmin }: Dema
   const [newTaskTitle, setNewTaskTitle] = useState("")
   const [newTaskLabel, setNewTaskLabel] = useState<"hoje" | "urgente" | "rotina">("rotina")
   const [fadingOut, setFadingOut] = useState<number | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   // Get current date formatted
   const today = new Date()
@@ -90,30 +91,38 @@ export function DemandasBoard({ initialDemandas, completedToday, isAdmin }: Dema
 
   const handleAddTask = () => {
     if (!newTaskTitle.trim() || !selectedMember) return
+    setError(null)
 
     startTransition(async () => {
-      const result = await createDemanda({
-        member_id: selectedMember,
-        title: newTaskTitle.trim(),
-        label: newTaskLabel,
-      })
-
-      if (result.success) {
-        // Optimistically add to UI
-        const newDemanda: Demanda = {
-          id: Date.now(), // Temporary ID
+      try {
+        const result = await createDemanda({
           member_id: selectedMember,
           title: newTaskTitle.trim(),
           label: newTaskLabel,
-          completed: false,
-          completed_at: null,
-          completed_date: null,
-          created_at: new Date().toISOString(),
+        })
+
+        if (result.success) {
+          // Optimistically add to UI
+          const newDemanda: Demanda = {
+            id: Date.now(), // Temporary ID
+            member_id: selectedMember,
+            title: newTaskTitle.trim(),
+            label: newTaskLabel,
+            completed: false,
+            completed_at: null,
+            completed_date: null,
+            created_at: new Date().toISOString(),
+          }
+          setDemandas([newDemanda, ...demandas])
+          setNewTaskTitle("")
+          setNewTaskLabel("rotina")
+          setAddDialogOpen(false)
+        } else {
+          setError(result.error || "Erro ao criar tarefa")
         }
-        setDemandas([newDemanda, ...demandas])
-        setNewTaskTitle("")
-        setNewTaskLabel("rotina")
-        setAddDialogOpen(false)
+      } catch (err) {
+        console.error("[v0] Error creating demanda:", err)
+        setError("Erro inesperado ao criar tarefa")
       }
     })
   }
@@ -204,6 +213,7 @@ export function DemandasBoard({ initialDemandas, completedToday, isAdmin }: Dema
                       className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10"
                       onClick={() => {
                         setSelectedMember(member.id)
+                        setError(null)
                         setAddDialogOpen(true)
                       }}
                     >
@@ -332,6 +342,12 @@ export function DemandasBoard({ initialDemandas, completedToday, isAdmin }: Dema
               Nova Tarefa
             </DialogTitle>
           </DialogHeader>
+          {error && (
+            <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm flex items-center gap-2">
+              <div className="h-2 w-2 rounded-full bg-destructive animate-pulse" />
+              {error}
+            </div>
+          )}
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">Membro</label>
