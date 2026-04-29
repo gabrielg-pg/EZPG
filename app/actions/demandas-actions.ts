@@ -21,12 +21,12 @@ export type MemberStats = {
   completed: number
 }
 
-// Check if user is admin (Alisson Jordi)
+// Check if user is admin
 async function isDemandasAdmin(): Promise<boolean> {
   const { user } = await getSession()
   if (!user) return false
-  // Admin is determined by user role being 'admin' AND name containing 'Alisson'
-  return user.role === "admin"
+  // user.role is an array of roles, check if it includes 'admin'
+  return user.role.includes("admin")
 }
 
 // Get all demandas
