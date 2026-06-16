@@ -33,16 +33,27 @@ const NICHES = [
 ]
 
 const COUNTRIES = [
-  { name: "Brasil", flag: "🇧🇷", code: "br" },
-  { name: "Estados Unidos", flag: "🇺🇸", code: "us" },
-  { name: "Portugal", flag: "🇵🇹", code: "pt" },
-  { name: "Espanha", flag: "🇪🇸", code: "es" },
-  { name: "Alemanha", flag: "🇩🇪", code: "de" },
-  { name: "Canadá", flag: "🇨🇦", code: "ca" },
-  { name: "Austrália", flag: "🇦🇺", code: "au" },
-  { name: "França", flag: "🇫🇷", code: "fr" },
-  { name: "Itália", flag: "🇮🇹", code: "it" },
+  { name: "Brasil", code: "br" },
+  { name: "Estados Unidos", code: "us" },
+  { name: "Portugal", code: "pt" },
+  { name: "Espanha", code: "es" },
+  { name: "Alemanha", code: "de" },
+  { name: "Canadá", code: "ca" },
+  { name: "Austrália", code: "au" },
+  { name: "França", code: "fr" },
+  { name: "Itália", code: "it" },
 ]
+
+function CountryFlag({ code, name, className = "" }: { code: string; name: string; className?: string }) {
+  return (
+    <img
+      src={`https://flagcdn.com/${code}.svg`}
+      alt={`Bandeira ${name}`}
+      className={`object-cover rounded-sm shadow-sm ${className}`}
+      loading="lazy"
+    />
+  )
+}
 
 interface StoreEntry {
   id: string
@@ -144,7 +155,7 @@ export function StoreReference() {
             <Card key={country.code} className="bg-sidebar border-sidebar-border flex flex-col">
               <CardHeader className="pb-3 border-b border-sidebar-border">
                 <CardTitle className="flex items-center gap-2 text-base text-white">
-                  <span className="text-2xl leading-none">{country.flag}</span>
+                  <CountryFlag code={country.code} name={country.name} className="w-7 h-5" />
                   {country.name}
                   <span className="ml-auto text-xs font-normal text-muted-foreground bg-white/5 px-2 py-0.5 rounded-full">
                     {stores.length} {stores.length === 1 ? "loja" : "lojas"}
@@ -201,7 +212,9 @@ export function StoreReference() {
         <DialogContent className="bg-sidebar border-sidebar-border text-white sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-white">
-              {activeCountryData && <span className="text-xl">{activeCountryData.flag}</span>}
+              {activeCountryData && (
+                <CountryFlag code={activeCountryData.code} name={activeCountryData.name} className="w-6 h-4" />
+              )}
               Adicionar Loja
               {activeCountryData && (
                 <span className="text-muted-foreground font-normal text-sm">— {activeCountryData.name}</span>
