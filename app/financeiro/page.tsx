@@ -8,6 +8,7 @@ import {
   getDespesas,
   getPagamentosColaborador,
   getResumoAnual,
+  getColaboradoresPerfil,
 } from "@/app/actions/financeiro-actions"
 
 export const dynamic = "force-dynamic"
@@ -24,11 +25,12 @@ export default async function FinanceiroPage() {
   const mes = now.getMonth() + 1
   const ano = now.getFullYear()
 
-  const [receitas, despesas, pagamentos, resumoAnual] = await Promise.all([
+  const [receitas, despesas, pagamentos, resumoAnual, colaboradoresPerfil] = await Promise.all([
     getReceitas(mes, ano),
     getDespesas(mes, ano),
     getPagamentosColaborador(mes, ano),
     getResumoAnual(ano),
+    getColaboradoresPerfil(),
   ])
 
   return (
@@ -40,6 +42,7 @@ export default async function FinanceiroPage() {
         resumoAnual={resumoAnual}
         currentMes={mes}
         currentAno={ano}
+        colaboradoresPerfil={colaboradoresPerfil}
       />
     </DashboardLayout>
   )

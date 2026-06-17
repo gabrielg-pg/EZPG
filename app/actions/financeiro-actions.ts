@@ -41,6 +41,7 @@ export async function createFinanceiroTables() {
     CREATE TABLE IF NOT EXISTS pg_colaboradores_pagamento (
       id SERIAL PRIMARY KEY,
       colaborador VARCHAR(255) NOT NULL,
+      colaborador_id INTEGER,
       marca VARCHAR(255) NOT NULL,
       plano VARCHAR(255) NOT NULL,
       valor NUMERIC(10,2) DEFAULT 0,
@@ -49,6 +50,35 @@ export async function createFinanceiroTables() {
       created_at TIMESTAMP DEFAULT NOW()
     )
   `
+  await sql`
+    CREATE TABLE IF NOT EXISTS pg_colaboradores_perfil (
+      id SERIAL PRIMARY KEY,
+      nome VARCHAR(255) NOT NULL,
+      departamento VARCHAR(255),
+      chave_pix VARCHAR(255),
+      created_at TIMESTAMP DEFAULT NOW()
+    )
+  `
+  // Garante a coluna colaborador_id em bancos já existentes
+  await sql`ALTER TABLE pg_colaboradores_pagamento ADD COLUMN IF NOT EXISTS colaborador_id INTEGER`
+}
+
+export async function getColaboradoresPerfil() {
+  return await sql`SELECT * FROM pg_colaboradores_perfil ORDER BY nome`
+}
+
+export async function createColaboradorPerfil(data: { nome: string; departamento: string; chave_pix: string }) {
+  await ensureAdmin()
+  return await sql`
+    INSERT INTO pg_colaboradores_perfil (nome, departamento, chave_pix)
+    VALUES (${data.nome}, ${data.departamento}, ${data.chave_pix})
+    RETURNING *
+  `
+}
+
+export async function deleteColaboradorPerfil(id: number) {
+  await ensureAdmin()
+  return await sql`DELETE FROM pg_colaboradores_perfil WHERE id=${id}`
 }
 
 export async function getReceitas(mes: number, ano: number) {

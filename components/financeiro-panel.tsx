@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, Trash2, TrendingUp, TrendingDown, DollarSign, Users } from "lucide-react"
+import { Plus, Trash2, TrendingUp, TrendingDown, DollarSign, Users, Copy, Check, UserPlus, Loader2 } from "lucide-react"
 import {
   getReceitas,
   getDespesas,
@@ -17,6 +17,8 @@ import {
   deleteReceita,
   deleteDespesa,
   deletePagamentoColaborador,
+  createColaboradorPerfil,
+  deleteColaboradorPerfil,
 } from "@/app/actions/financeiro-actions"
 
 const MESES = [
@@ -35,7 +37,16 @@ const MESES = [
 ]
 const METODOS = ["Pix", "Transferência", "Cartão", "Boleto", "Outro"]
 const CATEGORIAS_DESPESA = ["Ferramenta", "Colaborador", "Marketing", "Operacional", "Outro"]
-const COLABORADORES = ["Luis", "Luiz Gabriel", "Alisson", "Outro"]
+const DEPARTAMENTOS = [
+  "Nexus Branding",
+  "Nexus Creative",
+  "Nexus Intake",
+  "Zona de Execução",
+  "Art & Coffee",
+  "Comercial",
+  "Administração",
+  "Outro",
+]
 
 function fmt(val: number) {
   return val.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
@@ -48,17 +59,21 @@ export function FinanceiroPanel({
   resumoAnual,
   currentMes,
   currentAno,
+  colaboradoresPerfil: initialPerfis,
 }: any) {
   const [mes, setMes] = useState(currentMes)
   const [ano] = useState(currentAno)
   const [receitas, setReceitas] = useState(initialReceitas)
   const [despesas, setDespesas] = useState(initialDespesas)
   const [pagamentos, setPagamentos] = useState(initialPagamentos)
+  const [perfis, setPerfis] = useState(initialPerfis || [])
   const [loading, setLoading] = useState(false)
-
-  const [modalType, setModalType] = useState<"receita" | "despesa" | "colaborador" | null>(null)
-  const [form, setForm] = useState<any>({})
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [copiedPix, setCopiedPix] = useState<number | null>(null)
+
+  const [modalType, setModalType] = useState<"receita" | "despesa" | "colaborador" | "perfil" | null>(null)
+  const [form, setForm] = useState<any>({})
 
   const changeMes = async (newMes: number) => {
     setLoading(true)
@@ -80,7 +95,7 @@ export function FinanceiroPanel({
   const totalSaidas = totalDespesas + totalColabs
   const liquido = totalEntradas - totalSaidas
 
-  // Group pagamentos by colaborador
+  // Group pagamentos by colaborador name
   const colaboradoresGroup = pagamentos.reduce((acc: any, p: any) => {
     if (!acc[p.colaborador]) acc[p.colaborador] = []
     acc[p.colaborador].push(p)
@@ -96,7 +111,8 @@ export function FinanceiroPanel({
     return { mes: m, entrada: Number.parseFloat(entrada), saida: Number.parseFloat(saida) + Number.parseFloat(colab) }
   })
 
-  const openModal = (type: "receita" | "despesa" | "colaborador") => {
+  const openModal = (type: "receita" | "despesa" | "colaborador" | "perfil") => {
+    setError(null)
     setForm({
       metodo: "",
       data: new Date().toISOString().split("T")[0],
@@ -111,12 +127,15 @@ export function FinanceiroPanel({
       marca: "",
       plano: "",
       valor: "",
+      departamento: "",
+      chave_pix: "",
     })
     setModalType(type)
   }
 
   const handleSave = async () => {
     setSaving(true)
+    setError(null)
     try {
       if (modalType === "receita") {
         const created = await createReceita({ ...form, entrada: Number.parseFloat(form.entrada) || 0, mes, ano })
@@ -132,13 +151,27 @@ export function FinanceiroPanel({
           ano,
         })
         setPagamentos([...pagamentos, created[0]])
+      } else if (modalType === "perfil") {
+        const created = await createColaboradorPerfil({
+          nome: form.nome,
+          departamento: form.departamento,
+          chave_pix: form.chave_pix,
+        })
+        setPerfis([...perfis, created[0]])
       }
       setModalType(null)
     } catch (err) {
       console.error("[v0] Error saving financeiro item:", err)
+      setError("Erro ao guardar. Verifique os dados e tente novamente.")
     } finally {
       setSaving(false)
     }
+  }
+
+  const copyPix = (id: number, pix: string) => {
+    navigator.clipboard.writeText(pix)
+    setCopiedPix(id)
+    setTimeout(() => setCopiedPix(null), 2000)
   }
 
   const handleDeleteReceita = async (id: number) => {
@@ -153,15 +186,17 @@ export function FinanceiroPanel({
     await deletePagamentoColaborador(id)
     setPagamentos(pagamentos.filter((p: any) => p.id !== id))
   }
+  const handleDeletePerfil = async (id: number) => {
+    await deleteColaboradorPerfil(id)
+    setPerfis(perfis.filter((p: any) => p.id !== id))
+  }
 
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="space-y-1">
         <h1 className="text-2xl font-bold text-white tracking-tight">Financeiro</h1>
-        <p className="text-muted-foreground text-sm">
-          Controlo financeiro interno da PRO GROWTH GLOBAL — {ano}
-        </p>
+        <p className="text-muted-foreground text-sm">Controlo financeiro interno da PRO GROWTH GLOBAL — {ano}</p>
       </div>
 
       {/* Month selector */}
@@ -253,7 +288,7 @@ export function FinanceiroPanel({
           </Button>
         </div>
         <div className="bg-sidebar border border-sidebar-border rounded-xl overflow-x-auto">
-          <table className="w-full text-xs">
+          <table className="w-full text-xs min-w-[640px]">
             <thead>
               <tr className="border-b border-sidebar-border bg-white/5">
                 {["Método", "Data", "Nome", "Plano / Serviço", "Operação", "Entrada", ""].map((h) => (
@@ -328,7 +363,7 @@ export function FinanceiroPanel({
           </Button>
         </div>
         <div className="bg-sidebar border border-sidebar-border rounded-xl overflow-x-auto">
-          <table className="w-full text-xs">
+          <table className="w-full text-xs min-w-[560px]">
             <thead>
               <tr className="border-b border-sidebar-border bg-white/5">
                 {["Método", "Data", "Descrição", "Categoria", "Saída", ""].map((h) => (
@@ -393,66 +428,114 @@ export function FinanceiroPanel({
             <h2 className="text-sm font-bold text-white tracking-widest">PAGAMENTOS COLABORADORES</h2>
             <span className="text-xs bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-full">{fmt(totalColabs)}</span>
           </div>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => openModal("colaborador")}
-            className="text-xs text-muted-foreground hover:text-white hover:bg-white/5 h-7 px-2"
-          >
-            <Plus className="h-3 w-3 mr-1" />
-            Adicionar
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => openModal("perfil")}
+              className="text-xs text-muted-foreground hover:text-white hover:bg-white/5 h-7 px-2"
+            >
+              <UserPlus className="h-3 w-3 mr-1" />
+              Novo Colaborador
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => openModal("colaborador")}
+              className="text-xs text-muted-foreground hover:text-white hover:bg-white/5 h-7 px-2"
+            >
+              <Plus className="h-3 w-3 mr-1" />
+              Adicionar Pagamento
+            </Button>
+          </div>
         </div>
+
+        {/* Colaborador profiles with payments */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-          {Object.keys(colaboradoresGroup).length === 0 ? (
+          {perfis.length === 0 && Object.keys(colaboradoresGroup).length === 0 ? (
             <div className="col-span-full border border-dashed border-sidebar-border rounded-xl p-6 text-center">
-              <p className="text-xs text-muted-foreground/50 italic">Nenhum pagamento registado.</p>
+              <p className="text-xs text-muted-foreground/50 italic">Nenhum colaborador cadastrado.</p>
             </div>
           ) : (
-            Object.entries(colaboradoresGroup).map(([colab, items]: any) => {
+            perfis.map((perfil: any) => {
+              const items = colaboradoresGroup[perfil.nome] || []
               const total = items.reduce((s: number, i: any) => s + Number.parseFloat(i.valor), 0)
               return (
-                <div key={colab} className="bg-sidebar border border-blue-500/20 rounded-xl overflow-hidden">
-                  <div className="bg-blue-500/10 px-4 py-3 border-b border-blue-500/20 flex items-center justify-between">
-                    <p className="text-sm font-bold text-white">{colab}</p>
-                    <span className="text-xs text-blue-300 font-semibold">{MESES[mes - 1]}</span>
+                <div key={perfil.id} className="bg-sidebar border border-blue-500/20 rounded-xl overflow-hidden">
+                  {/* Perfil header */}
+                  <div className="bg-blue-500/10 px-4 py-3 border-b border-blue-500/20">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-white truncate">{perfil.nome}</p>
+                        <p className="text-xs text-blue-300/70 mt-0.5">{perfil.departamento}</p>
+                      </div>
+                      <button
+                        onClick={() => handleDeletePerfil(perfil.id)}
+                        className="text-muted-foreground hover:text-red-400 transition-colors ml-2 p-1"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </div>
+                    {perfil.chave_pix && (
+                      <div className="flex items-center gap-2 mt-2 bg-black/20 rounded-lg px-2 py-1.5">
+                        <p className="text-xs text-white font-mono flex-1 truncate">{perfil.chave_pix}</p>
+                        <button
+                          onClick={() => copyPix(perfil.id, perfil.chave_pix)}
+                          className="shrink-0 text-muted-foreground hover:text-white transition-colors"
+                        >
+                          {copiedPix === perfil.id ? (
+                            <Check className="h-3 w-3 text-green-400" />
+                          ) : (
+                            <Copy className="h-3 w-3" />
+                          )}
+                        </button>
+                      </div>
+                    )}
                   </div>
-                  <table className="w-full text-xs">
-                    <thead>
-                      <tr className="border-b border-sidebar-border/50">
-                        <th className="text-left px-4 py-2 text-muted-foreground">Marca</th>
-                        <th className="text-left px-4 py-2 text-muted-foreground">Plano</th>
-                        <th className="text-right px-4 py-2 text-muted-foreground">Valor</th>
-                        <th className="px-2 py-2" />
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {items.map((item: any) => (
-                        <tr key={item.id} className="border-b border-sidebar-border/30 hover:bg-white/5 group">
-                          <td className="px-4 py-2 text-white">{item.marca}</td>
-                          <td className="px-4 py-2 text-muted-foreground">{item.plano}</td>
-                          <td className="px-4 py-2 text-blue-400 font-medium text-right">
-                            {fmt(Number.parseFloat(item.valor))}
-                          </td>
-                          <td className="px-2 py-2">
-                            <button
-                              onClick={() => handleDeletePagamento(item.id)}
-                              className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-400 transition-all"
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </button>
-                          </td>
+
+                  {/* Payments */}
+                  {items.length === 0 ? (
+                    <div className="px-4 py-4 text-center">
+                      <p className="text-xs text-muted-foreground/40 italic">Sem pagamentos em {MESES[mes - 1]}.</p>
+                    </div>
+                  ) : (
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="border-b border-sidebar-border/50">
+                          <th className="text-left px-4 py-2 text-muted-foreground">Marca</th>
+                          <th className="text-left px-4 py-2 text-muted-foreground">Plano</th>
+                          <th className="text-right px-4 py-2 text-muted-foreground">Valor</th>
+                          <th className="px-2 py-2" />
                         </tr>
-                      ))}
-                      <tr className="bg-blue-500/10 border-t border-blue-500/20">
-                        <td colSpan={2} className="px-4 py-2 text-blue-300 font-bold">
-                          VALOR
-                        </td>
-                        <td className="px-4 py-2 text-blue-400 font-bold text-right">{fmt(total)}</td>
-                        <td />
-                      </tr>
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {items.map((item: any) => (
+                          <tr key={item.id} className="border-b border-sidebar-border/30 hover:bg-white/5 group">
+                            <td className="px-4 py-2 text-white">{item.marca}</td>
+                            <td className="px-4 py-2 text-muted-foreground">{item.plano}</td>
+                            <td className="px-4 py-2 text-blue-400 font-medium text-right">
+                              {fmt(Number.parseFloat(item.valor))}
+                            </td>
+                            <td className="px-2 py-2">
+                              <button
+                                onClick={() => handleDeletePagamento(item.id)}
+                                className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-400 transition-all"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                        <tr className="bg-blue-500/10 border-t border-blue-500/20">
+                          <td colSpan={2} className="px-4 py-2.5 text-blue-300 font-bold">
+                            TOTAL A PAGAR
+                          </td>
+                          <td className="px-4 py-2.5 text-blue-400 font-bold text-right text-sm">{fmt(total)}</td>
+                          <td />
+                        </tr>
+                      </tbody>
+                    </table>
+                  )}
                 </div>
               )
             })
@@ -494,10 +577,108 @@ export function FinanceiroPanel({
         <DialogContent className="bg-sidebar border-sidebar-border text-white sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="text-white">
-              {modalType === "receita" ? "Nova Receita" : modalType === "despesa" ? "Nova Despesa" : "Novo Pagamento"}
+              {modalType === "receita"
+                ? "Nova Receita"
+                : modalType === "despesa"
+                  ? "Nova Despesa"
+                  : modalType === "perfil"
+                    ? "Novo Colaborador"
+                    : "Novo Pagamento"}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3 pt-2">
+            {error && (
+              <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+                {error}
+              </div>
+            )}
+
+            {modalType === "perfil" && (
+              <>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Nome completo</Label>
+                  <Input
+                    placeholder="Ex: Luiz Gabriel Alves"
+                    value={form.nome}
+                    onChange={(e) => setForm({ ...form, nome: e.target.value })}
+                    className="bg-background/50 border-sidebar-border text-white placeholder:text-muted-foreground/50"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Departamento</Label>
+                  <Select value={form.departamento} onValueChange={(v) => setForm({ ...form, departamento: v })}>
+                    <SelectTrigger className="bg-background/50 border-sidebar-border text-white">
+                      <SelectValue placeholder="Selecionar" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-sidebar border-sidebar-border text-white">
+                      {DEPARTAMENTOS.map((d) => (
+                        <SelectItem key={d} value={d} className="focus:bg-white/10">
+                          {d}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Chave Pix</Label>
+                  <Input
+                    placeholder="CPF, telefone, e-mail ou chave aleatória"
+                    value={form.chave_pix}
+                    onChange={(e) => setForm({ ...form, chave_pix: e.target.value })}
+                    className="bg-background/50 border-sidebar-border text-white placeholder:text-muted-foreground/50"
+                  />
+                </div>
+              </>
+            )}
+
+            {modalType === "colaborador" && (
+              <>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Colaborador</Label>
+                  <Select value={form.colaborador} onValueChange={(v) => setForm({ ...form, colaborador: v })}>
+                    <SelectTrigger className="bg-background/50 border-sidebar-border text-white">
+                      <SelectValue placeholder="Selecionar colaborador" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-sidebar border-sidebar-border text-white">
+                      {perfis.map((p: any) => (
+                        <SelectItem key={p.id} value={p.nome} className="focus:bg-white/10">
+                          {p.nome}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Marca</Label>
+                  <Input
+                    placeholder="Ex: Divale"
+                    value={form.marca}
+                    onChange={(e) => setForm({ ...form, marca: e.target.value })}
+                    className="bg-background/50 border-sidebar-border text-white placeholder:text-muted-foreground/50"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Plano</Label>
+                  <Input
+                    placeholder="Ex: Scale"
+                    value={form.plano}
+                    onChange={(e) => setForm({ ...form, plano: e.target.value })}
+                    className="bg-background/50 border-sidebar-border text-white placeholder:text-muted-foreground/50"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Valor (R$)</Label>
+                  <Input
+                    type="number"
+                    placeholder="0,00"
+                    value={form.valor}
+                    onChange={(e) => setForm({ ...form, valor: e.target.value })}
+                    className="bg-background/50 border-sidebar-border text-white placeholder:text-muted-foreground/50"
+                  />
+                </div>
+              </>
+            )}
+
             {modalType === "receita" && (
               <>
                 <div className="grid grid-cols-2 gap-3">
@@ -631,68 +812,21 @@ export function FinanceiroPanel({
               </>
             )}
 
-            {modalType === "colaborador" && (
-              <>
-                <div className="space-y-1.5">
-                  <Label className="text-xs text-muted-foreground">Colaborador</Label>
-                  <Select value={form.colaborador} onValueChange={(v) => setForm({ ...form, colaborador: v })}>
-                    <SelectTrigger className="bg-background/50 border-sidebar-border text-white">
-                      <SelectValue placeholder="Selecionar" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-sidebar border-sidebar-border text-white">
-                      {COLABORADORES.map((c) => (
-                        <SelectItem key={c} value={c} className="focus:bg-white/10">
-                          {c}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs text-muted-foreground">Marca</Label>
-                  <Input
-                    placeholder="Ex: Divale"
-                    value={form.marca}
-                    onChange={(e) => setForm({ ...form, marca: e.target.value })}
-                    className="bg-background/50 border-sidebar-border text-white placeholder:text-muted-foreground/50"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs text-muted-foreground">Plano</Label>
-                  <Input
-                    placeholder="Ex: Scale"
-                    value={form.plano}
-                    onChange={(e) => setForm({ ...form, plano: e.target.value })}
-                    className="bg-background/50 border-sidebar-border text-white placeholder:text-muted-foreground/50"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs text-muted-foreground">Valor (R$)</Label>
-                  <Input
-                    type="number"
-                    placeholder="0,00"
-                    value={form.valor}
-                    onChange={(e) => setForm({ ...form, valor: e.target.value })}
-                    className="bg-background/50 border-sidebar-border text-white placeholder:text-muted-foreground/50"
-                  />
-                </div>
-              </>
-            )}
-
             <div className="flex gap-2 pt-1">
               <Button
                 variant="outline"
+                disabled={saving}
                 className="flex-1 border-sidebar-border text-muted-foreground hover:text-white hover:bg-white/5 bg-transparent"
                 onClick={() => setModalType(null)}
               >
                 Cancelar
               </Button>
               <Button
+                disabled={saving}
                 className="flex-1 bg-gradient-to-r from-primary to-primary/80 text-white shadow-lg shadow-primary/25"
                 onClick={handleSave}
-                disabled={saving}
               >
-                {saving ? "A guardar..." : "Guardar"}
+                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Guardar"}
               </Button>
             </div>
           </div>
