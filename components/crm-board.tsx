@@ -105,6 +105,7 @@ export function CrmBoard({ initialLeads }: { initialLeads: Lead[] }) {
 
   const [draggedId, setDraggedId] = useState<number | null>(null)
   const [dragOverStage, setDragOverStage] = useState<string | null>(null)
+  const [dragDisabled, setDragDisabled] = useState(false)
 
   // Métricas
   const metrics = useMemo(() => {
@@ -286,34 +287,38 @@ export function CrmBoard({ initialLeads }: { initialLeads: Lead[] }) {
                   return (
                     <div
                       key={lead.id}
-                      draggable
+                      draggable={!dragDisabled}
                       onDragStart={() => setDraggedId(lead.id)}
                       onDragEnd={() => setDraggedId(null)}
                       className="group cursor-grab rounded-lg border border-border bg-card p-3 transition-colors hover:border-primary/40 active:cursor-grabbing"
                     >
                       <div className="flex items-start justify-between gap-2">
                         <p className="font-semibold text-foreground leading-tight">{lead.nome}</p>
-                        <div className="flex shrink-0 gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                        <div
+                          className="flex shrink-0 gap-1 opacity-0 transition-opacity group-hover:opacity-100"
+                          onMouseEnter={() => setDragDisabled(true)}
+                          onMouseLeave={() => setDragDisabled(false)}
+                        >
                           <button
+                            type="button"
                             draggable={false}
-                            onMouseDown={(e) => e.stopPropagation()}
                             onClick={(e) => {
                               e.stopPropagation()
                               openEdit(lead)
                             }}
-                            className="text-muted-foreground hover:text-primary"
+                            className="rounded p-1 text-muted-foreground hover:text-primary"
                             aria-label="Editar lead"
                           >
                             <Pencil className="h-3.5 w-3.5" />
                           </button>
                           <button
+                            type="button"
                             draggable={false}
-                            onMouseDown={(e) => e.stopPropagation()}
                             onClick={(e) => {
                               e.stopPropagation()
                               handleDelete(lead.id)
                             }}
-                            className="text-muted-foreground hover:text-destructive"
+                            className="rounded p-1 text-muted-foreground hover:text-destructive"
                             aria-label="Excluir lead"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
