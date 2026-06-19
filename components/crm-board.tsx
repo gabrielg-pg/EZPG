@@ -295,14 +295,24 @@ export function CrmBoard({ initialLeads }: { initialLeads: Lead[] }) {
                         <p className="font-semibold text-foreground leading-tight">{lead.nome}</p>
                         <div className="flex shrink-0 gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                           <button
-                            onClick={() => openEdit(lead)}
+                            draggable={false}
+                            onMouseDown={(e) => e.stopPropagation()}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              openEdit(lead)
+                            }}
                             className="text-muted-foreground hover:text-primary"
                             aria-label="Editar lead"
                           >
                             <Pencil className="h-3.5 w-3.5" />
                           </button>
                           <button
-                            onClick={() => handleDelete(lead.id)}
+                            draggable={false}
+                            onMouseDown={(e) => e.stopPropagation()}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleDelete(lead.id)
+                            }}
                             className="text-muted-foreground hover:text-destructive"
                             aria-label="Excluir lead"
                           >
