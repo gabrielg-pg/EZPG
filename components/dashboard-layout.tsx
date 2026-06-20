@@ -58,14 +58,16 @@ export function DashboardLayout({ children, userRoles = ["user"] }: DashboardLay
           {/* Logo */}
           <div className="flex items-center justify-between h-20 px-6 border-b border-sidebar-border">
             <div className="flex items-center gap-3">
-              <Image
-                src="https://i.imgur.com/jfNDVLp.png"
-                alt="Pro Growth Logo"
-                width={40}
-                height={40}
-                className="rounded-xl shadow-lg shadow-primary/20"
-              />
-              <span className="text-lg font-bold text-white tracking-tight">Pro Growth</span>
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white p-1 shadow-lg shadow-primary/20 ring-1 ring-primary/30">
+                <Image
+                  src="/aeesjb-logo.png"
+                  alt="AEESJB Logo"
+                  width={40}
+                  height={40}
+                  className="h-full w-full object-contain"
+                />
+              </div>
+              <span className="text-lg font-bold text-white tracking-tight">AEESJB</span>
             </div>
             <button 
               onClick={() => setSidebarOpen(false)} 

@@ -8,8 +8,8 @@ const _inter = Inter({ subsets: ["latin"] })
 const _geistMono = Geist_Mono({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Pro Growth - Sistema Interno",
-  description: "Sistema interno Pro Growth",
+  title: "AEESJB - Sistema Interno",
+  description: "Sistema interno AEESJB",
   generator: "Gerp Business Solutions",
   icons: {
     icon: [

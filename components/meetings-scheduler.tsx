@@ -277,7 +277,7 @@ export function MeetingsScheduler({ currentUserId }: { currentUserId: number }) 
 
   const getReasonColor = (reason: string) => {
     if (reason === "Mentoria") {
-      return "bg-purple-500/20 text-purple-400 border-purple-500/30"
+      return "bg-[rgba(220,38,38,0.2)] text-[#EF4444] border-[rgba(220,38,38,0.3)]"
     }
 
     if (reason === "Onboarding") {
@@ -300,7 +300,7 @@ export function MeetingsScheduler({ currentUserId }: { currentUserId: number }) 
         return "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30"
 
       case "Reagendar":
-        return "bg-purple-500/20 text-purple-400 border border-purple-500/30"
+        return "bg-[rgba(220,38,38,0.2)] text-[#EF4444] border border-[rgba(220,38,38,0.3)]"
 
       case "Talvez":
         return "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"
@@ -376,7 +376,7 @@ export function MeetingsScheduler({ currentUserId }: { currentUserId: number }) 
                     <span
                       className={cn(
                         "text-sm font-bold px-2 py-0.5 rounded-full",
-                        isBooked ? "bg-[rgba(139,92,246,0.2)] text-[#A855F7]" : "text-white",
+                        isBooked ? "bg-[rgba(220,38,38,0.2)] text-[#EF4444]" : "text-white",
                       )}
                     >
                       {time}
@@ -405,7 +405,7 @@ export function MeetingsScheduler({ currentUserId }: { currentUserId: number }) 
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-6 px-2 text-xs bg-[rgba(139,92,246,0.15)] hover:bg-[rgba(139,92,246,0.25)] text-white"
+                            className="h-6 px-2 text-xs bg-[rgba(220,38,38,0.15)] hover:bg-[rgba(220,38,38,0.25)] text-white"
                             onClick={(e) => handleOpenDetails(time, e)}
                           >
                             <Eye className="h-3 w-3 mr-1" />
@@ -437,11 +437,11 @@ export function MeetingsScheduler({ currentUserId }: { currentUserId: number }) 
               {meetings.map((meeting) => (
                 <div
                   key={meeting.id}
-                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-lg bg-[rgba(139,92,246,0.08)] border border-[rgba(139,92,246,0.15)]"
+                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-lg bg-[rgba(220,38,38,0.08)] border border-[rgba(220,38,38,0.15)]"
                 >
                   <div className="flex-1 space-y-2">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-bold text-lg text-[#A855F7] bg-[rgba(139,92,246,0.2)] px-3 py-1 rounded-full">
+                      <span className="font-bold text-lg text-[#EF4444] bg-[rgba(220,38,38,0.2)] px-3 py-1 rounded-full">
                         {meeting.meeting_time.slice(0, 5)}
                       </span>
                       <span className="font-semibold text-white">{meeting.lead_name}</span>

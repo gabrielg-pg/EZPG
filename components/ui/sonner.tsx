@@ -16,11 +16,11 @@ const Toaster = ({ ...props }: ToasterProps) => {
         {
           '--normal-bg': 'rgba(14, 17, 24, 0.95)',
           '--normal-text': '#F1F5F9',
-          '--normal-border': 'rgba(139, 92, 246, 0.2)',
+          '--normal-border': 'rgba(220, 38, 38, 0.2)',
         } as React.CSSProperties
       }
       toastOptions={{
-        className: 'backdrop-blur-xl border-[rgba(139,92,246,0.2)] shadow-[0_8px_32px_rgba(0,0,0,0.4)]',
+        className: 'backdrop-blur-xl border-[rgba(220,38,38,0.2)] shadow-[0_8px_32px_rgba(0,0,0,0.4)]',
       }}
       {...props}
     />

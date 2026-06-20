@@ -17,7 +17,7 @@ const resources = [
     id: "tutoriais",
     title: "PG | TUTORIAIS",
     subtitle: "Base interna de conhecimento operacional",
-    description: "Aqui ficam tutoriais práticos criados conforme demandas reais da operação. Esse banco serve para padronizar processos e acelerar a execução, além de facilitar o onboarding de novos colaboradores dentro da Pro Growth.",
+    description: "Aqui ficam tutoriais práticos criados conforme demandas reais da operação. Esse banco serve para padronizar processos e acelerar a execução, além de facilitar o onboarding de novos colaboradores dentro da AEESJB.",
     icon: BookOpen,
     color: "from-blue-500 to-cyan-500",
     shadowColor: "shadow-blue-500/20",
@@ -26,11 +26,11 @@ const resources = [
   {
     id: "temas",
     title: "PG | TEMAS",
-    subtitle: "Estruturas dos planos Pro Growth",
-    description: "Repositório dos temas utilizados nos planos da Pro Growth: START GROWTH, PRO VÉRTEBRA, SCALE VÉRTEBRA e SCALE GLOBAL. Cada tema segue a estrutura validada de cada plano, garantindo consistência, padrão e replicabilidade das operações.",
+    subtitle: "Estruturas dos planos AEESJB",
+    description: "Repositório dos temas utilizados nos planos da AEESJB: START GROWTH, PRO VÉRTEBRA, SCALE VÉRTEBRA e SCALE GLOBAL. Cada tema segue a estrutura validada de cada plano, garantindo consistência, padrão e replicabilidade das operações.",
     icon: Palette,
-    color: "from-purple-500 to-pink-500",
-    shadowColor: "shadow-purple-500/20",
+    color: "from-[#DC2626] to-[#EF4444]",
+    shadowColor: "shadow-[rgba(220,38,38,0.2)]",
     link: "https://drive.google.com/drive/u/0/folders/1FhdDr0GcgvmYMhdAiJibRYVP-HIc-x0s"
   },
   {
@@ -69,7 +69,7 @@ const resources = [
     subtitle: "Criação e organização de criativos para tráfego pago",
     description: "Área dedicada à criação, armazenamento e organização dos criativos utilizados nas campanhas. Criativos validados, variações por nicho, estruturas criativas usadas em escala e base histórica de anúncios para análise e melhoria de performance.",
     icon: Target,
-    color: "from-indigo-500 to-violet-500",
+    color: "from-[#5B95A8] to-[#3B82F6]",
     shadowColor: "shadow-indigo-500/20",
     link: "https://drive.google.com/drive/u/0/folders/1UaLtpLBsUkOQzKzglRFp6SXjSdBKc2-3"
   }

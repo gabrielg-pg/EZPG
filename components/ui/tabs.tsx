@@ -26,7 +26,7 @@ function TabsList({
     <TabsPrimitive.List
       data-slot="tabs-list"
       className={cn(
-        'bg-[rgba(255,255,255,0.04)] text-[#9CA3AF] inline-flex h-9 w-fit items-center justify-center rounded-lg p-[3px] border border-[rgba(139,92,246,0.15)]',
+        'bg-[rgba(255,255,255,0.04)] text-[#9CA3AF] inline-flex h-9 w-fit items-center justify-center rounded-lg p-[3px] border border-[rgba(220,38,38,0.15)]',
         className,
       )}
       {...props}
@@ -42,7 +42,7 @@ function TabsTrigger({
     <TabsPrimitive.Trigger
       data-slot="tabs-trigger"
       className={cn(
-        "data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#7C3AED] data-[state=active]:to-[#8B5CF6] data-[state=active]:text-white focus-visible:border-[#A855F7] focus-visible:ring-2 focus-visible:ring-[#A855F7]/20 text-[#9CA3AF] hover:text-white inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-md border border-transparent px-2 py-1 text-sm font-medium whitespace-nowrap transition-all duration-200 focus-visible:outline-1 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:shadow-[0_0_15px_rgba(139,92,246,0.3)] [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        "data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#B91C1C] data-[state=active]:to-[#DC2626] data-[state=active]:text-white focus-visible:border-[#EF4444] focus-visible:ring-2 focus-visible:ring-[#EF4444]/20 text-[#9CA3AF] hover:text-white inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-md border border-transparent px-2 py-1 text-sm font-medium whitespace-nowrap transition-all duration-200 focus-visible:outline-1 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:shadow-[0_0_15px_rgba(220,38,38,0.3)] [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         className,
       )}
       {...props}

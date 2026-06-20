@@ -40,7 +40,7 @@ const steps = [
 
 const plans = [
   { id: "Start Growth", name: "Start Growth", icon: TrendingUp, color: "text-emerald-500" },
-  { id: "Pro Vértebra", name: "Pro Vértebra", icon: Brain, color: "text-purple-500" },
+  { id: "Pro Vértebra", name: "Pro Vértebra", icon: Brain, color: "text-[#5B95A8]" },
   { id: "Scale Vértebra", name: "Scale Vértebra", icon: Rocket, color: "text-blue-500" },
   { id: "Scale Global", name: "Scale Global", icon: Zap, color: "text-orange-500" },
 ]

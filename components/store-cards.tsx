@@ -94,7 +94,7 @@ const statusConfig = {
 }
 
 const userColors: Record<string, string> = {
-  GabrielPG: "bg-purple-500/20 text-purple-400 border-purple-500/30",
+  GabrielPG: "bg-[rgba(220,38,38,0.2)] text-[#EF4444] border-[rgba(220,38,38,0.3)]",
   admin: "bg-blue-500/20 text-blue-400 border-blue-500/30",
   comercial: "bg-green-500/20 text-green-400 border-green-500/30",
   default: "bg-gray-500/20 text-gray-400 border-gray-500/30",

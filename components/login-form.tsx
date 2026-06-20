@@ -42,17 +42,19 @@ export function LoginForm() {
         <div className="flex flex-col items-center gap-4">
           <div className="relative">
             <div className="absolute inset-0 bg-primary/30 blur-3xl rounded-full scale-150" />
-            <Image
-              src="https://i.imgur.com/jfNDVLp.png"
-              alt="Pro Growth Logo"
-              width={64}
-              height={64}
-              className="relative z-10 rounded-2xl shadow-xl shadow-primary/20"
-              priority
-            />
+            <div className="relative z-10 flex h-24 w-24 items-center justify-center rounded-2xl bg-white p-2 shadow-xl shadow-primary/20 ring-1 ring-primary/20">
+              <Image
+                src="/aeesjb-logo.png"
+                alt="AEESJB Logo"
+                width={88}
+                height={88}
+                className="h-full w-full object-contain"
+                priority
+              />
+            </div>
           </div>
           <div className="space-y-1">
-            <CardTitle className="text-xl font-bold text-foreground">Pro Growth</CardTitle>
+            <CardTitle className="text-xl font-bold text-foreground">AEESJB</CardTitle>
             <CardDescription className="text-muted-foreground text-sm">
               Entre com suas credenciais para acessar
             </CardDescription>
