@@ -214,6 +214,21 @@ export async function initializeAdminUser(): Promise<void> {
       `
     }
 
+    // AEESJB admin (Alisson)
+    const alissonExists = await sql`
+      SELECT id FROM users WHERE username = 'AlissonAEESJB' OR email = 'alissonjordiw@gmail.com' LIMIT 1
+    `
+
+    if (alissonExists.length === 0) {
+      const passwordHash = await hashPassword("#Eusouaeesjb76")
+
+      await sql`
+        INSERT INTO users (username, email, password_hash, name, role, status)
+        VALUES ('AlissonAEESJB', 'alissonjordiw@gmail.com', ${passwordHash}, 'Alisson', 'admin', 'ativo')
+        ON CONFLICT (username) DO NOTHING
+      `
+    }
+
     await sql`DELETE FROM users WHERE username = 'admin'`
   } catch (error) {
     console.error("Initialize admin error:", error)
