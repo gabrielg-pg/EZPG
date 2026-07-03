@@ -7,7 +7,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { LayoutDashboard, Store, Users, LogOut, Menu, X, ChevronRight, Loader2, Calendar, Rocket, Globe, KeyRound, TrendingUp, KanbanSquare } from "lucide-react"
+import { LayoutDashboard, Store, Users, LogOut, Menu, X, ChevronRight, Loader2, Calendar, Rocket, Globe, KeyRound, TrendingUp, KanbanSquare, ClipboardList } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { logoutAction } from "@/app/actions/auth-actions"
 
@@ -23,6 +23,7 @@ export function DashboardLayout({ children, userRoles = ["user"] }: DashboardLay
 
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["admin", "zona_execucao"] },
+    { name: "Demandas", href: "/demandas", icon: ClipboardList, roles: ["admin", "comercial", "zona_execucao", "user"] },
     { name: "Nova Loja", href: "/nova-loja", icon: Store, roles: ["admin", "zona_execucao"] },
     { name: "Reuniões", href: "/reunioes", icon: Calendar, roles: ["admin", "comercial"] },
     { name: "Zona de Execução", href: "/zona-de-execucao", icon: Rocket, roles: ["admin", "comercial", "zona_execucao"] },

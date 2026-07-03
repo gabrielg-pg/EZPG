@@ -1,43 +1,21 @@
-import { redirect } from "next/navigation"
-import { getSession } from "@/lib/auth"
-import { sql } from "@/lib/db"
+import { requireAuth } from "@/lib/auth"
+export const dynamic = "force-dynamic"
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { DemandasBoard } from "@/components/demandas-board"
-import {
-  getDemandas,
-  getCompletedToday,
-  resetDailyCompletions,
-} from "@/app/actions/demandas-actions"
-
-async function getUserRoles(userId: number): Promise<string[]> {
-  const roles = await sql`
-    SELECT role FROM user_roles WHERE user_id = ${userId}
-  `
-  return roles.map((r) => r.role)
-}
+import { createDemandasTable, getDemandas, getWeekStart } from "@/app/actions/demandas-actions"
 
 export default async function DemandasPage() {
-  const { user } = await getSession()
-  if (!user) {
-    redirect("/login")
-  }
+  const user = await requireAuth()
+  const roles = [user.role?.toLowerCase() || ""]
 
-  // Reset completions from previous days
-  await resetDailyCompletions()
+  await createDemandasTable()
 
-  const roles = await getUserRoles(user.id)
-  const allRoles = [...new Set([user.role, ...roles])]
-
-  const { demandas, isAdmin } = await getDemandas()
-  const completedToday = await getCompletedToday()
+  const weekStart = getWeekStart()
+  const demandas = await getDemandas(weekStart)
 
   return (
-    <DashboardLayout userRoles={allRoles}>
-      <DemandasBoard
-        initialDemandas={demandas}
-        completedToday={completedToday}
-        isAdmin={isAdmin}
-      />
+    <DashboardLayout userRoles={roles}>
+      <DemandasBoard initialDemandas={demandas} weekStart={weekStart} />
     </DashboardLayout>
   )
 }
