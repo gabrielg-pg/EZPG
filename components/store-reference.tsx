@@ -1,13 +1,18 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useTransition } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Plus, ExternalLink, X, Store } from "lucide-react"
+import { Plus, ExternalLink, X, Store, Loader2 } from "lucide-react"
+import {
+  createStoreReference,
+  deleteStoreReference,
+  type StoreReferenceEntry,
+} from "@/app/actions/store-reference-actions"
 
 const NICHES = [
   "Moda Feminina",
@@ -55,40 +60,19 @@ function CountryFlag({ code, name, className = "" }: { code: string; name: strin
   )
 }
 
-interface StoreEntry {
-  id: string
-  name: string
-  site: string
-  niche: string
-  country: string
-}
 interface AddStoreForm {
   name: string
   site: string
   niche: string
 }
-const STORAGE_KEY = "store_reference_data"
 
-function loadStores(): Record<string, StoreEntry[]> {
-  if (typeof window === "undefined") return {}
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    return raw ? JSON.parse(raw) : {}
-  } catch {
-    return {}
-  }
-}
-function saveStores(data: Record<string, StoreEntry[]>) {
-  if (typeof window === "undefined") return
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
-}
-
-export function StoreReference() {
-  const [storesByCountry, setStoresByCountry] = useState<Record<string, StoreEntry[]>>(() => loadStores())
+export function StoreReference({ initialStores }: { initialStores: StoreReferenceEntry[] }) {
+  const [stores, setStores] = useState<StoreReferenceEntry[]>(initialStores)
   const [modalOpen, setModalOpen] = useState(false)
   const [activeCountry, setActiveCountry] = useState<string | null>(null)
   const [form, setForm] = useState<AddStoreForm>({ name: "", site: "", niche: "" })
   const [error, setError] = useState("")
+  const [isPending, startTransition] = useTransition()
 
   const openModal = (countryCode: string) => {
     setActiveCountry(countryCode)
@@ -115,29 +99,28 @@ export function StoreReference() {
       return
     }
     if (!activeCountry) return
-    const newStore: StoreEntry = {
-      id: `${Date.now()}`,
-      name: form.name.trim(),
-      site: form.site.trim().startsWith("http") ? form.site.trim() : `https://${form.site.trim()}`,
-      niche: form.niche,
-      country: activeCountry,
-    }
-    const updated = {
-      ...storesByCountry,
-      [activeCountry]: [...(storesByCountry[activeCountry] || []), newStore],
-    }
-    setStoresByCountry(updated)
-    saveStores(updated)
-    closeModal()
+
+    startTransition(async () => {
+      const result = await createStoreReference({
+        name: form.name,
+        site: form.site,
+        niche: form.niche,
+        country: activeCountry,
+      })
+      if (result.success && result.store) {
+        setStores((prev) => [...prev, result.store as StoreReferenceEntry])
+        closeModal()
+      } else {
+        setError(result.error || "Erro ao adicionar loja.")
+      }
+    })
   }
 
-  const handleRemove = (countryCode: string, storeId: string) => {
-    const updated = {
-      ...storesByCountry,
-      [countryCode]: (storesByCountry[countryCode] || []).filter((s) => s.id !== storeId),
-    }
-    setStoresByCountry(updated)
-    saveStores(updated)
+  const handleRemove = (storeId: number) => {
+    setStores((prev) => prev.filter((s) => s.id !== storeId))
+    startTransition(async () => {
+      await deleteStoreReference(storeId)
+    })
   }
 
   const activeCountryData = COUNTRIES.find((c) => c.code === activeCountry)
@@ -150,7 +133,7 @@ export function StoreReference() {
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {COUNTRIES.map((country) => {
-          const stores = storesByCountry[country.code] || []
+          const countryStores = stores.filter((s) => s.country === country.code)
           return (
             <Card key={country.code} className="bg-sidebar border-sidebar-border flex flex-col">
               <CardHeader className="pb-3 border-b border-sidebar-border">
@@ -158,16 +141,16 @@ export function StoreReference() {
                   <CountryFlag code={country.code} name={country.name} className="w-7 h-5" />
                   {country.name}
                   <span className="ml-auto text-xs font-normal text-muted-foreground bg-white/5 px-2 py-0.5 rounded-full">
-                    {stores.length} {stores.length === 1 ? "loja" : "lojas"}
+                    {countryStores.length} {countryStores.length === 1 ? "loja" : "lojas"}
                   </span>
                 </CardTitle>
               </CardHeader>
               <CardContent className="flex-1 pt-3 space-y-2">
-                {stores.length === 0 ? (
+                {countryStores.length === 0 ? (
                   <p className="text-xs text-muted-foreground/60 italic py-2">Nenhuma loja adicionada ainda.</p>
                 ) : (
                   <ul className="space-y-2">
-                    {stores.map((store) => (
+                    {countryStores.map((store) => (
                       <li key={store.id} className="flex items-start gap-2 bg-white/5 rounded-lg px-3 py-2 group">
                         <Store className="h-4 w-4 text-primary mt-0.5 shrink-0" />
                         <div className="flex-1 min-w-0">
@@ -184,7 +167,7 @@ export function StoreReference() {
                           </a>
                         </div>
                         <button
-                          onClick={() => handleRemove(country.code, store.id)}
+                          onClick={() => handleRemove(store.id)}
                           className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-red-400 p-0.5 rounded"
                           title="Remover"
                         >
@@ -269,14 +252,20 @@ export function StoreReference() {
                 variant="outline"
                 className="flex-1 border-sidebar-border text-muted-foreground hover:text-white hover:bg-white/5"
                 onClick={closeModal}
+                disabled={isPending}
               >
                 Cancelar
               </Button>
               <Button
                 className="flex-1 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-white shadow-lg shadow-primary/25"
                 onClick={handleAdd}
+                disabled={isPending}
               >
-                <Plus className="h-4 w-4 mr-1.5" />
+                {isPending ? (
+                  <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                ) : (
+                  <Plus className="h-4 w-4 mr-1.5" />
+                )}
                 Adicionar
               </Button>
             </div>
