@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useMemo, useState, useTransition } from "react"
+import { useState, useTransition } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -30,19 +30,6 @@ export function DemandasBoard({ initialDemandas, weekStart }: DemandasBoardProps
   const [newTitle, setNewTitle] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
-
-  // Datas de cada coluna a partir da segunda-feira (weekStart)
-  const dayDates = useMemo(() => {
-    const map: Record<number, Date> = {}
-    const [y, m, d] = weekStart.split("-").map(Number)
-    const monday = new Date(y, m - 1, d)
-    DAYS.forEach((day) => {
-      const date = new Date(monday)
-      date.setDate(monday.getDate() + (day.value - 1))
-      map[day.value] = date
-    })
-    return map
-  }, [weekStart])
 
   const totalCount = demandas.length
   const completedCount = demandas.filter((d) => d.completed).length
@@ -150,19 +137,12 @@ export function DemandasBoard({ initialDemandas, weekStart }: DemandasBoardProps
         {DAYS.map((day) => {
           const dayDemandas = demandas.filter((d) => d.day_of_week === day.value)
           const dayCompleted = dayDemandas.filter((d) => d.completed).length
-          const date = dayDates[day.value]
-          const dateLabel = date
-            ? date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })
-            : ""
 
           return (
             <div key={day.value} className="flex flex-col rounded-xl border border-border bg-card/50">
               {/* Cabeçalho da coluna */}
               <div className="flex items-center justify-between border-b border-border p-3">
-                <div>
-                  <p className="font-semibold text-foreground">{day.label}</p>
-                  <p className="text-xs text-muted-foreground">{dateLabel}</p>
-                </div>
+                <p className="font-semibold text-foreground">{day.label}</p>
                 <span
                   className={cn(
                     "rounded-full px-2 py-0.5 text-xs font-medium",
