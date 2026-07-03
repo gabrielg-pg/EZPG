@@ -2,7 +2,8 @@ import { requireAuth } from "@/lib/auth"
 export const dynamic = "force-dynamic"
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { DemandasBoard } from "@/components/demandas-board"
-import { createDemandasTable, getDemandas, getWeekStart } from "@/app/actions/demandas-actions"
+import { createDemandasTable, getDemandas } from "@/app/actions/demandas-actions"
+import { getWeekStart } from "@/lib/week"
 
 export default async function DemandasPage() {
   const user = await requireAuth()
