@@ -55,20 +55,8 @@ export function DemandasBoard({ initialDemandas, weekStart }: DemandasBoardProps
 
     startTransition(async () => {
       const result = await createDemanda({ title, dayOfWeek, weekStart })
-      if (result.success) {
-        setDemandas((prev) => [
-          ...prev,
-          {
-            id: Date.now(),
-            title,
-            day_of_week: dayOfWeek,
-            week_start: weekStart,
-            completed: false,
-            created_by: null,
-            created_by_name: null,
-            created_at: new Date().toISOString(),
-          },
-        ])
+      if (result.success && result.demanda) {
+        setDemandas((prev) => [...prev, result.demanda as Demanda])
         setNewTitle("")
         setAddingDay(null)
       } else {

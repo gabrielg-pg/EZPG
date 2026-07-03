@@ -47,7 +47,7 @@ export async function createDemanda(data: {
   title: string
   dayOfWeek: number
   weekStart: string
-}): Promise<{ success: boolean; error?: string }> {
+}): Promise<{ success: boolean; error?: string; demanda?: Demanda }> {
   const { user } = await getSession()
   if (!user) {
     return { success: false, error: "Não autenticado" }
@@ -58,12 +58,13 @@ export async function createDemanda(data: {
   }
 
   try {
-    await sql`
+    const rows = await sql`
       INSERT INTO pg_demandas (title, day_of_week, week_start, created_by, created_by_name)
       VALUES (${data.title.trim()}, ${data.dayOfWeek}, ${data.weekStart}, ${user.id}, ${user.name})
+      RETURNING id, title, day_of_week, week_start, completed, created_by, created_by_name, created_at
     `
     revalidatePath("/demandas")
-    return { success: true }
+    return { success: true, demanda: rows[0] as Demanda }
   } catch (error: unknown) {
     console.error("Create demanda error:", error)
     const errorMessage = error instanceof Error ? error.message : "Erro desconhecido"
