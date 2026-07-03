@@ -46,9 +46,9 @@ export function DemandasExtras() {
               <FolderOpen className="h-6 w-6" />
             </div>
             <div>
-              <p className="text-lg font-semibold text-foreground">Materiais e Referências</p>
+              <p className="text-lg font-semibold text-foreground">Drive Criativo Clientes</p>
               <p className="mt-1 text-sm text-muted-foreground">
-                Acesse os arquivos e referências gerais no Google Drive.
+                Esse é o drive para inserir os criativos de nossos clientes.
               </p>
             </div>
           </div>
