@@ -7,7 +7,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { LayoutDashboard, Users, LogOut, Menu, X, ChevronRight, Loader2, Contact, Wallet } from "lucide-react"
+import { Users, LogOut, Menu, X, ChevronRight, Loader2, Contact, Wallet, PiggyBank } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { logoutAction } from "@/app/actions/auth-actions"
 
@@ -22,9 +22,9 @@ export function DashboardLayout({ children, userRoles = ["user"] }: DashboardLay
   const pathname = usePathname()
 
   const navigation = [
-    { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["admin", "user"] },
-    { name: "CRM", href: "/crm", icon: Contact, roles: ["admin", "user"] },
     { name: "Financeiro", href: "/financeiro", icon: Wallet, roles: ["admin", "user"] },
+    { name: "Cofre", href: "/cofre", icon: PiggyBank, roles: ["admin", "user"] },
+    { name: "CRM", href: "/crm", icon: Contact, roles: ["admin", "user"] },
     { name: "Usuários", href: "/admin", icon: Users, roles: ["admin"] },
   ]
 
@@ -137,7 +137,7 @@ export function DashboardLayout({ children, userRoles = ["user"] }: DashboardLay
           <div className="flex items-center gap-3">
             <div className="h-8 w-1 rounded-full bg-gradient-to-b from-primary to-primary/50" />
             <h1 className="text-xl font-semibold text-foreground">
-              {filteredNavigation.find((item) => item.href === pathname)?.name || "Dashboard"}
+              {filteredNavigation.find((item) => item.href === pathname)?.name || "AEESJB"}
             </h1>
           </div>
         </header>

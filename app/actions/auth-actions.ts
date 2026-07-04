@@ -16,7 +16,7 @@ export async function loginAction(
   const result = await login(username, password)
 
   if (result.success) {
-    return { success: true, redirectTo: "/dashboard" }
+    return { success: true, redirectTo: "/financeiro" }
   }
 
   return result

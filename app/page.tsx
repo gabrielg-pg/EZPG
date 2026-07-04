@@ -5,7 +5,7 @@ export default async function HomePage() {
   const { user } = await getSession()
 
   if (user) {
-    redirect("/dashboard")
+    redirect("/financeiro")
   }
 
   redirect("/login")
