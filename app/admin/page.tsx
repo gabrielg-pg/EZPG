@@ -7,14 +7,9 @@ import { getUsers } from "@/app/actions/user-actions"
 
 export default async function AdminPage() {
   const user = await requireAdmin()
-  const users = await getUsers() as any[]
+  const users = (await getUsers()) as any[]
 
-  // ✅ roles sempre array (fallback pro role antigo)
-  const roles = Array.isArray((user as any).roles)
-    ? ((user as any).roles as string[])
-    : user.role
-      ? [String(user.role).toLowerCase()]
-      : []
+  const roles = [user.role?.toLowerCase() || "user"]
 
   return (
     <DashboardLayout userRoles={roles}>

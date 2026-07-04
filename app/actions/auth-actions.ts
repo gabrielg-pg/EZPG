@@ -4,8 +4,10 @@ import { login, logout, createUser, getSession, initializeAdminUser } from "@/li
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 
-export async function loginAction(formData: FormData): Promise<{ success: boolean; error?: string; redirectTo?: string }> {
-  // Initialize admin user if not exists
+export async function loginAction(
+  formData: FormData,
+): Promise<{ success: boolean; error?: string; redirectTo?: string }> {
+  // Garante que o admin AEESJB exista
   await initializeAdminUser()
 
   const username = formData.get("username") as string
@@ -14,18 +16,7 @@ export async function loginAction(formData: FormData): Promise<{ success: boolea
   const result = await login(username, password)
 
   if (result.success) {
-    // Get user session to determine redirect
-    const { user } = await getSession()
-    const role = user?.role?.toLowerCase() || ""
-    
-    let redirectTo = "/dashboard"
-    if (role === "comercial") {
-      redirectTo = "/reunioes"
-    } else if (role !== "admin") {
-      redirectTo = "/zona-de-execucao"
-    }
-    
-    return { success: true, redirectTo }
+    return { success: true, redirectTo: "/dashboard" }
   }
 
   return result
@@ -41,16 +32,14 @@ export async function createUserAction(data: {
   email: string
   password: string
   name: string
-  role: string[]
+  role: string
 }) {
   const { user } = await getSession()
-  if (!user || !user.role.includes("admin")) {
+  if (!user || user.role !== "admin") {
     return { success: false, error: "Não autorizado" }
   }
 
-  // Use primary role for legacy field
-  const primaryRole = data.role[0] || "user"
-  const result = await createUser({ ...data, role: primaryRole })
+  const result = await createUser({ ...data, role: data.role || "user" })
   if (result.success) {
     revalidatePath("/admin")
   }

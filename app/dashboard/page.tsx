@@ -1,33 +1,29 @@
-import { requireAuth } from "@/lib/auth"
-import { redirect } from "next/navigation"
 export const dynamic = "force-dynamic"
+
+import { requireAuth } from "@/lib/auth"
 import { DashboardLayout } from "@/components/dashboard-layout"
-import { StoreCards } from "@/components/store-cards"
-import { getStores } from "@/app/actions/store-actions"
-import type { StoreData } from "@/types/store"
+import { DashboardOverview } from "@/components/dashboard-overview"
+import { getContacts, getStages } from "@/app/actions/crm-actions"
+import { getFinanceSummary } from "@/app/actions/finance-actions"
 
 export default async function DashboardPage() {
   const user = await requireAuth()
+  const roles = [user.role?.toLowerCase() || "user"]
 
-  // Normaliza a role do usuário
-  const userRole = user.role?.toLowerCase() || ""
-  const roles = [userRole]
-
-  // Comercial vai para reuniões
-  if (userRole === "comercial") {
-    redirect("/reunioes")
-  }
-
-  // Somente admin acessa o dashboard
-  if (userRole !== "admin" && userRole !== "zona_execucao") {
-    redirect("/zona-de-execucao")
-  }
-
-  const stores = (await getStores()) as StoreData[]
+  const [contacts, stages, summary] = await Promise.all([
+    getContacts(),
+    getStages(),
+    getFinanceSummary(),
+  ])
 
   return (
     <DashboardLayout userRoles={roles}>
-      <StoreCards initialStores={stores} />
+      <DashboardOverview
+        userName={user.name}
+        contacts={contacts}
+        stages={stages}
+        summary={summary}
+      />
     </DashboardLayout>
   )
 }

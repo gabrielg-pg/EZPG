@@ -166,13 +166,7 @@ export async function requireAdmin() {
   return user
 }
 
-export async function requireComercialOrAdmin() {
-  const user = await requireAuth()
-  if (user.role !== "admin" && user.role !== "comercial") {
-    redirect("/dashboard")
-  }
-  return user
-}
+
 
 export async function createUser(data: {
   username: string
@@ -199,22 +193,9 @@ export async function createUser(data: {
   }
 }
 
-// Initialize admin user
+// Initialize admin user (AEESJB)
 export async function initializeAdminUser(): Promise<void> {
   try {
-    const gabrielExists = await sql`SELECT id FROM users WHERE username = 'GabrielPG' LIMIT 1`
-
-    if (gabrielExists.length === 0) {
-      const passwordHash = await hashPassword("Gab211223@")
-
-      await sql`
-        INSERT INTO users (username, email, password_hash, name, role, status)
-        VALUES ('GabrielPG', 'gabriel@progrowth.com', ${passwordHash}, 'Gabriel', 'admin', 'ativo')
-        ON CONFLICT (username) DO NOTHING
-      `
-    }
-
-    // AEESJB admin (Alisson)
     const alissonExists = await sql`
       SELECT id FROM users WHERE username = 'AlissonAEESJB' OR email = 'alissonjordiw@gmail.com' LIMIT 1
     `
@@ -228,8 +209,6 @@ export async function initializeAdminUser(): Promise<void> {
         ON CONFLICT (username) DO NOTHING
       `
     }
-
-    await sql`DELETE FROM users WHERE username = 'admin'`
   } catch (error) {
     console.error("Initialize admin error:", error)
   }
