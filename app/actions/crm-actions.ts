@@ -14,15 +14,26 @@ export type CrmStage = {
 export type CrmContact = {
   id: number
   name: string
-  company: string | null
   email: string | null
   phone: string | null
   stage_id: number | null
-  value: number
+  interest_reason: string | null
   notes: string | null
-  owner_id: number | null
+  responsible: string | null
+  form_submitted_at: string | null
   created_at: string
   updated_at: string
+}
+
+type ContactInput = {
+  name: string
+  email?: string
+  phone?: string
+  stage_id: number
+  interest_reason?: string
+  notes?: string
+  responsible?: string
+  form_submitted_at?: string
 }
 
 export async function getStages(): Promise<CrmStage[]> {
@@ -38,40 +49,34 @@ export async function getContacts(): Promise<CrmContact[]> {
   const { user } = await getSession()
   if (!user) return []
   const rows = await sql`
-    SELECT id, name, company, email, phone, stage_id, value, notes, owner_id, created_at, updated_at
+    SELECT id, name, email, phone, stage_id, interest_reason, notes, responsible,
+           form_submitted_at, created_at, updated_at
     FROM crm_contacts
     ORDER BY created_at DESC
   `
   return rows as CrmContact[]
 }
 
-export async function createContact(data: {
-  name: string
-  company?: string
-  email?: string
-  phone?: string
-  stage_id: number
-  value?: number
-  notes?: string
-}) {
+export async function createContact(data: ContactInput) {
   const { user } = await getSession()
   if (!user) return { success: false, error: "Não autorizado" }
 
   if (!data.name?.trim()) {
-    return { success: false, error: "Informe o nome do contato" }
+    return { success: false, error: "Informe o nome do candidato" }
   }
 
   try {
     await sql`
-      INSERT INTO crm_contacts (name, company, email, phone, stage_id, value, notes, owner_id)
+      INSERT INTO crm_contacts (name, email, phone, stage_id, interest_reason, notes, responsible, form_submitted_at, owner_id)
       VALUES (
         ${data.name.trim()},
-        ${data.company || null},
         ${data.email || null},
         ${data.phone || null},
         ${data.stage_id},
-        ${data.value ?? 0},
+        ${data.interest_reason || null},
         ${data.notes || null},
+        ${data.responsible || null},
+        ${data.form_submitted_at || null},
         ${user.id}
       )
     `
@@ -79,22 +84,11 @@ export async function createContact(data: {
     return { success: true }
   } catch (error) {
     console.error("Create contact error:", error)
-    return { success: false, error: "Erro ao criar contato" }
+    return { success: false, error: "Erro ao criar candidato" }
   }
 }
 
-export async function updateContact(
-  id: number,
-  data: {
-    name: string
-    company?: string
-    email?: string
-    phone?: string
-    stage_id: number
-    value?: number
-    notes?: string
-  },
-) {
+export async function updateContact(id: number, data: ContactInput) {
   const { user } = await getSession()
   if (!user) return { success: false, error: "Não autorizado" }
 
@@ -102,12 +96,13 @@ export async function updateContact(
     await sql`
       UPDATE crm_contacts
       SET name = ${data.name.trim()},
-          company = ${data.company || null},
           email = ${data.email || null},
           phone = ${data.phone || null},
           stage_id = ${data.stage_id},
-          value = ${data.value ?? 0},
+          interest_reason = ${data.interest_reason || null},
           notes = ${data.notes || null},
+          responsible = ${data.responsible || null},
+          form_submitted_at = ${data.form_submitted_at || null},
           updated_at = NOW()
       WHERE id = ${id}
     `
@@ -115,7 +110,7 @@ export async function updateContact(
     return { success: true }
   } catch (error) {
     console.error("Update contact error:", error)
-    return { success: false, error: "Erro ao atualizar contato" }
+    return { success: false, error: "Erro ao atualizar candidato" }
   }
 }
 
@@ -131,7 +126,7 @@ export async function moveContact(id: number, stageId: number) {
     return { success: true }
   } catch (error) {
     console.error("Move contact error:", error)
-    return { success: false, error: "Erro ao mover contato" }
+    return { success: false, error: "Erro ao mover candidato" }
   }
 }
 
@@ -145,6 +140,6 @@ export async function deleteContact(id: number) {
     return { success: true }
   } catch (error) {
     console.error("Delete contact error:", error)
-    return { success: false, error: "Erro ao excluir contato" }
+    return { success: false, error: "Erro ao excluir candidato" }
   }
 }

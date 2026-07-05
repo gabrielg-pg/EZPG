@@ -30,9 +30,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Plus, Building2, Mail, Phone, Pencil, Trash2, GripVertical } from "lucide-react"
+import { Plus, Mail, Phone, Pencil, Trash2, GripVertical, CalendarDays, UserCog, MessageSquareText } from "lucide-react"
 import { toast } from "sonner"
-import { formatCurrency } from "@/lib/format"
+import { formatDateBR } from "@/lib/date"
 import {
   createContact,
   updateContact,
@@ -49,23 +49,29 @@ interface CrmBoardProps {
 
 type FormState = {
   name: string
-  company: string
   email: string
   phone: string
   stage_id: number
-  value: string
+  interest_reason: string
   notes: string
+  responsible: string
+  form_submitted_at: string
+}
+
+function todayISO() {
+  return new Date().toISOString().slice(0, 10)
 }
 
 function emptyForm(stageId: number): FormState {
   return {
     name: "",
-    company: "",
     email: "",
     phone: "",
     stage_id: stageId,
-    value: "",
+    interest_reason: "",
     notes: "",
+    responsible: "",
+    form_submitted_at: todayISO(),
   }
 }
 
@@ -98,25 +104,33 @@ export function CrmBoard({ initialContacts, stages }: CrmBoardProps) {
     setEditingId(contact.id)
     setForm({
       name: contact.name,
-      company: contact.company ?? "",
       email: contact.email ?? "",
       phone: contact.phone ?? "",
       stage_id: contact.stage_id ?? stages[0]?.id ?? 0,
-      value: contact.value ? String(contact.value) : "",
+      interest_reason: contact.interest_reason ?? "",
       notes: contact.notes ?? "",
+      responsible: contact.responsible ?? "",
+      form_submitted_at: contact.form_submitted_at
+        ? contact.form_submitted_at.slice(0, 10)
+        : todayISO(),
     })
     setDialogOpen(true)
   }
 
   const handleSubmit = () => {
+    if (!form.name.trim()) {
+      toast.error("Informe o nome completo do candidato")
+      return
+    }
     const payload = {
       name: form.name,
-      company: form.company,
       email: form.email,
       phone: form.phone,
       stage_id: form.stage_id,
-      value: form.value ? Number(form.value) : 0,
+      interest_reason: form.interest_reason,
       notes: form.notes,
+      responsible: form.responsible,
+      form_submitted_at: form.form_submitted_at || undefined,
     }
 
     startTransition(async () => {
@@ -132,20 +146,32 @@ export function CrmBoard({ initialContacts, stages }: CrmBoardProps) {
       if (editingId) {
         setContacts((prev) =>
           prev.map((c) =>
-            c.id === editingId ? { ...c, ...payload, value: payload.value } : c,
+            c.id === editingId
+              ? {
+                  ...c,
+                  ...payload,
+                  email: payload.email || null,
+                  phone: payload.phone || null,
+                  interest_reason: payload.interest_reason || null,
+                  notes: payload.notes || null,
+                  responsible: payload.responsible || null,
+                  form_submitted_at: payload.form_submitted_at ?? null,
+                }
+              : c,
           ),
         )
       } else {
-        // recarrega otimisticamente com id temporário; refresh do server virá via revalidate
         setContacts((prev) => [
           {
             id: Math.max(0, ...prev.map((p) => p.id)) + 1,
-            ...payload,
-            company: payload.company || null,
+            name: payload.name,
+            stage_id: payload.stage_id,
             email: payload.email || null,
             phone: payload.phone || null,
+            interest_reason: payload.interest_reason || null,
             notes: payload.notes || null,
-            owner_id: null,
+            responsible: payload.responsible || null,
+            form_submitted_at: payload.form_submitted_at ?? null,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           },
@@ -153,7 +179,7 @@ export function CrmBoard({ initialContacts, stages }: CrmBoardProps) {
         ])
       }
 
-      toast.success(editingId ? "Contato atualizado" : "Contato criado")
+      toast.success(editingId ? "Candidato atualizado" : "Candidato adicionado")
       setDialogOpen(false)
     })
   }
@@ -168,7 +194,7 @@ export function CrmBoard({ initialContacts, stages }: CrmBoardProps) {
         return
       }
       setContacts((prev) => prev.filter((c) => c.id !== id))
-      toast.success("Contato excluído")
+      toast.success("Candidato excluído")
       setDeleteTarget(null)
     })
   }
@@ -187,7 +213,7 @@ export function CrmBoard({ initialContacts, stages }: CrmBoardProps) {
     startTransition(async () => {
       const result = await moveContact(id, stageId)
       if (!result.success) {
-        toast.error(result.error ?? "Erro ao mover contato")
+        toast.error(result.error ?? "Erro ao mover candidato")
       }
     })
   }
@@ -196,21 +222,20 @@ export function CrmBoard({ initialContacts, stages }: CrmBoardProps) {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">CRM</h2>
+          <h2 className="text-2xl font-bold text-foreground">CRM de Parceiros</h2>
           <p className="text-muted-foreground mt-1">
-            Gerencie seus contatos e acompanhe o funil de vendas.
+            Acompanhe o funil de recrutamento, do formulário de interesse até o parceiro ativo.
           </p>
         </div>
         <Button onClick={() => openCreate(stages[0]?.id ?? 0)} className="gap-2">
           <Plus className="h-4 w-4" />
-          Novo contato
+          Novo candidato
         </Button>
       </div>
 
       <div className="flex gap-4 overflow-x-auto pb-4">
         {stages.map((stage) => {
           const stageContacts = contactsByStage[stage.id] ?? []
-          const total = stageContacts.reduce((acc, c) => acc + Number(c.value || 0), 0)
           const isOver = dragOverStage === stage.id
           return (
             <div
@@ -237,18 +262,13 @@ export function CrmBoard({ initialContacts, stages }: CrmBoardProps) {
                 <button
                   onClick={() => openCreate(stage.id)}
                   className="text-muted-foreground hover:text-foreground transition-colors"
-                  aria-label={`Adicionar contato em ${stage.name}`}
+                  aria-label={`Adicionar candidato em ${stage.name}`}
                 >
                   <Plus className="h-4 w-4" />
                 </button>
               </div>
 
               <div className="p-3 space-y-3 min-h-[120px]">
-                {total > 0 && (
-                  <p className="text-xs text-muted-foreground px-1">
-                    Total: <span className="text-foreground font-medium">{formatCurrency(total)}</span>
-                  </p>
-                )}
                 {stageContacts.map((contact) => (
                   <Card
                     key={contact.id}
@@ -268,10 +288,10 @@ export function CrmBoard({ initialContacts, stages }: CrmBoardProps) {
                             <p className="font-medium text-foreground text-sm truncate">
                               {contact.name}
                             </p>
-                            {contact.company && (
+                            {contact.form_submitted_at && (
                               <p className="text-xs text-muted-foreground flex items-center gap-1 truncate">
-                                <Building2 className="h-3 w-3 shrink-0" />
-                                {contact.company}
+                                <CalendarDays className="h-3 w-3 shrink-0" />
+                                {formatDateBR(contact.form_submitted_at)}
                               </p>
                             )}
                           </div>
@@ -280,42 +300,46 @@ export function CrmBoard({ initialContacts, stages }: CrmBoardProps) {
                           <button
                             onClick={() => openEdit(contact)}
                             className="text-muted-foreground hover:text-foreground p-1"
-                            aria-label="Editar contato"
+                            aria-label="Editar candidato"
                           >
                             <Pencil className="h-3.5 w-3.5" />
                           </button>
                           <button
                             onClick={() => setDeleteTarget(contact)}
                             className="text-muted-foreground hover:text-destructive p-1"
-                            aria-label="Excluir contato"
+                            aria-label="Excluir candidato"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>
                         </div>
                       </div>
 
-                      {(contact.email || contact.phone) && (
-                        <div className="mt-2 space-y-1 pl-6">
-                          {contact.email && (
-                            <p className="text-xs text-muted-foreground flex items-center gap-1 truncate">
-                              <Mail className="h-3 w-3 shrink-0" />
-                              {contact.email}
-                            </p>
-                          )}
-                          {contact.phone && (
-                            <p className="text-xs text-muted-foreground flex items-center gap-1 truncate">
-                              <Phone className="h-3 w-3 shrink-0" />
-                              {contact.phone}
-                            </p>
-                          )}
-                        </div>
-                      )}
-
-                      {Number(contact.value) > 0 && (
-                        <p className="mt-2 pl-6 text-sm font-semibold text-primary">
-                          {formatCurrency(contact.value)}
-                        </p>
-                      )}
+                      <div className="mt-2 space-y-1 pl-6">
+                        {contact.email && (
+                          <p className="text-xs text-muted-foreground flex items-center gap-1 truncate">
+                            <Mail className="h-3 w-3 shrink-0" />
+                            {contact.email}
+                          </p>
+                        )}
+                        {contact.phone && (
+                          <p className="text-xs text-muted-foreground flex items-center gap-1 truncate">
+                            <Phone className="h-3 w-3 shrink-0" />
+                            {contact.phone}
+                          </p>
+                        )}
+                        {contact.interest_reason && (
+                          <p className="text-xs text-muted-foreground flex items-start gap-1">
+                            <MessageSquareText className="h-3 w-3 shrink-0 mt-0.5" />
+                            <span className="line-clamp-2">{contact.interest_reason}</span>
+                          </p>
+                        )}
+                        {contact.responsible && (
+                          <p className="text-xs flex items-center gap-1 truncate text-primary">
+                            <UserCog className="h-3 w-3 shrink-0" />
+                            {contact.responsible}
+                          </p>
+                        )}
+                      </div>
                     </CardContent>
                   </Card>
                 ))}
@@ -327,37 +351,18 @@ export function CrmBoard({ initialContacts, stages }: CrmBoardProps) {
 
       {/* Dialog criar/editar */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editingId ? "Editar contato" : "Novo contato"}</DialogTitle>
+            <DialogTitle>{editingId ? "Editar candidato" : "Novo candidato"}</DialogTitle>
           </DialogHeader>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-2">
             <div className="sm:col-span-2 space-y-2">
-              <Label htmlFor="name">Nome *</Label>
+              <Label htmlFor="name">Nome completo *</Label>
               <Input
                 id="name"
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
-                placeholder="Nome do contato"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="company">Empresa</Label>
-              <Input
-                id="company"
-                value={form.company}
-                onChange={(e) => setForm({ ...form, company: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="value">Valor (R$)</Label>
-              <Input
-                id="value"
-                type="number"
-                min="0"
-                step="0.01"
-                value={form.value}
-                onChange={(e) => setForm({ ...form, value: e.target.value })}
+                placeholder="Nome completo do candidato"
               />
             </div>
             <div className="space-y-2">
@@ -370,21 +375,39 @@ export function CrmBoard({ initialContacts, stages }: CrmBoardProps) {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="phone">Telefone</Label>
+              <Label htmlFor="phone">Telefone / WhatsApp</Label>
               <Input
                 id="phone"
                 value={form.phone}
                 onChange={(e) => setForm({ ...form, phone: e.target.value })}
               />
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="form_date">Data de envio do formulário</Label>
+              <Input
+                id="form_date"
+                type="date"
+                value={form.form_submitted_at}
+                onChange={(e) => setForm({ ...form, form_submitted_at: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="responsible">Responsável</Label>
+              <Input
+                id="responsible"
+                value={form.responsible}
+                onChange={(e) => setForm({ ...form, responsible: e.target.value })}
+                placeholder="Quem está cuidando"
+              />
+            </div>
             <div className="sm:col-span-2 space-y-2">
-              <Label htmlFor="stage">Estágio</Label>
+              <Label htmlFor="stage">Etapa do funil</Label>
               <Select
                 value={String(form.stage_id)}
                 onValueChange={(v) => setForm({ ...form, stage_id: Number(v) })}
               >
                 <SelectTrigger id="stage">
-                  <SelectValue placeholder="Selecione o estágio" />
+                  <SelectValue placeholder="Selecione a etapa" />
                 </SelectTrigger>
                 <SelectContent>
                   {stages.map((s) => (
@@ -396,12 +419,23 @@ export function CrmBoard({ initialContacts, stages }: CrmBoardProps) {
               </Select>
             </div>
             <div className="sm:col-span-2 space-y-2">
-              <Label htmlFor="notes">Observações</Label>
+              <Label htmlFor="interest">Motivo de interesse em ser parceiro</Label>
+              <Textarea
+                id="interest"
+                value={form.interest_reason}
+                onChange={(e) => setForm({ ...form, interest_reason: e.target.value })}
+                rows={3}
+                placeholder="Texto informado no formulário do site"
+              />
+            </div>
+            <div className="sm:col-span-2 space-y-2">
+              <Label htmlFor="notes">Notas internas</Label>
               <Textarea
                 id="notes"
                 value={form.notes}
                 onChange={(e) => setForm({ ...form, notes: e.target.value })}
                 rows={3}
+                placeholder="Observações da equipe durante a avaliação"
               />
             </div>
           </div>
@@ -420,9 +454,9 @@ export function CrmBoard({ initialContacts, stages }: CrmBoardProps) {
       <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Excluir contato?</AlertDialogTitle>
+            <AlertDialogTitle>Excluir candidato?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta ação não pode ser desfeita. O contato &quot;{deleteTarget?.name}&quot; será
+              Esta ação não pode ser desfeita. O candidato &quot;{deleteTarget?.name}&quot; será
               removido permanentemente.
             </AlertDialogDescription>
           </AlertDialogHeader>
