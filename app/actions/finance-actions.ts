@@ -1,144 +1,270 @@
 "use server"
 
 import { sql } from "@/lib/db"
-import { getSession } from "@/lib/auth"
+import { requireAuth } from "@/lib/auth"
 import { revalidatePath } from "next/cache"
 
-export type FinanceTransaction = {
+export type Revenue = {
   id: number
-  type: "receita" | "despesa"
+  year: number
+  month: number
+  method: string | null
+  occurred_on: string | null
+  name: string
+  plan: string | null
+  operation: string | null
+  amount: number
+}
+
+export type Expense = {
+  id: number
+  year: number
+  month: number
+  method: string | null
+  occurred_on: string | null
   description: string
   category: string | null
   amount: number
-  status: string
-  due_date: string | null
-  occurred_on: string
-  created_by: number | null
-  created_at: string
 }
 
-export type FinanceSummary = {
-  totalReceitas: number
-  totalDespesas: number
-  saldo: number
-  monthly: { month: string; receitas: number; despesas: number }[]
-  byCategory: { category: string; total: number }[]
+export type Collaborator = {
+  id: number
+  name: string
+  area: string | null
+  contact: string | null
 }
 
-export async function getTransactions(): Promise<FinanceTransaction[]> {
-  const { user } = await getSession()
-  if (!user) return []
-  const rows = await sql`
-    SELECT id, type, description, category, amount, status, due_date, occurred_on, created_by, created_at
-    FROM finance_transactions
-    ORDER BY occurred_on DESC, id DESC
-  `
-  return rows.map((r: any) => ({ ...r, amount: Number(r.amount) })) as FinanceTransaction[]
+export type Payment = {
+  id: number
+  collaborator_id: number
+  year: number
+  month: number
+  description: string | null
+  amount: number
+  paid_on: string | null
 }
 
-export async function getFinanceSummary(): Promise<FinanceSummary> {
-  const { user } = await getSession()
-  if (!user) {
-    return { totalReceitas: 0, totalDespesas: 0, saldo: 0, monthly: [], byCategory: [] }
-  }
+export type FinanceData = {
+  revenues: Revenue[]
+  expenses: Expense[]
+  collaborators: Collaborator[]
+  payments: Payment[]
+  yearTotals: { month: number; total: number }[]
+}
 
-  const totals = await sql`
-    SELECT
-      COALESCE(SUM(amount) FILTER (WHERE type = 'receita'), 0) AS receitas,
-      COALESCE(SUM(amount) FILTER (WHERE type = 'despesa'), 0) AS despesas
-    FROM finance_transactions
-  `
+function num(v: unknown): number {
+  return Number(v ?? 0)
+}
 
-  const monthlyRows = await sql`
-    SELECT
-      to_char(date_trunc('month', occurred_on), 'YYYY-MM') AS month,
-      COALESCE(SUM(amount) FILTER (WHERE type = 'receita'), 0) AS receitas,
-      COALESCE(SUM(amount) FILTER (WHERE type = 'despesa'), 0) AS despesas
-    FROM finance_transactions
-    WHERE occurred_on >= (CURRENT_DATE - INTERVAL '5 months')
-    GROUP BY 1
-    ORDER BY 1 ASC
-  `
+export async function getFinanceData(year: number, month: number): Promise<FinanceData> {
+  await requireAuth()
 
-  const categoryRows = await sql`
-    SELECT COALESCE(category, 'Sem categoria') AS category, COALESCE(SUM(amount), 0) AS total
-    FROM finance_transactions
-    WHERE type = 'despesa'
-    GROUP BY 1
-    ORDER BY total DESC
-    LIMIT 6
-  `
-
-  const totalReceitas = Number(totals[0]?.receitas ?? 0)
-  const totalDespesas = Number(totals[0]?.despesas ?? 0)
+  const [revenues, expenses, collaborators, payments, yearTotals] = await Promise.all([
+    sql`
+      SELECT id, year, month, method, occurred_on, name, plan, operation, amount
+      FROM finance_revenues
+      WHERE year = ${year} AND month = ${month}
+      ORDER BY occurred_on ASC NULLS LAST, id ASC
+    `,
+    sql`
+      SELECT id, year, month, method, occurred_on, description, category, amount
+      FROM finance_expenses
+      WHERE year = ${year} AND month = ${month}
+      ORDER BY occurred_on ASC NULLS LAST, id ASC
+    `,
+    sql`
+      SELECT id, name, area, contact
+      FROM finance_collaborators
+      ORDER BY name ASC
+    `,
+    sql`
+      SELECT id, collaborator_id, year, month, description, amount, paid_on
+      FROM finance_payments
+      WHERE year = ${year} AND month = ${month}
+      ORDER BY id ASC
+    `,
+    sql`
+      SELECT m.month, COALESCE(r.rev, 0) - COALESCE(e.exp, 0) - COALESCE(p.pay, 0) AS total
+      FROM generate_series(1, 12) AS m(month)
+      LEFT JOIN (
+        SELECT month, SUM(amount) AS rev FROM finance_revenues WHERE year = ${year} GROUP BY month
+      ) r ON r.month = m.month
+      LEFT JOIN (
+        SELECT month, SUM(amount) AS exp FROM finance_expenses WHERE year = ${year} GROUP BY month
+      ) e ON e.month = m.month
+      LEFT JOIN (
+        SELECT month, SUM(amount) AS pay FROM finance_payments WHERE year = ${year} GROUP BY month
+      ) p ON p.month = m.month
+      ORDER BY m.month ASC
+    `,
+  ])
 
   return {
-    totalReceitas,
-    totalDespesas,
-    saldo: totalReceitas - totalDespesas,
-    monthly: monthlyRows.map((r: any) => ({
-      month: r.month,
-      receitas: Number(r.receitas),
-      despesas: Number(r.despesas),
-    })),
-    byCategory: categoryRows.map((r: any) => ({
-      category: r.category,
-      total: Number(r.total),
-    })),
+    revenues: revenues.map((r: any) => ({ ...r, amount: num(r.amount) })) as Revenue[],
+    expenses: expenses.map((e: any) => ({ ...e, amount: num(e.amount) })) as Expense[],
+    collaborators: collaborators as Collaborator[],
+    payments: payments.map((p: any) => ({ ...p, amount: num(p.amount) })) as Payment[],
+    yearTotals: yearTotals.map((t: any) => ({ month: Number(t.month), total: num(t.total) })),
   }
 }
 
-export async function createTransaction(data: {
-  type: "receita" | "despesa"
+/* -------------------- Receitas -------------------- */
+
+export async function createRevenue(data: {
+  year: number
+  month: number
+  method?: string
+  occurred_on?: string
+  name: string
+  plan?: string
+  operation?: string
+  amount: number
+}) {
+  const user = await requireAuth()
+  if (!data.name?.trim()) return { success: false as const, error: "Informe o nome" }
+  try {
+    const rows = await sql`
+      INSERT INTO finance_revenues (year, month, method, occurred_on, name, plan, operation, amount, created_by)
+      VALUES (
+        ${data.year}, ${data.month}, ${data.method?.trim() || null},
+        ${data.occurred_on || null}, ${data.name.trim()},
+        ${data.plan?.trim() || null}, ${data.operation?.trim() || null},
+        ${data.amount || 0}, ${user.id}
+      )
+      RETURNING id, year, month, method, occurred_on, name, plan, operation, amount
+    `
+    revalidatePath("/financeiro")
+    return { success: true as const, revenue: { ...rows[0], amount: num(rows[0].amount) } as Revenue }
+  } catch (error) {
+    console.error("createRevenue error:", error)
+    return { success: false as const, error: "Erro ao salvar receita" }
+  }
+}
+
+export async function deleteRevenue(id: number) {
+  await requireAuth()
+  try {
+    await sql`DELETE FROM finance_revenues WHERE id = ${id}`
+    revalidatePath("/financeiro")
+    return { success: true as const }
+  } catch (error) {
+    console.error("deleteRevenue error:", error)
+    return { success: false as const, error: "Erro ao excluir receita" }
+  }
+}
+
+/* -------------------- Despesas -------------------- */
+
+export async function createExpense(data: {
+  year: number
+  month: number
+  method?: string
+  occurred_on?: string
   description: string
   category?: string
   amount: number
-  status?: string
-  occurred_on?: string
-  due_date?: string
 }) {
-  const { user } = await getSession()
-  if (!user) return { success: false, error: "Não autorizado" }
-
-  if (!data.description?.trim()) {
-    return { success: false, error: "Informe a descrição" }
-  }
-  if (!data.amount || data.amount <= 0) {
-    return { success: false, error: "Informe um valor válido" }
-  }
-
+  const user = await requireAuth()
+  if (!data.description?.trim()) return { success: false as const, error: "Informe a descrição" }
   try {
-    await sql`
-      INSERT INTO finance_transactions (type, description, category, amount, status, occurred_on, due_date, created_by)
+    const rows = await sql`
+      INSERT INTO finance_expenses (year, month, method, occurred_on, description, category, amount, created_by)
       VALUES (
-        ${data.type},
-        ${data.description.trim()},
-        ${data.category || null},
-        ${data.amount},
-        ${data.status || "pago"},
-        ${data.occurred_on || new Date().toISOString().slice(0, 10)},
-        ${data.due_date || null},
-        ${user.id}
+        ${data.year}, ${data.month}, ${data.method?.trim() || null},
+        ${data.occurred_on || null}, ${data.description.trim()},
+        ${data.category?.trim() || null}, ${data.amount || 0}, ${user.id}
       )
+      RETURNING id, year, month, method, occurred_on, description, category, amount
     `
     revalidatePath("/financeiro")
-    return { success: true }
+    return { success: true as const, expense: { ...rows[0], amount: num(rows[0].amount) } as Expense }
   } catch (error) {
-    console.error("Create transaction error:", error)
-    return { success: false, error: "Erro ao criar lançamento" }
+    console.error("createExpense error:", error)
+    return { success: false as const, error: "Erro ao salvar despesa" }
   }
 }
 
-export async function deleteTransaction(id: number) {
-  const { user } = await getSession()
-  if (!user) return { success: false, error: "Não autorizado" }
-
+export async function deleteExpense(id: number) {
+  await requireAuth()
   try {
-    await sql`DELETE FROM finance_transactions WHERE id = ${id}`
+    await sql`DELETE FROM finance_expenses WHERE id = ${id}`
     revalidatePath("/financeiro")
-    return { success: true }
+    return { success: true as const }
   } catch (error) {
-    console.error("Delete transaction error:", error)
-    return { success: false, error: "Erro ao excluir lançamento" }
+    console.error("deleteExpense error:", error)
+    return { success: false as const, error: "Erro ao excluir despesa" }
+  }
+}
+
+/* -------------------- Colaboradores -------------------- */
+
+export async function createCollaborator(data: { name: string; area?: string; contact?: string }) {
+  const user = await requireAuth()
+  if (!data.name?.trim()) return { success: false as const, error: "Informe o nome" }
+  try {
+    const rows = await sql`
+      INSERT INTO finance_collaborators (name, area, contact, created_by)
+      VALUES (${data.name.trim()}, ${data.area?.trim() || null}, ${data.contact?.trim() || null}, ${user.id})
+      RETURNING id, name, area, contact
+    `
+    revalidatePath("/financeiro")
+    return { success: true as const, collaborator: rows[0] as Collaborator }
+  } catch (error) {
+    console.error("createCollaborator error:", error)
+    return { success: false as const, error: "Erro ao salvar colaborador" }
+  }
+}
+
+export async function deleteCollaborator(id: number) {
+  await requireAuth()
+  try {
+    await sql`DELETE FROM finance_payments WHERE collaborator_id = ${id}`
+    await sql`DELETE FROM finance_collaborators WHERE id = ${id}`
+    revalidatePath("/financeiro")
+    return { success: true as const }
+  } catch (error) {
+    console.error("deleteCollaborator error:", error)
+    return { success: false as const, error: "Erro ao excluir colaborador" }
+  }
+}
+
+/* -------------------- Pagamentos -------------------- */
+
+export async function createPayment(data: {
+  collaborator_id: number
+  year: number
+  month: number
+  description?: string
+  amount: number
+  paid_on?: string
+}) {
+  const user = await requireAuth()
+  if (!data.amount || data.amount <= 0) return { success: false as const, error: "Informe um valor válido" }
+  try {
+    const rows = await sql`
+      INSERT INTO finance_payments (collaborator_id, year, month, description, amount, paid_on, created_by)
+      VALUES (
+        ${data.collaborator_id}, ${data.year}, ${data.month},
+        ${data.description?.trim() || null}, ${data.amount}, ${data.paid_on || null}, ${user.id}
+      )
+      RETURNING id, collaborator_id, year, month, description, amount, paid_on
+    `
+    revalidatePath("/financeiro")
+    return { success: true as const, payment: { ...rows[0], amount: num(rows[0].amount) } as Payment }
+  } catch (error) {
+    console.error("createPayment error:", error)
+    return { success: false as const, error: "Erro ao registrar pagamento" }
+  }
+}
+
+export async function deletePayment(id: number) {
+  await requireAuth()
+  try {
+    await sql`DELETE FROM finance_payments WHERE id = ${id}`
+    revalidatePath("/financeiro")
+    return { success: true as const }
+  } catch (error) {
+    console.error("deletePayment error:", error)
+    return { success: false as const, error: "Erro ao excluir pagamento" }
   }
 }
