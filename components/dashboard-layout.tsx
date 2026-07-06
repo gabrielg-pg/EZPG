@@ -7,7 +7,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Users, LogOut, Menu, X, ChevronRight, Loader2, Contact, Wallet, PiggyBank } from "lucide-react"
+import { Users, LogOut, Menu, X, ChevronRight, Loader2, Contact, Wallet, PiggyBank, BookOpen } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { logoutAction } from "@/app/actions/auth-actions"
 
@@ -25,6 +25,7 @@ export function DashboardLayout({ children, userRoles = ["user"] }: DashboardLay
     { name: "Financeiro", href: "/financeiro", icon: Wallet, roles: ["admin", "user"] },
     { name: "Cofre", href: "/cofre", icon: PiggyBank, roles: ["admin", "user"] },
     { name: "CRM", href: "/crm", icon: Contact, roles: ["admin", "user"] },
+    { name: "Base de Conhecimento", href: "/base-conhecimento", icon: BookOpen, roles: ["admin", "user"] },
     { name: "Usuários", href: "/admin", icon: Users, roles: ["admin"] },
   ]
 
