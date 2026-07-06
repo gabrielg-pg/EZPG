@@ -15,7 +15,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, ExternalLink, Video, ImageIcon, Loader2, GripVertical, Megaphone } from "lucide-react"
+import { Plus, ExternalLink, Video, ImageIcon, Loader2, GripVertical, Megaphone, Maximize2, DollarSign } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { createCreative, moveCreative } from "@/app/actions/creatives-actions"
 import { type Creative, type CreativeStatus } from "@/lib/creatives"
@@ -40,6 +40,7 @@ const emptyForm = {
   title: "",
   description: "",
   observation: "",
+  budget: "",
   status: "briefing" as CreativeStatus,
 }
 
@@ -52,6 +53,9 @@ export function CreativesBoard({ initialCreatives }: { initialCreatives: Creativ
 
   const [draggingId, setDraggingId] = useState<number | null>(null)
   const [dragOverCol, setDragOverCol] = useState<CreativeStatus | null>(null)
+
+  // Criativo aberto no modal de detalhes
+  const [detailCreative, setDetailCreative] = useState<Creative | null>(null)
 
   // Motivo de pausa (quando move para Pausado — Negativo)
   const [pausePrompt, setPausePrompt] = useState<{ id: number } | null>(null)
@@ -203,6 +207,7 @@ export function CreativesBoard({ initialCreatives }: { initialCreatives: Creativ
                       key={c.id}
                       creative={c}
                       isDragging={draggingId === c.id}
+                      onExpand={() => setDetailCreative(c)}
                       onDragStart={() => {
                         dragIdRef.current = c.id
                         setDraggingId(c.id)
@@ -330,6 +335,19 @@ export function CreativesBoard({ initialCreatives }: { initialCreatives: Creativ
             </div>
 
             <div className="space-y-2">
+              <Label className="font-medium">Orçamento</Label>
+              <div className="relative">
+                <DollarSign className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={form.budget}
+                  onChange={(e) => setForm({ ...form, budget: e.target.value })}
+                  placeholder="Ex: R$ 50/dia"
+                  className="rounded-xl pl-9"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
               <Label className="font-medium">Observação</Label>
               <Textarea
                 value={form.observation}
@@ -387,6 +405,108 @@ export function CreativesBoard({ initialCreatives }: { initialCreatives: Creativ
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Modal de Detalhes do Criativo */}
+      <CreativeDetailDialog creative={detailCreative} onClose={() => setDetailCreative(null)} />
+    </div>
+  )
+}
+
+const FORMAT_LABEL: Record<string, string> = { video: "Vídeo", imagem: "Imagem" }
+
+function CreativeDetailDialog({
+  creative,
+  onClose,
+}: {
+  creative: Creative | null
+  onClose: () => void
+}) {
+  const column = COLUMNS.find((c) => c.key === creative?.status)
+  return (
+    <Dialog open={creative !== null} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-lg bg-card/95 text-foreground backdrop-blur-xl">
+        {creative && (
+          <>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-xl text-pretty">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/20">
+                  {creative.format === "video" ? (
+                    <Video className="h-4 w-4 text-primary" />
+                  ) : (
+                    <ImageIcon className="h-4 w-4 text-primary" />
+                  )}
+                </div>
+                {creative.name}
+              </DialogTitle>
+              <DialogDescription className="text-muted-foreground">
+                {FORMAT_LABEL[creative.format] ?? creative.format}
+                {column ? ` • ${column.label}` : ""}
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="max-h-[65vh] space-y-4 overflow-y-auto py-1 pr-1">
+              {creative.budget && (
+                <DetailBlock label="Orçamento">
+                  <span className="inline-flex items-center gap-1.5 font-medium text-foreground">
+                    <DollarSign className="h-4 w-4 text-emerald-400" />
+                    {creative.budget}
+                  </span>
+                </DetailBlock>
+              )}
+              {creative.title && <DetailBlock label="Título">{creative.title}</DetailBlock>}
+              {creative.primary_text && (
+                <DetailBlock label="Texto principal">
+                  <span className="whitespace-pre-wrap">{creative.primary_text}</span>
+                </DetailBlock>
+              )}
+              {creative.description && <DetailBlock label="Descrição">{creative.description}</DetailBlock>}
+              {creative.observation && (
+                <DetailBlock label="Observação">
+                  <span className="whitespace-pre-wrap italic">{creative.observation}</span>
+                </DetailBlock>
+              )}
+              {creative.status === "pausado_negativo" && creative.pause_reason && (
+                <DetailBlock label="Motivo da pausa">
+                  <span className="text-rose-400">{creative.pause_reason}</span>
+                </DetailBlock>
+              )}
+              {!creative.title &&
+                !creative.primary_text &&
+                !creative.description &&
+                !creative.observation &&
+                !creative.budget && (
+                  <p className="text-sm text-muted-foreground">Nenhuma informação adicional cadastrada.</p>
+                )}
+            </div>
+
+            <DialogFooter>
+              {creative.drive_link && (
+                <a
+                  href={creative.drive_link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+                >
+                  Abrir no Drive
+                  <ExternalLink className="h-4 w-4" />
+                </a>
+              )}
+              <Button variant="outline" onClick={onClose}>
+                Fechar
+              </Button>
+            </DialogFooter>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function DetailBlock({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-xl border border-border/50 bg-muted/20 p-3">
+      <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+      <div className="text-sm text-foreground">{children}</div>
     </div>
   )
 }
@@ -394,11 +514,13 @@ export function CreativesBoard({ initialCreatives }: { initialCreatives: Creativ
 function CreativeCard({
   creative,
   isDragging,
+  onExpand,
   onDragStart,
   onDragEnd,
 }: {
   creative: Creative
   isDragging: boolean
+  onExpand: () => void
   onDragStart: () => void
   onDragEnd: () => void
 }) {
@@ -416,10 +538,23 @@ function CreativeCard({
     >
       <div className="flex items-start justify-between gap-2">
         <p className="text-sm font-semibold leading-tight text-foreground text-pretty">{creative.name}</p>
-        <GripVertical className="h-4 w-4 shrink-0 text-muted-foreground/50" />
+        <div className="flex shrink-0 items-center gap-1">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation()
+              onExpand()
+            }}
+            aria-label="Ver detalhes do criativo"
+            className="rounded-md p-1 text-muted-foreground/60 transition-colors hover:bg-primary/15 hover:text-primary"
+          >
+            <Maximize2 className="h-3.5 w-3.5" />
+          </button>
+          <GripVertical className="h-4 w-4 text-muted-foreground/50" />
+        </div>
       </div>
 
-      <div className="mt-2 flex items-center gap-1.5">
+      <div className="mt-2 flex flex-wrap items-center gap-1.5">
         <Badge
           variant="outline"
           className={cn(
@@ -432,6 +567,15 @@ function CreativeCard({
           {isVideo ? <Video className="h-3 w-3" /> : <ImageIcon className="h-3 w-3" />}
           {isVideo ? "Vídeo" : "Imagem"}
         </Badge>
+        {creative.budget && (
+          <Badge
+            variant="outline"
+            className="gap-1 border-emerald-500/25 bg-emerald-500/10 text-[11px] text-emerald-400"
+          >
+            <DollarSign className="h-3 w-3" />
+            {creative.budget}
+          </Badge>
+        )}
       </div>
 
       {creative.drive_link && (
@@ -448,29 +592,23 @@ function CreativeCard({
       )}
 
       {(creative.primary_text || creative.title || creative.description) && (
-        <div className="mt-3 space-y-1.5 border-t border-border/50 pt-2.5">
+        <div className="mt-3 space-y-1 border-t border-border/50 pt-2.5">
           {creative.title && (
-            <p className="text-xs text-foreground">
+            <p className="truncate text-xs text-foreground">
               <span className="text-muted-foreground">Título: </span>
               {creative.title}
             </p>
           )}
           {creative.primary_text && (
-            <p className="line-clamp-2 text-xs text-muted-foreground">{creative.primary_text}</p>
+            <p className="line-clamp-1 text-xs text-muted-foreground">{creative.primary_text}</p>
           )}
           {creative.description && (
-            <p className="text-xs text-muted-foreground">
+            <p className="truncate text-xs text-muted-foreground">
               <span className="text-muted-foreground/70">Desc: </span>
               {creative.description}
             </p>
           )}
         </div>
-      )}
-
-      {creative.observation && (
-        <p className="mt-2 rounded-lg bg-muted/40 px-2 py-1.5 text-[11px] italic text-muted-foreground">
-          {creative.observation}
-        </p>
       )}
 
       {creative.status === "pausado_negativo" && creative.pause_reason && (
@@ -481,6 +619,18 @@ function CreativeCard({
           Motivo: {creative.pause_reason}
         </Badge>
       )}
+
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation()
+          onExpand()
+        }}
+        className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg border border-border/50 py-1.5 text-[11px] font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
+      >
+        <Maximize2 className="h-3 w-3" />
+        Ver detalhes
+      </button>
     </div>
   )
 }

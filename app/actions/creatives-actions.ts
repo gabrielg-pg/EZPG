@@ -23,6 +23,7 @@ export async function createCreativesTable() {
       title TEXT,
       description TEXT,
       observation TEXT,
+      budget TEXT,
       status TEXT NOT NULL DEFAULT 'briefing',
       pause_reason TEXT,
       sort_order INTEGER NOT NULL DEFAULT 0,
@@ -53,6 +54,7 @@ export async function createCreative(data: {
   title?: string
   description?: string
   observation?: string
+  budget?: string
   status?: CreativeStatus
 }): Promise<{ success: boolean; error?: string; creative?: Creative }> {
   if (!(await canManageCreatives())) {
@@ -65,7 +67,7 @@ export async function createCreative(data: {
   try {
     const status = data.status && CREATIVE_STATUSES.includes(data.status) ? data.status : "briefing"
     const rows = await sql`
-      INSERT INTO pg_creatives (name, format, drive_link, primary_text, title, description, observation, status)
+      INSERT INTO pg_creatives (name, format, drive_link, primary_text, title, description, observation, budget, status)
       VALUES (
         ${data.name.trim()},
         ${data.format || "video"},
@@ -74,6 +76,7 @@ export async function createCreative(data: {
         ${data.title || null},
         ${data.description || null},
         ${data.observation || null},
+        ${data.budget || null},
         ${status}
       )
       RETURNING *
@@ -124,6 +127,7 @@ export async function updateCreative(
     title?: string
     description?: string
     observation?: string
+    budget?: string
   },
 ): Promise<{ success: boolean; error?: string }> {
   if (!(await canManageCreatives())) {
@@ -143,6 +147,7 @@ export async function updateCreative(
           title = ${data.title || null},
           description = ${data.description || null},
           observation = ${data.observation || null},
+          budget = ${data.budget || null},
           updated_at = NOW()
       WHERE id = ${id}
     `

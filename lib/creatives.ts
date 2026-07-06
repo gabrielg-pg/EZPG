@@ -19,6 +19,7 @@ export type Creative = {
   title: string | null
   description: string | null
   observation: string | null
+  budget: string | null
   status: CreativeStatus
   pause_reason: string | null
   sort_order: number
