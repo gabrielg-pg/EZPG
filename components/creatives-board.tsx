@@ -17,12 +17,8 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Plus, ExternalLink, Video, ImageIcon, Loader2, GripVertical, Megaphone } from "lucide-react"
 import { cn } from "@/lib/utils"
-import {
-  createCreative,
-  moveCreative,
-  type Creative,
-  type CreativeStatus,
-} from "@/app/actions/creatives-actions"
+import { createCreative, moveCreative } from "@/app/actions/creatives-actions"
+import { type Creative, type CreativeStatus } from "@/lib/creatives"
 
 const COLUMNS: { key: CreativeStatus; label: string; hint: string; accent: string }[] = [
   { key: "briefing", label: "Briefing", hint: "Criativo pronto para subir", accent: "bg-slate-400" },

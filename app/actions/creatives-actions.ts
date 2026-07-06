@@ -3,34 +3,7 @@
 import { sql } from "@/lib/db"
 import { getSession } from "@/lib/auth"
 import { revalidatePath } from "next/cache"
-
-export const CREATIVE_STATUSES = [
-  "briefing",
-  "em_producao",
-  "no_ar",
-  "em_analise",
-  "escalando",
-  "pausado_positivo",
-  "pausado_negativo",
-] as const
-
-export type CreativeStatus = (typeof CREATIVE_STATUSES)[number]
-
-export type Creative = {
-  id: number
-  name: string
-  format: string
-  drive_link: string | null
-  primary_text: string | null
-  title: string | null
-  description: string | null
-  observation: string | null
-  status: CreativeStatus
-  pause_reason: string | null
-  sort_order: number
-  created_at: string
-  updated_at: string
-}
+import { CREATIVE_STATUSES, type CreativeStatus, type Creative } from "@/lib/creatives"
 
 // Somente Gestor de ADS e Admin podem acessar/gerenciar criativos
 async function canManageCreatives() {
