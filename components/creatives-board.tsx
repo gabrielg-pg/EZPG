@@ -15,7 +15,25 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, ExternalLink, Video, ImageIcon, Loader2, GripVertical, Megaphone, Maximize2, DollarSign, Trash2 } from "lucide-react"
+import {
+  Plus,
+  ExternalLink,
+  Video,
+  ImageIcon,
+  Loader2,
+  GripVertical,
+  Megaphone,
+  Maximize2,
+  DollarSign,
+  Trash2,
+  PauseCircle,
+  Rocket,
+  Clock,
+  BookMarked,
+  Wallet,
+  TrendingUp,
+  TrendingDown,
+} from "lucide-react"
 import { cn } from "@/lib/utils"
 import { createCreative, moveCreative, deleteCreative } from "@/app/actions/creatives-actions"
 import { type Creative, type CreativeStatus } from "@/lib/creatives"
@@ -245,6 +263,9 @@ export function CreativesBoard({ initialCreatives }: { initialCreatives: Creativ
           )
         })}
       </div>
+
+      {/* Playbook de decisão */}
+      <CreativesPlaybook />
 
       {/* Modal Novo Criativo */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -575,6 +596,141 @@ function DetailBlock({ label, children }: { label: string; children: React.React
     <div className="rounded-xl border border-border/50 bg-muted/20 p-3">
       <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
       <div className="text-sm text-foreground">{children}</div>
+    </div>
+  )
+}
+
+type PlaybookRule = { trigger: string; action: string }
+
+const PAUSE_RULES: PlaybookRule[] = [
+  { trigger: "Gastou R$ 21,50 sem gerar lead", action: "Pausar imediato → Pausado Negativo" },
+  { trigger: "CTR abaixo de 1% ao atingir R$ 21,50", action: "Pausar imediato" },
+]
+
+const SCALE_RULES: PlaybookRule[] = [
+  { trigger: "2+ leads dentro do budget inicial", action: "Dobrar budget → mover para Escalando" },
+  { trigger: "CPL abaixo de R$ 10", action: "Escalar gradual" },
+]
+
+const WAIT_RULES: PlaybookRule[] = [
+  { trigger: "Gerou lead mas CPL alto", action: "Aguardar mais 1 dia antes de decidir" },
+  { trigger: "CTR acima de 1% sem lead", action: "Manter até esgotar o budget inicial" },
+]
+
+function CreativesPlaybook() {
+  return (
+    <section className="rounded-2xl border border-border/60 bg-card/40 p-5 sm:p-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/15">
+            <BookMarked className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-foreground">Playbook de Decisão</h2>
+            <p className="text-sm text-muted-foreground">Regras de gestão para cada criativo do pipeline.</p>
+          </div>
+        </div>
+
+        {/* Budget inicial em destaque */}
+        <div className="flex items-center gap-3 rounded-xl border border-primary/30 bg-primary/10 px-4 py-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/20">
+            <Wallet className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">Budget inicial</p>
+            <p className="text-xl font-bold text-foreground">R$ 21,50</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-5 grid gap-4 md:grid-cols-3">
+        <PlaybookColumn
+          title="Quando pausar"
+          icon={<PauseCircle className="h-4 w-4" />}
+          tone="rose"
+          rules={PAUSE_RULES}
+        />
+        <PlaybookColumn
+          title="Quando aguardar / manter"
+          icon={<Clock className="h-4 w-4" />}
+          tone="amber"
+          rules={WAIT_RULES}
+        />
+        <PlaybookColumn
+          title="Quando escalar"
+          icon={<Rocket className="h-4 w-4" />}
+          tone="emerald"
+          rules={SCALE_RULES}
+        />
+      </div>
+
+      {/* Regras gerais */}
+      <div className="mt-5 grid gap-3 border-t border-border/60 pt-5 sm:grid-cols-3">
+        <div className="flex items-start gap-3 rounded-xl border border-border/50 bg-muted/20 p-3">
+          <DollarSign className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">
+            Ao pausar qualquer criativo, <span className="text-foreground">registre o motivo</span> antes de mover.
+          </p>
+        </div>
+        <div className="flex items-start gap-3 rounded-xl border border-emerald-500/25 bg-emerald-500/5 p-3">
+          <TrendingUp className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
+          <p className="text-sm text-muted-foreground">
+            <span className="text-emerald-400">Pausado positivo:</span> referência para os próximos briefings.
+          </p>
+        </div>
+        <div className="flex items-start gap-3 rounded-xl border border-rose-500/25 bg-rose-500/5 p-3">
+          <TrendingDown className="mt-0.5 h-4 w-4 shrink-0 text-rose-400" />
+          <p className="text-sm text-muted-foreground">
+            <span className="text-rose-400">Pausado negativo:</span> referência do que não repetir.
+          </p>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+const PLAYBOOK_TONES = {
+  rose: { border: "border-rose-500/25", bg: "bg-rose-500/10", text: "text-rose-400", dot: "bg-rose-400" },
+  amber: { border: "border-amber-500/25", bg: "bg-amber-500/10", text: "text-amber-400", dot: "bg-amber-400" },
+  emerald: {
+    border: "border-emerald-500/25",
+    bg: "bg-emerald-500/10",
+    text: "text-emerald-400",
+    dot: "bg-emerald-400",
+  },
+} as const
+
+function PlaybookColumn({
+  title,
+  icon,
+  tone,
+  rules,
+}: {
+  title: string
+  icon: React.ReactNode
+  tone: keyof typeof PLAYBOOK_TONES
+  rules: PlaybookRule[]
+}) {
+  const t = PLAYBOOK_TONES[tone]
+  return (
+    <div className={cn("flex flex-col rounded-xl border bg-muted/10 p-4", t.border)}>
+      <div className="flex items-center gap-2">
+        <span className={cn("flex h-7 w-7 items-center justify-center rounded-lg", t.bg, t.text)}>{icon}</span>
+        <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+      </div>
+      <ul className="mt-3 space-y-2.5">
+        {rules.map((rule, i) => (
+          <li key={i} className="rounded-lg border border-border/40 bg-card/40 p-3">
+            <div className="flex items-start gap-2">
+              <span className={cn("mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full", t.dot)} />
+              <div>
+                <p className="text-sm leading-snug text-foreground">{rule.trigger}</p>
+                <p className={cn("mt-0.5 text-xs leading-snug", t.text)}>{rule.action}</p>
+              </div>
+            </div>
+          </li>
+        ))}
+      </ul>
     </div>
   )
 }
