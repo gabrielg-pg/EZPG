@@ -14,6 +14,11 @@ export default async function ZonaDeExecucaoPage() {
     redirect("/login")
   }
 
+  // Gestor de ADS (sem ser admin) só enxerga a aba Criativos — vai direto para ela
+  if (roles.includes("gestor_ads") && !roles.includes("admin")) {
+    redirect("/zona-de-execucao/criativos")
+  }
+
   return (
     <DashboardLayout userRoles={roles}>
       <ExecutionZoneCards />
