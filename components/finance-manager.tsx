@@ -13,6 +13,7 @@ import {
   ChevronLeft,
   ChevronRight,
   UserPlus,
+  Wallet,
 } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -148,6 +149,20 @@ export function FinanceManager({ initialData, initialYear, initialMonth }: Finan
     const saidas = despesas + colaboradores
     return { entradas, despesas, colaboradores, saidas, liquido: entradas - saidas }
   }, [data])
+
+  // Totais do ano "ao vivo": substitui o mês selecionado pelo líquido calculado
+  // localmente, para refletir alterações antes de recarregar do banco.
+  const liveYearTotals = useMemo(
+    () =>
+      data.yearTotals.map((t) => (t.month === month ? { ...t, total: totals.liquido } : t)),
+    [data.yearTotals, month, totals.liquido],
+  )
+
+  // Caixa acumulado: soma do líquido de todos os meses do ano selecionado
+  const caixa = useMemo(
+    () => liveYearTotals.reduce((acc, t) => acc + t.total, 0),
+    [liveYearTotals],
+  )
 
   function reload(nextYear: number, nextMonth: number) {
     startLoading(async () => {
@@ -344,13 +359,28 @@ export function FinanceManager({ initialData, initialYear, initialMonth }: Finan
             <ChevronRight className="h-4 w-4" />
           </Button>
           {isLoading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+
+          {/* Bloco CAIXA — acumulado de todos os meses do ano */}
+          <div className="ml-auto flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-2">
+            <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              <Wallet className="h-4 w-4" />
+              Caixa
+            </span>
+            <span
+              className={`text-lg font-bold tabular-nums ${
+                caixa >= 0 ? "text-[#22C55E]" : "text-destructive"
+              }`}
+            >
+              {formatCurrency(caixa)}
+            </span>
+          </div>
         </div>
 
         <div className="flex flex-wrap gap-2">
           {MONTHS.map((label, i) => {
             const m = i + 1
             const active = m === month
-            const monthTotal = data.yearTotals.find((t) => t.month === m)?.total ?? 0
+            const monthTotal = liveYearTotals.find((t) => t.month === m)?.total ?? 0
             return (
               <button
                 key={label}
