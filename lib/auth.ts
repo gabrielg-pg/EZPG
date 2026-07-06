@@ -106,7 +106,7 @@ export async function logout(): Promise<void> {
 }
 
 export async function getSession(): Promise<{
-  user: { id: number; username: string; name: string; role: string } | null
+  user: { id: number; username: string; name: string; role: string; roles: string[] } | null
 }> {
   try {
     const cookieStore = cookies()
@@ -135,12 +135,29 @@ export async function getSession(): Promise<{
     }
 
     const session = sessions[0]
+
+    // Carrega todas as roles do usuário (tabela user_roles), com fallback para a role legada
+    let roles: string[] = []
+    try {
+      const roleRows = await sql`SELECT role FROM user_roles WHERE user_id = ${session.user_id}`
+      roles = (roleRows as Array<{ role: string }>).map((r) => r.role)
+    } catch {
+      roles = []
+    }
+    if (session.role && !roles.includes(session.role)) {
+      roles.push(session.role)
+    }
+    if (roles.length === 0 && session.role) {
+      roles = [session.role]
+    }
+
     return {
       user: {
         id: session.user_id,
         username: session.username,
         name: session.name,
         role: session.role,
+        roles,
       },
     }
   } catch (error) {
@@ -180,14 +197,25 @@ export async function createUser(data: {
   password: string
   name: string
   role: string
+  roles?: string[]
 }): Promise<{ success: boolean; error?: string }> {
   try {
     const passwordHash = await hashPassword(data.password)
 
-    await sql`
+    const inserted = await sql`
       INSERT INTO users (username, email, password_hash, name, role, status)
       VALUES (${data.username}, ${data.email}, ${passwordHash}, ${data.name}, ${data.role}, 'ativo')
+      RETURNING id
     `
+
+    // Persiste todas as roles selecionadas na tabela user_roles
+    const newUserId = (inserted as Array<{ id: number }>)[0]?.id
+    const allRoles = Array.from(new Set((data.roles && data.roles.length > 0 ? data.roles : [data.role]).filter(Boolean)))
+    if (newUserId && allRoles.length > 0) {
+      for (const role of allRoles) {
+        await sql`INSERT INTO user_roles (user_id, role) VALUES (${newUserId}, ${role})`
+      }
+    }
 
     return { success: true }
   } catch (error: unknown) {
