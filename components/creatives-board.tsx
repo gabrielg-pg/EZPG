@@ -15,9 +15,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, ExternalLink, Video, ImageIcon, Loader2, GripVertical, Megaphone, Maximize2, DollarSign } from "lucide-react"
+import { Plus, ExternalLink, Video, ImageIcon, Loader2, GripVertical, Megaphone, Maximize2, DollarSign, Trash2 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { createCreative, moveCreative } from "@/app/actions/creatives-actions"
+import { createCreative, moveCreative, deleteCreative } from "@/app/actions/creatives-actions"
 import { type Creative, type CreativeStatus } from "@/lib/creatives"
 
 const COLUMNS: { key: CreativeStatus; label: string; hint: string; accent: string }[] = [
@@ -56,6 +56,10 @@ export function CreativesBoard({ initialCreatives }: { initialCreatives: Creativ
 
   // Criativo aberto no modal de detalhes
   const [detailCreative, setDetailCreative] = useState<Creative | null>(null)
+
+  // Criativo a ser excluído (confirmação)
+  const [deleteTarget, setDeleteTarget] = useState<Creative | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   // Motivo de pausa (quando move para Pausado — Negativo)
   const [pausePrompt, setPausePrompt] = useState<{ id: number } | null>(null)
@@ -98,6 +102,21 @@ export function CreativesBoard({ initialCreatives }: { initialCreatives: Creativ
         resetForm()
       } else {
         setError(result.error || "Erro ao criar criativo")
+      }
+    })
+  }
+
+  const handleDelete = () => {
+    if (!deleteTarget) return
+    const id = deleteTarget.id
+    setIsDeleting(true)
+    startTransition(async () => {
+      const result = await deleteCreative(id)
+      setIsDeleting(false)
+      if (result.success) {
+        setCreatives((prev) => prev.filter((c) => c.id !== id))
+        setDeleteTarget(null)
+        setDetailCreative((prev) => (prev?.id === id ? null : prev))
       }
     })
   }
@@ -208,6 +227,7 @@ export function CreativesBoard({ initialCreatives }: { initialCreatives: Creativ
                       creative={c}
                       isDragging={draggingId === c.id}
                       onExpand={() => setDetailCreative(c)}
+                      onDelete={() => setDeleteTarget(c)}
                       onDragStart={() => {
                         dragIdRef.current = c.id
                         setDraggingId(c.id)
@@ -407,7 +427,43 @@ export function CreativesBoard({ initialCreatives }: { initialCreatives: Creativ
       </Dialog>
 
       {/* Modal de Detalhes do Criativo */}
-      <CreativeDetailDialog creative={detailCreative} onClose={() => setDetailCreative(null)} />
+      <CreativeDetailDialog
+        creative={detailCreative}
+        onClose={() => setDetailCreative(null)}
+        onDelete={() => detailCreative && setDeleteTarget(detailCreative)}
+      />
+
+      {/* Confirmação de exclusão */}
+      <Dialog open={deleteTarget !== null} onOpenChange={(open) => !open && !isDeleting && setDeleteTarget(null)}>
+        <DialogContent className="max-w-md bg-card/95 text-foreground backdrop-blur-xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-rose-500/15">
+                <Trash2 className="h-4 w-4 text-rose-400" />
+              </div>
+              Excluir criativo
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              Tem certeza que deseja excluir{" "}
+              <span className="font-medium text-foreground">{deleteTarget?.name}</span>? Essa ação não pode ser
+              desfeita.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteTarget(null)} disabled={isDeleting}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="bg-rose-500 text-white hover:bg-rose-600"
+            >
+              {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+              Excluir
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
@@ -417,9 +473,11 @@ const FORMAT_LABEL: Record<string, string> = { video: "Vídeo", imagem: "Imagem"
 function CreativeDetailDialog({
   creative,
   onClose,
+  onDelete,
 }: {
   creative: Creative | null
   onClose: () => void
+  onDelete: () => void
 }) {
   const column = COLUMNS.find((c) => c.key === creative?.status)
   return (
@@ -479,21 +537,31 @@ function CreativeDetailDialog({
                 )}
             </div>
 
-            <DialogFooter>
-              {creative.drive_link && (
-                <a
-                  href={creative.drive_link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-                >
-                  Abrir no Drive
-                  <ExternalLink className="h-4 w-4" />
-                </a>
-              )}
-              <Button variant="outline" onClick={onClose}>
-                Fechar
+            <DialogFooter className="sm:justify-between">
+              <Button
+                variant="ghost"
+                onClick={onDelete}
+                className="text-rose-400 hover:bg-rose-500/10 hover:text-rose-400"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Excluir
               </Button>
+              <div className="flex items-center gap-2">
+                {creative.drive_link && (
+                  <a
+                    href={creative.drive_link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+                  >
+                    Abrir no Drive
+                    <ExternalLink className="h-4 w-4" />
+                  </a>
+                )}
+                <Button variant="outline" onClick={onClose}>
+                  Fechar
+                </Button>
+              </div>
             </DialogFooter>
           </>
         )}
@@ -515,12 +583,14 @@ function CreativeCard({
   creative,
   isDragging,
   onExpand,
+  onDelete,
   onDragStart,
   onDragEnd,
 }: {
   creative: Creative
   isDragging: boolean
   onExpand: () => void
+  onDelete: () => void
   onDragStart: () => void
   onDragEnd: () => void
 }) {
@@ -549,6 +619,17 @@ function CreativeCard({
             className="rounded-md p-1 text-muted-foreground/60 transition-colors hover:bg-primary/15 hover:text-primary"
           >
             <Maximize2 className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation()
+              onDelete()
+            }}
+            aria-label="Excluir criativo"
+            className="rounded-md p-1 text-muted-foreground/60 transition-colors hover:bg-rose-500/15 hover:text-rose-400"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
           </button>
           <GripVertical className="h-4 w-4 text-muted-foreground/50" />
         </div>
