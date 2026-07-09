@@ -152,36 +152,35 @@ export function QualificationForm() {
   }
 
   // Step 5: capital (bifurcação)
-  const handleCapital = async (value: string, disqualify?: boolean) => {
+  const handleCapital = (value: string, disqualify?: boolean) => {
     setForm((f) => ({ ...f, capital: value }))
     if (disqualify) {
       setDisqualifying(true)
       track("trackCustom", "LeadDesqualificado")
       if (leadId) {
-        await updateLeadProgress(leadId, { capital: "sem_capital", status: "desqualificado" })
+        void updateLeadProgress(leadId, { capital: "sem_capital", status: "desqualificado" })
       }
       setTimeout(() => {
         window.location.href = SITE_LINK
       }, 1500)
       return
     }
-    if (leadId) await updateLeadProgress(leadId, { capital: value })
+    // Avança imediatamente; salva em segundo plano
+    if (leadId) void updateLeadProgress(leadId, { capital: value })
     setStep(6)
   }
 
   // Step 4: experiência
-  const handleExperiencia = async (value: string) => {
+  const handleExperiencia = (value: string) => {
     setForm((f) => ({ ...f, experiencia: value }))
-    if (leadId) await updateLeadProgress(leadId, { experiencia: value })
+    if (leadId) void updateLeadProgress(leadId, { experiencia: value })
     setStep(5)
   }
 
   // Step 6 → 7: prazo + qualificação final
-  const handlePrazo = async (value: string) => {
+  const handlePrazo = (value: string) => {
     setForm((f) => ({ ...f, prazo: value }))
-    setSaving(true)
-    if (leadId) await updateLeadProgress(leadId, { prazo: value, status: "qualificado" })
-    setSaving(false)
+    if (leadId) void updateLeadProgress(leadId, { prazo: value, status: "qualificado" })
     track("track", "Lead")
     track("trackCustom", "LeadQualificado")
     setStep(7)
