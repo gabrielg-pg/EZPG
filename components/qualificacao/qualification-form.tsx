@@ -557,6 +557,48 @@ function ConfirmationStep({ showWhats }: { showWhats: boolean }) {
   )
 }
 
+// Contador animado (count-up) com easing
+function CountUp({
+  value,
+  duration = 1800,
+  decimals = 0,
+}: {
+  value: number
+  duration?: number
+  decimals?: number
+}) {
+  const [display, setDisplay] = useState(0)
+  const rafRef = useRef<number | null>(null)
+
+  useEffect(() => {
+    const start = performance.now()
+    const tick = (now: number) => {
+      const elapsed = now - start
+      const t = Math.min(elapsed / duration, 1)
+      // easeOutExpo
+      const eased = t === 1 ? 1 : 1 - Math.pow(2, -10 * t)
+      setDisplay(value * eased)
+      if (t < 1) rafRef.current = requestAnimationFrame(tick)
+    }
+    rafRef.current = requestAnimationFrame(tick)
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current)
+    }
+  }, [value, duration])
+
+  const formatted = display.toLocaleString("pt-BR", {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  })
+  return <>{formatted}</>
+}
+
+const START_STATS = [
+  { prefix: "+", value: 2157, decimals: 0, suffix: "", label: "Operações estruturadas" },
+  { prefix: "R$", value: 67, decimals: 0, suffix: "M", label: "Gerados para clientes" },
+  { prefix: "", value: 98, decimals: 0, suffix: "%", label: "Recomendam o método" },
+]
+
 function StartScreen({ onStart }: { onStart: () => void }) {
   return (
     <div className="flex min-h-[100dvh] flex-col">
@@ -567,32 +609,63 @@ function StartScreen({ onStart }: { onStart: () => void }) {
       </header>
 
       {/* Conteúdo centralizado */}
-      <div className="flex flex-1 flex-col items-center justify-center px-6 pb-10">
-        <div className="w-full max-w-md text-center">
-          <h1 className="text-[26px] font-bold leading-tight tracking-tight text-white text-balance sm:text-[28px]">
+      <div className="flex flex-1 flex-col items-center justify-center px-6 py-10">
+        <div className="w-full max-w-md">
+          {/* Selo */}
+          <div className="mx-auto mb-6 flex w-fit items-center gap-2 rounded-full border border-[#7C3AED]/30 bg-[#7C3AED]/10 px-3.5 py-1.5">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#A78BFA] opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-[#8B5CF6]" />
+            </span>
+            <span className="text-xs font-semibold tracking-wide text-[#C4B5FD]">Processo seletivo aberto</span>
+          </div>
+
+          <h1 className="text-center text-[28px] font-bold leading-[1.15] tracking-tight text-white text-balance sm:text-[32px]">
             Este formulário não é para todo mundo.
           </h1>
 
-          <p className="mt-5 text-base leading-relaxed text-[#A3A3A3] text-pretty">
+          <p className="mx-auto mt-5 max-w-sm text-center text-base leading-relaxed text-[#A3A3A3] text-pretty">
             É para quem já entendeu que dropshipping sem estrutura é dinheiro jogado fora — e quer entrar pelo
             caminho certo.
           </p>
 
-          <p className="mt-4 text-base leading-relaxed text-[#A3A3A3] text-pretty">
-            Responda 7 perguntas. Nossa equipe analisa seu perfil e retorna pelo WhatsApp.
-          </p>
+          {/* Bloco de estatísticas roxo com contadores */}
+          <div className="relative mt-8 overflow-hidden rounded-2xl border border-[#7C3AED]/30 bg-gradient-to-br from-[#2A1650] via-[#1E1236] to-[#150C28] p-5 shadow-[0_0_40px_-12px_rgba(124,58,237,0.5)]">
+            {/* brilho decorativo */}
+            <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-[#8B5CF6]/20 blur-2xl" />
+            <div className="relative grid grid-cols-3 gap-2">
+              {START_STATS.map((stat, i) => (
+                <div key={i} className="flex flex-col items-center text-center">
+                  <div className="text-[22px] font-bold leading-none tracking-tight text-white sm:text-[26px]">
+                    <span className="text-[#C4B5FD]">{stat.prefix}</span>
+                    <CountUp value={stat.value} decimals={stat.decimals} />
+                    <span className="text-[#C4B5FD]">{stat.suffix}</span>
+                  </div>
+                  <span className="mt-2 text-[11px] font-medium leading-tight text-[#9CA3AF] text-pretty">
+                    {stat.label}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
 
-          <p className="mt-8 text-[13px] font-medium text-[#525252] text-pretty">
-            +2.157 operações estruturadas. R$67M gerados para clientes.
+          <p className="mt-6 text-center text-sm leading-relaxed text-[#A3A3A3] text-pretty">
+            Responda 7 perguntas rápidas. Nossa equipe analisa seu perfil e retorna pelo WhatsApp.
           </p>
 
           <button
             type="button"
             onClick={onStart}
-            className="mt-8 flex h-[52px] w-full items-center justify-center gap-2 rounded-lg bg-[#16A34A] text-sm font-bold uppercase tracking-wide text-white transition-colors hover:bg-[#15803D]"
+            className="group mt-6 flex h-[54px] w-full items-center justify-center gap-2 rounded-xl bg-[#16A34A] text-sm font-bold uppercase tracking-wide text-white shadow-[0_8px_24px_-8px_rgba(22,163,74,0.6)] transition-all hover:bg-[#15803D] active:scale-[0.99]"
           >
-            Começar qualificação <ArrowRight className="h-4 w-4" />
+            Começar qualificação
+            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
           </button>
+
+          <div className="mt-4 flex items-center justify-center gap-1.5 text-[12px] text-[#525252]">
+            <ShieldCheck className="h-3.5 w-3.5" />
+            Leva menos de 2 minutos. Seus dados estão seguros.
+          </div>
         </div>
       </div>
     </div>
