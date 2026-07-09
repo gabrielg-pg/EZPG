@@ -7,7 +7,7 @@ import { Check, ArrowLeft, ArrowRight, ShieldCheck } from "lucide-react"
 import { createPartialLead, updateLeadProgress } from "@/app/actions/leads-actions"
 
 const WHATSAPP_LINK = "https://wa.link/a571wz"
-const SITE_LINK = "https://progrowthglobal.com.br/"
+const BLOG_LINK = "https://progrowthglobal.com.br/blog/"
 const PRIVACY_LINK = "https://progrowthglobal.com.br/politica-de-privacidade/"
 const LOGO = "https://progrowthglobal.com.br/wp-content/uploads/2025/07/logo-pro-growth-horizontal.svg"
 
@@ -78,7 +78,7 @@ function maskPhone(value: string): string {
 
 export function QualificationForm() {
   const searchParams = useSearchParams()
-  const [step, setStep] = useState(1)
+  const [step, setStep] = useState(0)
   const [form, setForm] = useState<FormData>(EMPTY)
   const [leadId, setLeadId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -88,13 +88,14 @@ export function QualificationForm() {
   const [disqualifying, setDisqualifying] = useState(false)
   const formStarted = useRef(false)
 
-  // FormStart (uma vez)
-  useEffect(() => {
+  // Tela de entrada → dispara FormStart e avança para o Step 1
+  const startQualification = () => {
     if (!formStarted.current) {
       formStarted.current = true
       track("trackCustom", "FormStart")
     }
-  }, [])
+    setStep(1)
+  }
 
   // Captura UTMs
   const getUtms = useCallback(() => {
@@ -161,7 +162,7 @@ export function QualificationForm() {
         void updateLeadProgress(leadId, { capital: "sem_capital", status: "desqualificado" })
       }
       setTimeout(() => {
-        window.location.href = SITE_LINK
+        window.location.href = BLOG_LINK
       }, 1500)
       return
     }
@@ -196,6 +197,10 @@ export function QualificationForm() {
 
   if (disqualifying) {
     return <TransitionScreen />
+  }
+
+  if (step === 0) {
+    return <StartScreen onStart={startQualification} />
   }
 
   const progress = Math.round((step / TOTAL_STEPS) * 100)
@@ -548,6 +553,48 @@ function ConfirmationStep({ showWhats }: { showWhats: boolean }) {
       <style>{`
         @keyframes drawCheck { to { stroke-dashoffset: 0; } }
       `}</style>
+    </div>
+  )
+}
+
+function StartScreen({ onStart }: { onStart: () => void }) {
+  return (
+    <div className="flex min-h-[100dvh] flex-col">
+      {/* Logo */}
+      <header className="flex h-[72px] shrink-0 items-center justify-center px-5 pt-4">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={LOGO || "/placeholder.svg"} alt="Pro Growth Global" className="h-7 w-auto" />
+      </header>
+
+      {/* Conteúdo centralizado */}
+      <div className="flex flex-1 flex-col items-center justify-center px-6 pb-10">
+        <div className="w-full max-w-md text-center">
+          <h1 className="text-[26px] font-bold leading-tight tracking-tight text-white text-balance sm:text-[28px]">
+            Este formulário não é para todo mundo.
+          </h1>
+
+          <p className="mt-5 text-base leading-relaxed text-[#A3A3A3] text-pretty">
+            É para quem já entendeu que dropshipping sem estrutura é dinheiro jogado fora — e quer entrar pelo
+            caminho certo.
+          </p>
+
+          <p className="mt-4 text-base leading-relaxed text-[#A3A3A3] text-pretty">
+            Responda 7 perguntas. Nossa equipe analisa seu perfil e retorna pelo WhatsApp.
+          </p>
+
+          <p className="mt-8 text-[13px] font-medium text-[#525252] text-pretty">
+            +2.157 operações estruturadas. R$67M gerados para clientes.
+          </p>
+
+          <button
+            type="button"
+            onClick={onStart}
+            className="mt-8 flex h-[52px] w-full items-center justify-center gap-2 rounded-lg bg-[#16A34A] text-sm font-bold uppercase tracking-wide text-white transition-colors hover:bg-[#15803D]"
+          >
+            Começar qualificação <ArrowRight className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
