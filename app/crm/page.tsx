@@ -1,23 +1,25 @@
 import { requireAuth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { DashboardLayout } from "@/components/dashboard-layout"
-import { CrmBoard } from "@/components/crm-board"
-import { createCrmTable, getCrmLeads } from "@/app/actions/crm-actions"
+import { LeadsPipeline } from "@/components/leads-pipeline"
+import { getPipelineLeads } from "@/app/actions/leads-actions"
 
 export const dynamic = "force-dynamic"
 
 export default async function CrmPage() {
   const user = await requireAuth()
-  const userRole = user.role?.toLowerCase() || ""
-  const roles = [userRole]
-  if (userRole !== "admin") redirect("/dashboard")
+  const roles = (user.roles ?? [user.role]).map((r) => r.toLowerCase())
 
-  await createCrmTable()
-  const leads = await getCrmLeads()
+  // Acesso restrito: apenas Admin e Gestor de ADS
+  if (!roles.some((r) => ["admin", "gestor_ads"].includes(r))) {
+    redirect("/dashboard")
+  }
+
+  const leads = await getPipelineLeads()
 
   return (
     <DashboardLayout userRoles={roles}>
-      <CrmBoard initialLeads={leads} />
+      <LeadsPipeline initialLeads={leads} />
     </DashboardLayout>
   )
 }
