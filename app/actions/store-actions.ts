@@ -28,6 +28,8 @@ export async function createStore(data: {
   customerName: string
   birthDate: string
   cpf: string
+  passportNumber?: string
+  passportPhotoUrl?: string
   address: string
   addressNumber: string
   cep: string
@@ -56,12 +58,14 @@ export async function createStore(data: {
     const storeId = storeResult[0].id
 
     await sql`
-      INSERT INTO customers (store_id, name, birth_date, cpf, address, address_number, cep)
+      INSERT INTO customers (store_id, name, birth_date, cpf, passport_number, passport_photo_url, address, address_number, cep)
       VALUES (
         ${storeId}, 
         ${data.customerName}, 
         ${data.birthDate || null}, 
         ${data.cpf}, 
+        ${data.passportNumber || null}, 
+        ${data.passportPhotoUrl || null}, 
         ${data.address}, 
         ${data.addressNumber}, 
         ${data.cep}
