@@ -28,6 +28,7 @@ export function DashboardLayout({ children, userRoles = ["user"] }: DashboardLay
     { name: "Reuniões", href: "/reunioes", icon: Calendar, roles: ["admin", "comercial"] },
     { name: "Zona de Execução", href: "/zona-de-execucao", icon: Rocket, roles: ["admin", "comercial", "zona_execucao"] },
     { name: "Criativos", href: "/zona-de-execucao/criativos", icon: Megaphone, roles: ["admin", "gestor_ads"] },
+    { name: "Growth Clientes", href: "/zona-de-execucao/growth-clientes", icon: TrendingUp, roles: ["admin"] },
     { name: "Referência de Lojas", href: "/referencia-lojas", icon: Globe, roles: ["admin", "comercial", "zona_execucao", "user"] },
     { name: "Cofre", href: "/cofre", icon: KeyRound, roles: ["admin"] },
     { name: "CRM", href: "/crm", icon: KanbanSquare, roles: ["admin", "gestor_ads"] },
