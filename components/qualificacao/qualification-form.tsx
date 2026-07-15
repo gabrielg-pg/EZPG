@@ -8,7 +8,6 @@ import { createPartialLead, updateLeadProgress } from "@/app/actions/leads-actio
 
 const WHATSAPP_LINK = "https://wa.link/a571wz"
 const BLOG_LINK = "https://progrowthglobal.com.br/blog/"
-const HOME_LINK = "https://progrowthglobal.com.br"
 const PRIVACY_LINK = "https://progrowthglobal.com.br/politica-de-privacidade/"
 const LOGO = "https://progrowthglobal.com.br/wp-content/uploads/2025/07/logo-pro-growth-horizontal.svg"
 
@@ -109,12 +108,12 @@ export function QualificationForm() {
     setAgeStep("rejected")
   }
 
-  // Redireciona para a home 8s após recusa por idade
+  // Tenta fechar a aba automaticamente alguns segundos após a recusa por idade
   useEffect(() => {
     if (ageStep === "rejected") {
       const t = setTimeout(() => {
-        window.location.href = HOME_LINK
-      }, 8000)
+        window.close()
+      }, 5000)
       return () => clearTimeout(t)
     }
   }, [ageStep])
@@ -760,7 +759,7 @@ function AgeGateScreen({ onYes, onNo }: { onYes: () => void; onNo: () => void })
   )
 }
 
-// Tela de encerramento para menores de 18 anos (redireciona à home em 8s)
+// Tela de encerramento para menores de 18 anos (tenta fechar a aba em 5s)
 function AgeRejectedScreen() {
   return (
     <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-[#0B0B0B] px-8 text-center">
@@ -770,6 +769,13 @@ function AgeRejectedScreen() {
         Nossa operação é destinada exclusivamente a maiores de 18 anos. Não podemos dar continuidade ao seu
         cadastro neste momento. Obrigado pelo interesse na Pro Growth Global.
       </p>
+      <button
+        type="button"
+        onClick={() => window.close()}
+        className="mt-8 flex h-[52px] items-center justify-center gap-2 rounded-xl border border-[#2A2A2A] bg-[#1A1A1A] px-8 text-sm font-semibold uppercase tracking-wide text-white transition-colors hover:bg-[#222222]"
+      >
+        Fechar
+      </button>
     </div>
   )
 }
