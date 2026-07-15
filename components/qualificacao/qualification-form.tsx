@@ -8,6 +8,7 @@ import { createPartialLead, updateLeadProgress } from "@/app/actions/leads-actio
 
 const WHATSAPP_LINK = "https://wa.link/a571wz"
 const BLOG_LINK = "https://progrowthglobal.com.br/blog/"
+const HOME_LINK = "https://progrowthglobal.com.br"
 const PRIVACY_LINK = "https://progrowthglobal.com.br/politica-de-privacidade/"
 const LOGO = "https://progrowthglobal.com.br/wp-content/uploads/2025/07/logo-pro-growth-horizontal.svg"
 
@@ -86,17 +87,37 @@ export function QualificationForm() {
   const [shake, setShake] = useState(false)
   const [showWhats, setShowWhats] = useState(false)
   const [disqualifying, setDisqualifying] = useState(false)
-  const [ageConfirmed, setAgeConfirmed] = useState(false)
+  // Gate de idade (fora da contagem das 7 etapas): "none" | "gate" | "rejected"
+  const [ageStep, setAgeStep] = useState<"none" | "gate" | "rejected">("none")
   const formStarted = useRef(false)
 
-  // Tela de entrada → dispara FormStart e avança para o Step 1
+  // Tela de entrada → dispara FormStart e abre a verificação de idade
   const startQualification = () => {
     if (!formStarted.current) {
       formStarted.current = true
       track("trackCustom", "FormStart")
     }
+    setAgeStep("gate")
+  }
+
+  // Verificação de idade
+  const handleAgeYes = () => {
+    setAgeStep("none")
     setStep(1)
   }
+  const handleAgeNo = () => {
+    setAgeStep("rejected")
+  }
+
+  // Redireciona para a home 8s após recusa por idade
+  useEffect(() => {
+    if (ageStep === "rejected") {
+      const t = setTimeout(() => {
+        window.location.href = HOME_LINK
+      }, 8000)
+      return () => clearTimeout(t)
+    }
+  }, [ageStep])
 
   // Captura UTMs
   const getUtms = useCallback(() => {
@@ -200,6 +221,14 @@ export function QualificationForm() {
     return <TransitionScreen />
   }
 
+  if (ageStep === "rejected") {
+    return <AgeRejectedScreen />
+  }
+
+  if (ageStep === "gate") {
+    return <AgeGateScreen onYes={handleAgeYes} onNo={handleAgeNo} />
+  }
+
   if (step === 0) {
     return <StartScreen onStart={startQualification} />
   }
@@ -252,8 +281,6 @@ export function QualificationForm() {
               form={form}
               errors={errors}
               onChange={(patch) => setForm((f) => ({ ...f, ...patch }))}
-              ageConfirmed={ageConfirmed}
-              onAgeChange={setAgeConfirmed}
             />
           )}
 
@@ -309,7 +336,7 @@ export function QualificationForm() {
           <div className="mx-auto w-full max-w-lg">
             <button
               type="button"
-              disabled={saving || (step === 3 && !ageConfirmed)}
+              disabled={saving}
               onClick={() => {
                 if (step === 1) {
                   if (!form.objetivo) return triggerShake()
@@ -318,7 +345,6 @@ export function QualificationForm() {
                   if (!form.situacao) return triggerShake()
                   setStep(3)
                 } else if (step === 3) {
-                  if (!ageConfirmed) return triggerShake()
                   handleContactSubmit()
                 }
               }}
@@ -428,14 +454,10 @@ function ContactStep({
   form,
   errors,
   onChange,
-  ageConfirmed,
-  onAgeChange,
 }: {
   form: FormData
   errors: Partial<Record<string, string>>
   onChange: (patch: Partial<FormData>) => void
-  ageConfirmed: boolean
-  onAgeChange: (value: boolean) => void
 }): ReactNode {
   return (
     <div>
@@ -479,23 +501,7 @@ function ContactStep({
         </Field>
       </div>
 
-      <button
-        type="button"
-        onClick={() => onAgeChange(!ageConfirmed)}
-        aria-pressed={ageConfirmed}
-        className="mt-6 flex w-full items-start gap-3 rounded-xl border border-[#2A2A2A] bg-[#1A1A1A] p-4 text-left transition-colors hover:border-[#3A3A3A]"
-      >
-        <span
-          className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors ${
-            ageConfirmed ? "border-[#16A34A] bg-[#16A34A]" : "border-[#3A3A3A] bg-transparent"
-          }`}
-        >
-          {ageConfirmed && <Check className="h-3.5 w-3.5 text-white" />}
-        </span>
-        <span className="text-sm leading-relaxed text-[#D4D4D4]">Confirmo que tenho 18 anos ou mais.</span>
-      </button>
-
-      <p className="mt-4 text-xs leading-relaxed text-[#525252]">
+      <p className="mt-5 text-xs leading-relaxed text-[#525252]">
         Ao continuar, você concorda com nossa{" "}
         <a href={PRIVACY_LINK} target="_blank" rel="noopener noreferrer" className="text-[#16A34A] underline">
           Política de Privacidade
@@ -705,6 +711,65 @@ function StartScreen({ onStart }: { onStart: () => void }) {
           </div>
         </div>
       </div>
+    </div>
+  )
+}
+
+// Gate de idade — mesmo layout/estilo das etapas, porém sem barra de progresso nem contador de etapas
+function AgeGateScreen({ onYes, onNo }: { onYes: () => void; onNo: () => void }) {
+  return (
+    <div className="flex min-h-[100dvh] flex-col">
+      {/* Header */}
+      <header className="flex h-[60px] shrink-0 items-center justify-center border-b border-[#2A2A2A] px-5">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={LOGO || "/placeholder.svg"} alt="Pro Growth Global" className="h-6 w-auto" />
+      </header>
+
+      {/* Content */}
+      <div className="mx-auto flex w-full max-w-lg flex-1 flex-col justify-center px-5 pb-16 pt-8">
+        <div className="animate-[slideIn_0.35s_ease-out]">
+          <div className="mb-6 flex w-fit items-center gap-1.5 rounded-full border border-[#7C3AED]/30 bg-[#7C3AED]/10 px-3.5 py-1.5">
+            <BadgeCheck className="h-3.5 w-3.5 text-[#C4B5FD]" />
+            <span className="text-xs font-semibold uppercase tracking-wide text-[#C4B5FD]">
+              Verificação de idade
+            </span>
+          </div>
+
+          <h1 className="mb-6 text-2xl font-bold leading-tight tracking-tight text-balance">
+            Você tem 18 anos ou mais?
+          </h1>
+
+          <div className="flex flex-col gap-2.5">
+            <button type="button" onClick={onYes} className={cardClass(false)}>
+              <span className="text-[15px] font-medium leading-snug">Sim, tenho 18 anos ou mais</span>
+            </button>
+            <button type="button" onClick={onNo} className={cardClass(false)}>
+              <span className="text-[15px] font-medium leading-snug">Não, sou menor de 18 anos</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes slideIn {
+          from { opacity: 0; transform: translateX(24px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
+      `}</style>
+    </div>
+  )
+}
+
+// Tela de encerramento para menores de 18 anos (redireciona à home em 8s)
+function AgeRejectedScreen() {
+  return (
+    <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-[#0B0B0B] px-8 text-center">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={LOGO || "/placeholder.svg"} alt="Pro Growth Global" className="mb-8 h-6 w-auto opacity-80" />
+      <p className="max-w-md text-lg font-medium leading-relaxed text-white text-balance">
+        Nossa operação é destinada exclusivamente a maiores de 18 anos. Não podemos dar continuidade ao seu
+        cadastro neste momento. Obrigado pelo interesse na Pro Growth Global.
+      </p>
     </div>
   )
 }
