@@ -3,7 +3,7 @@
 import type { ReactNode } from "react"
 import { useState, useEffect, useRef, useCallback } from "react"
 import { useSearchParams } from "next/navigation"
-import { Check, ArrowLeft, ArrowRight, ShieldCheck } from "lucide-react"
+import { Check, ArrowLeft, ArrowRight, ShieldCheck, BadgeCheck } from "lucide-react"
 import { createPartialLead, updateLeadProgress } from "@/app/actions/leads-actions"
 
 const WHATSAPP_LINK = "https://wa.link/a571wz"
@@ -86,6 +86,7 @@ export function QualificationForm() {
   const [shake, setShake] = useState(false)
   const [showWhats, setShowWhats] = useState(false)
   const [disqualifying, setDisqualifying] = useState(false)
+  const [ageConfirmed, setAgeConfirmed] = useState(false)
   const formStarted = useRef(false)
 
   // Tela de entrada → dispara FormStart e avança para o Step 1
@@ -251,6 +252,8 @@ export function QualificationForm() {
               form={form}
               errors={errors}
               onChange={(patch) => setForm((f) => ({ ...f, ...patch }))}
+              ageConfirmed={ageConfirmed}
+              onAgeChange={setAgeConfirmed}
             />
           )}
 
@@ -306,7 +309,7 @@ export function QualificationForm() {
           <div className="mx-auto w-full max-w-lg">
             <button
               type="button"
-              disabled={saving}
+              disabled={saving || (step === 3 && !ageConfirmed)}
               onClick={() => {
                 if (step === 1) {
                   if (!form.objetivo) return triggerShake()
@@ -315,6 +318,7 @@ export function QualificationForm() {
                   if (!form.situacao) return triggerShake()
                   setStep(3)
                 } else if (step === 3) {
+                  if (!ageConfirmed) return triggerShake()
                   handleContactSubmit()
                 }
               }}
@@ -424,10 +428,14 @@ function ContactStep({
   form,
   errors,
   onChange,
+  ageConfirmed,
+  onAgeChange,
 }: {
   form: FormData
   errors: Partial<Record<string, string>>
   onChange: (patch: Partial<FormData>) => void
+  ageConfirmed: boolean
+  onAgeChange: (value: boolean) => void
 }): ReactNode {
   return (
     <div>
@@ -471,7 +479,23 @@ function ContactStep({
         </Field>
       </div>
 
-      <p className="mt-5 text-xs leading-relaxed text-[#525252]">
+      <button
+        type="button"
+        onClick={() => onAgeChange(!ageConfirmed)}
+        aria-pressed={ageConfirmed}
+        className="mt-6 flex w-full items-start gap-3 rounded-xl border border-[#2A2A2A] bg-[#1A1A1A] p-4 text-left transition-colors hover:border-[#3A3A3A]"
+      >
+        <span
+          className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors ${
+            ageConfirmed ? "border-[#16A34A] bg-[#16A34A]" : "border-[#3A3A3A] bg-transparent"
+          }`}
+        >
+          {ageConfirmed && <Check className="h-3.5 w-3.5 text-white" />}
+        </span>
+        <span className="text-sm leading-relaxed text-[#D4D4D4]">Confirmo que tenho 18 anos ou mais.</span>
+      </button>
+
+      <p className="mt-4 text-xs leading-relaxed text-[#525252]">
         Ao continuar, você concorda com nossa{" "}
         <a href={PRIVACY_LINK} target="_blank" rel="noopener noreferrer" className="text-[#16A34A] underline">
           Política de Privacidade
@@ -611,13 +635,23 @@ function StartScreen({ onStart }: { onStart: () => void }) {
       {/* Conteúdo centralizado */}
       <div className="flex flex-1 flex-col items-center justify-center px-6 py-10">
         <div className="w-full max-w-md">
-          {/* Selo */}
-          <div className="mx-auto mb-6 flex w-fit items-center gap-2 rounded-full border border-[#7C3AED]/30 bg-[#7C3AED]/10 px-3.5 py-1.5">
-            <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#A78BFA] opacity-75" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-[#8B5CF6]" />
-            </span>
-            <span className="text-xs font-semibold tracking-wide text-[#C4B5FD]">Processo seletivo aberto</span>
+          {/* Selos */}
+          <div className="mb-6 flex flex-col items-center gap-2">
+            <div className="flex w-fit items-center gap-2 rounded-full border border-[#7C3AED]/30 bg-[#7C3AED]/10 px-3.5 py-1.5">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#A78BFA] opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-[#8B5CF6]" />
+              </span>
+              <span className="text-xs font-semibold uppercase tracking-wide text-[#C4B5FD]">
+                Processo seletivo aberto
+              </span>
+            </div>
+            <div className="flex w-fit items-center gap-1.5 rounded-full border border-[#3A3A3A] bg-[#1A1A1A] px-3.5 py-1.5">
+              <BadgeCheck className="h-3.5 w-3.5 text-[#9CA3AF]" />
+              <span className="text-xs font-semibold uppercase tracking-wide text-[#9CA3AF]">
+                Apenas maiores de 18 anos
+              </span>
+            </div>
           </div>
 
           <h1 className="text-center text-[28px] font-bold leading-[1.15] tracking-tight text-white text-balance sm:text-[32px]">
@@ -625,8 +659,8 @@ function StartScreen({ onStart }: { onStart: () => void }) {
           </h1>
 
           <p className="mx-auto mt-5 max-w-sm text-center text-base leading-relaxed text-[#A3A3A3] text-pretty">
-            É para quem já entendeu que dropshipping sem estrutura é dinheiro jogado fora — e quer entrar pelo
-            caminho certo.
+            É para maiores de 18 anos que já entenderam que dropshipping sem estrutura é dinheiro jogado fora — e
+            querem entrar pelo caminho certo.
           </p>
 
           {/* Bloco de estatísticas roxo com contadores */}
@@ -662,9 +696,12 @@ function StartScreen({ onStart }: { onStart: () => void }) {
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
           </button>
 
-          <div className="mt-4 flex items-center justify-center gap-1.5 text-[12px] text-[#525252]">
-            <ShieldCheck className="h-3.5 w-3.5" />
-            Leva menos de 2 minutos. Seus dados estão seguros.
+          <div className="mt-4 flex flex-col items-center gap-1 text-center text-[12px] text-[#525252]">
+            <span className="flex items-center justify-center gap-1.5">
+              <ShieldCheck className="h-3.5 w-3.5" />
+              Leva menos de 2 minutos. Seus dados estão seguros.
+            </span>
+            <span>Disponível apenas para maiores de 18 anos.</span>
           </div>
         </div>
       </div>
