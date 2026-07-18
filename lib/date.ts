@@ -30,12 +30,12 @@ export function getBusinessDaysByPlan(plan: string): number {
       return 7
     case "Pro VÉRTEBRA":
     case "Pro Vértebra":
-      return 10
+      return 7
     case "Scale VÉRTEBRA+ BR":
     case "Scale Vértebra":
     case "Scale VÉRTEBRA+ GLOBAL":
     case "Scale Global":
-      return 15
+      return 10
     default:
       return 7
   }
