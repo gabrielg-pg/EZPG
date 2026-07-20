@@ -8,9 +8,12 @@ export const dynamic = "force-dynamic"
 
 export default async function PgDashPage() {
   const user = await requireAuth()
-  const userRole = user.role?.toLowerCase() || ""
-  const roles = [userRole]
-  if (userRole !== "admin") redirect("/dashboard")
+  const roles = (user.roles ?? [user.role]).map((r) => (r ?? "").toLowerCase())
+
+  // Acesso permitido para admin e usuários com Zona de Execução
+  if (!roles.some((r) => ["admin", "zona_execucao"].includes(r))) {
+    redirect("/dashboard")
+  }
 
   await createPgDashTable()
   const items = await getPgDashAccounts()

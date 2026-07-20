@@ -31,7 +31,7 @@ export function DashboardLayout({ children, userRoles = ["user"] }: DashboardLay
     { name: "Growth Clientes", href: "/zona-de-execucao/growth-clientes", icon: TrendingUp, roles: ["admin"] },
     { name: "Referência de Lojas", href: "/referencia-lojas", icon: Globe, roles: ["admin", "comercial", "zona_execucao", "user"] },
     { name: "Cofre", href: "/cofre", icon: KeyRound, roles: ["admin"] },
-    { name: "PG Dash", href: "/pg-dash", icon: Gauge, roles: ["admin"] },
+    { name: "PG Dash", href: "/pg-dash", icon: Gauge, roles: ["admin", "zona_execucao"] },
     { name: "CRM", href: "/crm", icon: KanbanSquare, roles: ["admin", "gestor_ads"] },
     { name: "Financeiro", href: "/financeiro", icon: TrendingUp, roles: ["admin"] },
     { name: "Usuários", href: "/admin", icon: Users, roles: ["admin"] },
