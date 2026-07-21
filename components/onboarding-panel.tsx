@@ -45,17 +45,10 @@ export function OnboardingPanel({ initialMessages }: { initialMessages: Onboardi
     })
   }
 
-  // Converte o corpo (que usa quebras simples) em texto com uma linha em branco
-  // entre cada bloco, para que o espaçamento seja preservado ao colar no WhatsApp.
-  const formatForWhatsApp = (body: string) =>
-    body
-      .split("\n")
-      .map((line) => line.trim())
-      .filter((line) => line !== "")
-      .join("\n\n")
-
+  // Copia o texto exatamente como está salvo (o espaçamento já vem correto do
+  // conteúdo), preservando quebras e linhas em branco ao colar no WhatsApp.
   const copyBody = (m: OnboardingMessage) => {
-    navigator.clipboard.writeText(formatForWhatsApp(m.body))
+    navigator.clipboard.writeText(m.body)
     setCopiedId(m.id)
     setTimeout(() => setCopiedId(null), 2000)
   }
