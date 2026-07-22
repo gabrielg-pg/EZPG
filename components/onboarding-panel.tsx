@@ -23,6 +23,8 @@ export function OnboardingPanel({ initialMessages }: { initialMessages: Onboardi
   const [editingId, setEditingId] = useState<number | null>(null)
   const [draft, setDraft] = useState("")
   const [draftTitle, setDraftTitle] = useState("")
+  const [editingTitleId, setEditingTitleId] = useState<number | null>(null)
+  const [titleDraft, setTitleDraft] = useState("")
   const [copiedId, setCopiedId] = useState<number | null>(null)
   const [isPending, startTransition] = useTransition()
 
@@ -52,6 +54,26 @@ export function OnboardingPanel({ initialMessages }: { initialMessages: Onboardi
       setEditingId(null)
       setDraft("")
       setDraftTitle("")
+    })
+  }
+
+  const startTitleEdit = (m: OnboardingMessage) => {
+    setEditingTitleId(m.id)
+    setTitleDraft(m.title)
+  }
+
+  const cancelTitleEdit = () => {
+    setEditingTitleId(null)
+    setTitleDraft("")
+  }
+
+  const saveTitleEdit = (m: OnboardingMessage) => {
+    const newTitle = titleDraft.trim() || m.title
+    startTransition(async () => {
+      await updateOnboardingMessage(m.id, m.body, newTitle)
+      setMessages((prev) => prev.map((x) => (x.id === m.id ? { ...x, title: newTitle } : x)))
+      setEditingTitleId(null)
+      setTitleDraft("")
     })
   }
 
@@ -154,17 +176,59 @@ export function OnboardingPanel({ initialMessages }: { initialMessages: Onboardi
             >
               {/* Card header */}
               <div className="flex items-start justify-between gap-3 mb-3">
-                <div className="flex items-center gap-2 min-w-0">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
                   {internal && <Lock className="h-3.5 w-3.5 text-amber-400 shrink-0" />}
-                  <h2
-                    className={`text-sm font-bold tracking-wide ${
-                      internal ? "text-amber-300" : "text-white"
-                    }`}
-                  >
-                    {m.title}
-                  </h2>
+                  {editingTitleId === m.id ? (
+                    <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                      <input
+                        value={titleDraft}
+                        onChange={(e) => setTitleDraft(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && !e.nativeEvent.isComposing) saveTitleEdit(m)
+                          if (e.key === "Escape") cancelTitleEdit()
+                        }}
+                        autoFocus
+                        className="flex-1 min-w-0 rounded-md border border-primary/40 bg-background px-2 py-1 text-sm font-bold tracking-wide text-white outline-none focus:border-primary"
+                      />
+                      <button
+                        onClick={() => saveTitleEdit(m)}
+                        disabled={isPending}
+                        aria-label="Salvar título"
+                        className="rounded-md border border-primary/40 p-1.5 text-primary hover:bg-primary/10 transition-colors"
+                      >
+                        <Save className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        onClick={cancelTitleEdit}
+                        disabled={isPending}
+                        aria-label="Cancelar edição do título"
+                        className="rounded-md border border-sidebar-border p-1.5 text-muted-foreground hover:text-white transition-colors"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <h2
+                        className={`text-sm font-bold tracking-wide ${
+                          internal ? "text-amber-300" : "text-white"
+                        }`}
+                      >
+                        {m.title}
+                      </h2>
+                      {!isEditing && (
+                        <button
+                          onClick={() => startTitleEdit(m)}
+                          className="flex items-center gap-1 rounded-md border border-sidebar-border px-1.5 py-0.5 text-[11px] text-muted-foreground hover:text-white hover:border-primary/40 transition-colors shrink-0"
+                        >
+                          <Pencil className="h-3 w-3" />
+                          Editar
+                        </button>
+                      )}
+                    </>
+                  )}
                 </div>
-                {!isEditing && (
+                {!isEditing && editingTitleId !== m.id && (
                   <div className="flex gap-1.5 shrink-0">
                     <button
                       onClick={() => copyBody(m)}
