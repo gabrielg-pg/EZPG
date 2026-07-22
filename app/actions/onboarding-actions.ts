@@ -102,3 +102,38 @@ export async function deleteOnboardingMessage(id: number) {
   await sql`DELETE FROM pg_onboarding_messages WHERE id = ${id}`
   revalidatePath(PATH)
 }
+
+// Move um bloco para cima ("up") ou para baixo ("down"), trocando de posição
+// com o bloco vizinho na mesma aba.
+export async function moveOnboardingMessage(id: number, direction: "up" | "down") {
+  await requireExecutionAccess()
+
+  const currentRows = await sql`
+    SELECT id, tab, position FROM pg_onboarding_messages WHERE id = ${id}
+  `
+  const current = currentRows[0] as { id: number; tab: string; position: number } | undefined
+  if (!current) return
+
+  // Localiza o vizinho imediato na direção desejada.
+  const neighborRows =
+    direction === "up"
+      ? await sql`
+          SELECT id, position FROM pg_onboarding_messages
+          WHERE tab = ${current.tab} AND position < ${current.position}
+          ORDER BY position DESC LIMIT 1
+        `
+      : await sql`
+          SELECT id, position FROM pg_onboarding_messages
+          WHERE tab = ${current.tab} AND position > ${current.position}
+          ORDER BY position ASC LIMIT 1
+        `
+  const neighbor = neighborRows[0] as { id: number; position: number } | undefined
+  if (!neighbor) return // já está no topo/fim
+
+  // Troca as posições usando um valor temporário para respeitar a UNIQUE(tab, position).
+  await sql`UPDATE pg_onboarding_messages SET position = -1 WHERE id = ${current.id}`
+  await sql`UPDATE pg_onboarding_messages SET position = ${current.position} WHERE id = ${neighbor.id}`
+  await sql`UPDATE pg_onboarding_messages SET position = ${neighbor.position} WHERE id = ${current.id}`
+
+  revalidatePath(PATH)
+}

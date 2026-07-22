@@ -2,11 +2,12 @@
 
 import { useState, useMemo, useTransition } from "react"
 import { Button } from "@/components/ui/button"
-import { Copy, Check, Pencil, Save, X, ClipboardList, Lock, Plus, Trash2 } from "lucide-react"
+import { Copy, Check, Pencil, Save, X, ClipboardList, Lock, Plus, Trash2, ChevronUp, ChevronDown } from "lucide-react"
 import {
   updateOnboardingMessage,
   createOnboardingMessage,
   deleteOnboardingMessage,
+  moveOnboardingMessage,
   type OnboardingMessage,
 } from "@/app/actions/onboarding-actions"
 
@@ -101,6 +102,28 @@ export function OnboardingPanel({ initialMessages }: { initialMessages: Onboardi
     })
   }
 
+  // Move um bloco para cima ou para baixo, trocando de posição com o vizinho.
+  const moveBlock = (m: OnboardingMessage, direction: "up" | "down") => {
+    const list = visible
+    const idx = list.findIndex((x) => x.id === m.id)
+    const neighborIdx = direction === "up" ? idx - 1 : idx + 1
+    if (neighborIdx < 0 || neighborIdx >= list.length) return
+    const neighbor = list[neighborIdx]
+
+    // Atualização otimista: troca as posições localmente.
+    setMessages((prev) =>
+      prev.map((x) => {
+        if (x.id === m.id) return { ...x, position: neighbor.position }
+        if (x.id === neighbor.id) return { ...x, position: m.position }
+        return x
+      }),
+    )
+
+    startTransition(async () => {
+      await moveOnboardingMessage(m.id, direction)
+    })
+  }
+
   // Copia o texto exatamente como está salvo (o espaçamento já vem correto do
   // conteúdo), preservando quebras e linhas em branco ao colar no WhatsApp.
   const copyBody = (m: OnboardingMessage) => {
@@ -161,9 +184,11 @@ export function OnboardingPanel({ initialMessages }: { initialMessages: Onboardi
 
       {/* Message cards */}
       <div className="flex flex-col gap-4">
-        {visible.map((m) => {
+        {visible.map((m, index) => {
           const isEditing = editingId === m.id
           const internal = m.is_internal
+          const isFirst = index === 0
+          const isLast = index === visible.length - 1
           return (
             <div
               key={m.id}
@@ -230,6 +255,25 @@ export function OnboardingPanel({ initialMessages }: { initialMessages: Onboardi
                 </div>
                 {!isEditing && editingTitleId !== m.id && (
                   <div className="flex gap-1.5 shrink-0">
+                    <div className="flex items-center rounded-lg border border-sidebar-border overflow-hidden">
+                      <button
+                        onClick={() => moveBlock(m, "up")}
+                        disabled={isFirst || isPending}
+                        aria-label="Mover bloco para cima"
+                        className="flex items-center px-2 py-1.5 text-muted-foreground hover:text-white hover:bg-primary/10 transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-muted-foreground"
+                      >
+                        <ChevronUp className="h-3.5 w-3.5" />
+                      </button>
+                      <span className="w-px self-stretch bg-sidebar-border" />
+                      <button
+                        onClick={() => moveBlock(m, "down")}
+                        disabled={isLast || isPending}
+                        aria-label="Mover bloco para baixo"
+                        className="flex items-center px-2 py-1.5 text-muted-foreground hover:text-white hover:bg-primary/10 transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-muted-foreground"
+                      >
+                        <ChevronDown className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
                     <button
                       onClick={() => copyBody(m)}
                       className="flex items-center gap-1.5 rounded-lg border border-sidebar-border px-2.5 py-1.5 text-xs text-muted-foreground hover:text-white hover:border-primary/40 transition-colors"
