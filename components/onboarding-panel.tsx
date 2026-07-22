@@ -2,8 +2,13 @@
 
 import { useState, useMemo, useTransition } from "react"
 import { Button } from "@/components/ui/button"
-import { Copy, Check, Pencil, Save, X, ClipboardList, Lock } from "lucide-react"
-import { updateOnboardingMessage, type OnboardingMessage } from "@/app/actions/onboarding-actions"
+import { Copy, Check, Pencil, Save, X, ClipboardList, Lock, Plus, Trash2 } from "lucide-react"
+import {
+  updateOnboardingMessage,
+  createOnboardingMessage,
+  deleteOnboardingMessage,
+  type OnboardingMessage,
+} from "@/app/actions/onboarding-actions"
 
 type TabKey = "brasil" | "global"
 
@@ -17,6 +22,7 @@ export function OnboardingPanel({ initialMessages }: { initialMessages: Onboardi
   const [activeTab, setActiveTab] = useState<TabKey>("brasil")
   const [editingId, setEditingId] = useState<number | null>(null)
   const [draft, setDraft] = useState("")
+  const [draftTitle, setDraftTitle] = useState("")
   const [copiedId, setCopiedId] = useState<number | null>(null)
   const [isPending, startTransition] = useTransition()
 
@@ -28,20 +34,48 @@ export function OnboardingPanel({ initialMessages }: { initialMessages: Onboardi
   const startEdit = (m: OnboardingMessage) => {
     setEditingId(m.id)
     setDraft(m.body)
+    setDraftTitle(m.title)
   }
 
   const cancelEdit = () => {
     setEditingId(null)
     setDraft("")
+    setDraftTitle("")
   }
 
   const saveEdit = (id: number) => {
     const newBody = draft
+    const newTitle = draftTitle.trim() || "NOVO BLOCO"
     startTransition(async () => {
-      await updateOnboardingMessage(id, newBody)
-      setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, body: newBody } : m)))
+      await updateOnboardingMessage(id, newBody, newTitle)
+      setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, body: newBody, title: newTitle } : m)))
       setEditingId(null)
       setDraft("")
+      setDraftTitle("")
+    })
+  }
+
+  const addBlock = () => {
+    startTransition(async () => {
+      const created = await createOnboardingMessage(activeTab, "NOVO BLOCO", "")
+      setMessages((prev) => [...prev, created])
+      // Entra em edição imediatamente no novo bloco
+      setEditingId(created.id)
+      setDraft(created.body)
+      setDraftTitle(created.title)
+      // Rola até o novo bloco após renderizar
+      setTimeout(() => {
+        document.getElementById(`onb-msg-${created.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" })
+      }, 100)
+    })
+  }
+
+  const removeBlock = (id: number) => {
+    if (!confirm("Tem certeza que deseja excluir este bloco? Esta ação não pode ser desfeita.")) return
+    startTransition(async () => {
+      await deleteOnboardingMessage(id)
+      setMessages((prev) => prev.filter((m) => m.id !== id))
+      if (editingId === id) cancelEdit()
     })
   }
 
@@ -111,6 +145,7 @@ export function OnboardingPanel({ initialMessages }: { initialMessages: Onboardi
           return (
             <div
               key={m.id}
+              id={`onb-msg-${m.id}`}
               className={`rounded-xl border p-5 transition-colors ${
                 internal
                   ? "border-amber-500/40 bg-amber-500/5"
@@ -161,13 +196,30 @@ export function OnboardingPanel({ initialMessages }: { initialMessages: Onboardi
               {/* Body */}
               {isEditing ? (
                 <div className="space-y-3">
-                  <textarea
-                    value={draft}
-                    onChange={(e) => setDraft(e.target.value)}
-                    rows={Math.max(6, draft.split("\n").length + 1)}
-                    className="w-full rounded-lg border border-primary/40 bg-background p-3 text-sm leading-relaxed text-white outline-none focus:border-primary resize-y font-sans"
-                  />
-                  <div className="flex gap-2">
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground/70">
+                      Título do bloco
+                    </label>
+                    <input
+                      value={draftTitle}
+                      onChange={(e) => setDraftTitle(e.target.value)}
+                      placeholder="Ex.: MENSAGEM 15 — ASSUNTO"
+                      className="w-full rounded-lg border border-primary/40 bg-background p-2.5 text-sm font-semibold text-white outline-none focus:border-primary"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground/70">
+                      Conteúdo da mensagem
+                    </label>
+                    <textarea
+                      value={draft}
+                      onChange={(e) => setDraft(e.target.value)}
+                      rows={Math.max(6, draft.split("\n").length + 1)}
+                      placeholder="Escreva o script. Use linhas em branco para separar blocos (elas são preservadas ao copiar)."
+                      className="w-full rounded-lg border border-primary/40 bg-background p-3 text-sm leading-relaxed text-white outline-none focus:border-primary resize-y font-sans"
+                    />
+                  </div>
+                  <div className="flex flex-wrap gap-2">
                     <Button
                       size="sm"
                       onClick={() => saveEdit(m.id)}
@@ -186,6 +238,16 @@ export function OnboardingPanel({ initialMessages }: { initialMessages: Onboardi
                     >
                       <X className="h-3.5 w-3.5 mr-1.5" />
                       Cancelar
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => removeBlock(m.id)}
+                      disabled={isPending}
+                      className="ml-auto border-red-500/30 text-red-400 hover:text-red-300 hover:border-red-500/50 bg-transparent"
+                    >
+                      <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+                      Excluir bloco
                     </Button>
                   </div>
                 </div>
@@ -210,6 +272,16 @@ export function OnboardingPanel({ initialMessages }: { initialMessages: Onboardi
             </div>
           )
         })}
+
+        {/* Adicionar novo bloco */}
+        <button
+          onClick={addBlock}
+          disabled={isPending}
+          className="flex items-center justify-center gap-2 rounded-xl border border-dashed border-primary/40 bg-primary/5 px-5 py-4 text-sm font-medium text-primary transition-colors hover:bg-primary/10 hover:border-primary/60 disabled:opacity-50"
+        >
+          <Plus className="h-4 w-4" />
+          Adicionar Bloco em {activeTabInfo.label}
+        </button>
       </div>
     </div>
   )

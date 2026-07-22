@@ -61,12 +61,44 @@ export async function getOnboardingMessages(): Promise<OnboardingMessage[]> {
   return rows as OnboardingMessage[]
 }
 
-export async function updateOnboardingMessage(id: number, body: string) {
+export async function updateOnboardingMessage(id: number, body: string, title?: string) {
   await requireExecutionAccess()
-  await sql`
-    UPDATE pg_onboarding_messages
-    SET body = ${body}, updated_at = NOW()
-    WHERE id = ${id}
+  if (typeof title === "string") {
+    await sql`
+      UPDATE pg_onboarding_messages
+      SET body = ${body}, title = ${title}, updated_at = NOW()
+      WHERE id = ${id}
+    `
+  } else {
+    await sql`
+      UPDATE pg_onboarding_messages
+      SET body = ${body}, updated_at = NOW()
+      WHERE id = ${id}
+    `
+  }
+  revalidatePath(PATH)
+}
+
+// Cria um novo bloco no fim do funil da aba informada.
+export async function createOnboardingMessage(tab: OnboardingTab, title: string, body: string) {
+  await requireExecutionAccess()
+  const rows = await sql`
+    SELECT COALESCE(MAX(position), 0) + 1 AS next
+    FROM pg_onboarding_messages
+    WHERE tab = ${tab}
   `
+  const nextPosition = (rows[0]?.next as number) ?? 1
+  const inserted = await sql`
+    INSERT INTO pg_onboarding_messages (tab, position, title, body, is_internal)
+    VALUES (${tab}, ${nextPosition}, ${title}, ${body}, false)
+    RETURNING id, tab, position, title, body, is_internal
+  `
+  revalidatePath(PATH)
+  return inserted[0] as OnboardingMessage
+}
+
+export async function deleteOnboardingMessage(id: number) {
+  await requireExecutionAccess()
+  await sql`DELETE FROM pg_onboarding_messages WHERE id = ${id}`
   revalidatePath(PATH)
 }
