@@ -26,6 +26,7 @@ const COUNTRIES = [
   { name: "Espanha", code: "es" },
   { name: "Alemanha", code: "de" },
   { name: "Canadá", code: "ca" },
+  { name: "Reino Unido", code: "gb" },
 ]
 
 const NICHE_SUGGESTIONS = [

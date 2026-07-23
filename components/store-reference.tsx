@@ -44,6 +44,7 @@ const COUNTRIES = [
   { name: "Espanha", code: "es" },
   { name: "Alemanha", code: "de" },
   { name: "Canadá", code: "ca" },
+  { name: "Reino Unido", code: "gb" },
   { name: "Austrália", code: "au" },
   { name: "França", code: "fr" },
   { name: "Itália", code: "it" },
