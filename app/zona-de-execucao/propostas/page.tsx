@@ -10,7 +10,7 @@ export default async function PropostasPage() {
   const user = await requireAuth()
   const roles = (user.roles ?? [user.role]).map((r) => (r ?? "").toLowerCase())
 
-  if (!roles.some((r) => ["admin", "zona_execucao"].includes(r))) {
+  if (!roles.includes("admin")) {
     redirect("/dashboard")
   }
 

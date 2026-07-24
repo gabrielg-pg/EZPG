@@ -29,7 +29,7 @@ export function DashboardLayout({ children, userRoles = ["user"] }: DashboardLay
     { name: "Zona de Execução", href: "/zona-de-execucao", icon: Rocket, roles: ["admin", "comercial", "zona_execucao"] },
     { name: "Onboardings", href: "/zona-de-execucao/onboardings", icon: MessageSquareText, roles: ["admin", "zona_execucao"] },
     { name: "Vértebra Naming™", href: "/zona-de-execucao/vertebra-naming", icon: Sparkles, roles: ["admin", "zona_execucao"] },
-    { name: "Propostas", href: "/zona-de-execucao/propostas", icon: HandCoins, roles: ["admin", "comercial", "zona_execucao"] },
+    { name: "Propostas", href: "/zona-de-execucao/propostas", icon: HandCoins, roles: ["admin"] },
     { name: "Criativos", href: "/zona-de-execucao/criativos", icon: Megaphone, roles: ["admin", "gestor_ads"] },
     { name: "Growth Clientes", href: "/zona-de-execucao/growth-clientes", icon: TrendingUp, roles: ["admin"] },
     { name: "Referência de Lojas", href: "/referencia-lojas", icon: Globe, roles: ["admin", "comercial", "zona_execucao", "user"] },

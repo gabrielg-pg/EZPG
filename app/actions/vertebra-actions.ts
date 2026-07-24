@@ -62,26 +62,26 @@ export async function updateVertebraLeadProgress(
   }
 }
 
-// ---------- PROPOSTAS (Admin + Zona de Execução) ----------
+// ---------- PROPOSTAS (somente Admin) ----------
 
-async function requireExecutionAccess() {
+async function requireAdminAccess() {
   const { user } = await getSession()
   if (!user) throw new Error("Não autenticado")
   const roles = (user.roles ?? [user.role]).map((r: string) => r.toLowerCase())
-  if (!roles.some((r: string) => ["admin", "zona_execucao"].includes(r))) {
+  if (!roles.includes("admin")) {
     throw new Error("Sem permissão")
   }
   return user
 }
 
 export async function getVertebraLeads(): Promise<VertebraLead[]> {
-  await requireExecutionAccess()
+  await requireAdminAccess()
   const rows = await sql`SELECT * FROM pg_vertebra_leads ORDER BY created_at DESC`
   return rows as VertebraLead[]
 }
 
 export async function moveVertebraLead(id: number, toStatus: VertebraPipelineStatus) {
-  await requireExecutionAccess()
+  await requireAdminAccess()
   await sql`
     UPDATE pg_vertebra_leads SET pipeline_status = ${toStatus}, updated_at = NOW()
     WHERE id = ${id}
@@ -90,7 +90,7 @@ export async function moveVertebraLead(id: number, toStatus: VertebraPipelineSta
 }
 
 export async function updateVertebraSinal(id: number, status: VertebraSinalStatus) {
-  await requireExecutionAccess()
+  await requireAdminAccess()
   await sql`
     UPDATE pg_vertebra_leads SET sinal_status = ${status}, updated_at = NOW()
     WHERE id = ${id}
@@ -99,19 +99,19 @@ export async function updateVertebraSinal(id: number, status: VertebraSinalStatu
 }
 
 export async function updateVertebraNotes(id: number, notas: string) {
-  await requireExecutionAccess()
+  await requireAdminAccess()
   await sql`UPDATE pg_vertebra_leads SET notas = ${notas}, updated_at = NOW() WHERE id = ${id}`
   revalidatePath(PATH)
 }
 
 export async function deleteVertebraLead(id: number) {
-  await requireExecutionAccess()
+  await requireAdminAccess()
   await sql`DELETE FROM pg_vertebra_leads WHERE id = ${id}`
   revalidatePath(PATH)
 }
 
 export async function updateVagasConfig(total: number, restantes: number) {
-  await requireExecutionAccess()
+  await requireAdminAccess()
   const safeTotal = Math.max(1, Math.round(total))
   const safeRestantes = Math.min(safeTotal, Math.max(0, Math.round(restantes)))
   await sql`
