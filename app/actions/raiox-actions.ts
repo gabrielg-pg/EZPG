@@ -7,18 +7,18 @@ import { defaultRaioxState, type RaioxState } from "@/lib/raiox"
 
 const PATH = "/raiox-planos"
 
-async function requireExecutionAccess() {
+async function requireAdminAccess() {
   const { user } = await getSession()
   if (!user) throw new Error("Não autenticado")
   const roles = (user.roles ?? [user.role]).map((r: string) => r.toLowerCase())
-  if (!roles.some((r: string) => ["admin", "zona_execucao"].includes(r))) {
+  if (!roles.includes("admin")) {
     throw new Error("Sem permissão")
   }
   return user
 }
 
 export async function getRaioxState(): Promise<RaioxState> {
-  await requireExecutionAccess()
+  await requireAdminAccess()
   const rows = await sql`SELECT data FROM pg_raiox_planos WHERE id = 1`
   const data = rows[0]?.data as RaioxState | undefined
 
@@ -35,7 +35,7 @@ export async function getRaioxState(): Promise<RaioxState> {
 }
 
 export async function saveRaioxState(state: RaioxState): Promise<{ ok: true }> {
-  await requireExecutionAccess()
+  await requireAdminAccess()
   await sql`
     INSERT INTO pg_raiox_planos (id, data, updated_at)
     VALUES (1, ${JSON.stringify(state)}::jsonb, NOW())

@@ -10,8 +10,8 @@ export default async function RaioxPlanosPage() {
   const user = await requireAuth()
   const roles = (user.roles ?? [user.role]).map((r) => r.toLowerCase())
 
-  // Acesso restrito: Admin e Zona de Execução (dados de margem sensíveis)
-  if (!roles.some((r) => ["admin", "zona_execucao"].includes(r))) {
+  // Acesso restrito: somente Admin (dados de margem sensíveis)
+  if (!roles.includes("admin")) {
     redirect("/dashboard")
   }
 
