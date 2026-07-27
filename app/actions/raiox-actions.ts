@@ -3,7 +3,7 @@
 import { sql } from "@/lib/db"
 import { revalidatePath } from "next/cache"
 import { getSession } from "@/lib/auth"
-import { defaultRaioxState, type RaioxState } from "@/lib/raiox"
+import { defaultRaioxState, normalizeState, type RaioxState } from "@/lib/raiox"
 
 const PATH = "/raiox-planos"
 
@@ -31,7 +31,8 @@ export async function getRaioxState(): Promise<RaioxState> {
     `
     return initial
   }
-  return data
+  // Reaplica as definições canônicas das colunas travadas (corrige estados antigos).
+  return normalizeState(data)
 }
 
 export async function saveRaioxState(state: RaioxState): Promise<{ ok: true }> {

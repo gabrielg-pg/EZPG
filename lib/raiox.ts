@@ -81,7 +81,18 @@ export function defaultRaioxState(): RaioxState {
         operators: ["-", "*"],
       },
     },
-    { id: "roas", name: "ROAS", type: "number", locked: true },
+    {
+      id: "roas",
+      name: "ROAS",
+      type: "formula",
+      locked: true,
+      displayAs: "number",
+      // ROAS = Valor do Plano ÷ Valor Gestão de ADS (0 quando ADS = 0).
+      formula: {
+        operands: ["valor_plano", "valor_ads"],
+        operators: ["/"],
+      },
+    },
   ]
 
   const planos = [
@@ -105,6 +116,19 @@ export function defaultRaioxState(): RaioxState {
   }))
 
   return { columns, rows }
+}
+
+// Reaplica as definições canônicas das colunas travadas (tipo, fórmula, displayAs)
+// a um estado carregado do banco, preservando a ordem, os valores das linhas e
+// quaisquer colunas personalizadas criadas pelo usuário. Isso corrige estados
+// salvos por versões antigas (ex.: Lucro sem "R$" e ROAS sem cálculo).
+export function normalizeState(state: RaioxState): RaioxState {
+  const canonical = new Map(defaultRaioxState().columns.map((c) => [c.id, c]))
+  const columns = state.columns.map((col) => {
+    const base = canonical.get(col.id)
+    return base ? { ...base } : col
+  })
+  return { columns, rows: state.rows }
 }
 
 // Converte o valor bruto de uma coluna para o número usado nos cálculos.
