@@ -13,6 +13,9 @@ export interface RaioxColumn {
     operands: string[] // ids de colunas
     operators: Operator[] // length === operands.length - 1
   }
+  // Formato de exibição do resultado de uma coluna de fórmula.
+  // Se ausente, usa "number".
+  displayAs?: "currency" | "number" | "percent"
   // Colunas base do sistema não podem ser removidas (mas podem ser editadas)
   locked?: boolean
 }
@@ -60,6 +63,7 @@ export function defaultRaioxState(): RaioxState {
       name: "Lucro Bruto",
       type: "formula",
       locked: true,
+      displayAs: "currency",
       formula: {
         operands: ["valor_plano", "valor_design", "valor_estrutura", "valor_ads"],
         operators: ["-", "-", "-"],
@@ -70,6 +74,7 @@ export function defaultRaioxState(): RaioxState {
       name: "Lucro Líquido",
       type: "formula",
       locked: true,
+      displayAs: "currency",
       // Lucro Bruto − (Valor do Plano × Valor Gestor%). Com precedência, o × resolve antes.
       formula: {
         operands: ["lucro_bruto", "valor_plano", "valor_gestor"],
@@ -169,7 +174,9 @@ export function formatValue(col: RaioxColumn, value: number | string): string {
   if (col.type === "text") return String(value ?? "")
   const n = typeof value === "number" ? value : Number.parseFloat(String(value ?? "").replace(",", "."))
   const safe = Number.isNaN(n) ? 0 : n
-  if (col.type === "currency") return formatCurrency(safe)
-  if (col.type === "percent") return `${safe.toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%`
+  // Colunas de fórmula usam o formato de exibição escolhido (displayAs).
+  const kind = col.type === "formula" ? (col.displayAs ?? "number") : col.type
+  if (kind === "currency") return formatCurrency(safe)
+  if (kind === "percent") return `${safe.toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%`
   return safe.toLocaleString("pt-BR", { maximumFractionDigits: 2 })
 }

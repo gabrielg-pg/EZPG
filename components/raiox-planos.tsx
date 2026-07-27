@@ -41,7 +41,6 @@ import {
   evaluateCell,
   isSummable,
   formatValue,
-  formatCurrency,
   newId,
 } from "@/lib/raiox"
 
@@ -67,7 +66,8 @@ export function RaioxPlanos({ initialState }: { initialState: RaioxState }) {
     type: ColumnType
     operands: string[]
     operators: Operator[]
-  }>({ name: "", type: "currency", operands: [], operators: [] })
+    displayAs: "currency" | "number" | "percent"
+  }>({ name: "", type: "currency", operands: [], operators: [], displayAs: "currency" })
 
   // confirmação de exclusão de coluna
   const [colToDelete, setColToDelete] = useState<RaioxColumn | null>(null)
@@ -154,7 +154,7 @@ export function RaioxPlanos({ initialState }: { initialState: RaioxState }) {
   }
 
   const openNewColModal = () => {
-    setNewCol({ name: "", type: "currency", operands: [], operators: [] })
+    setNewCol({ name: "", type: "currency", operands: [], operators: [], displayAs: "currency" })
     setColModalOpen(true)
   }
 
@@ -169,6 +169,7 @@ export function RaioxPlanos({ initialState }: { initialState: RaioxState }) {
     if (newCol.type === "formula") {
       if (newCol.operands.length < 1) return
       col.formula = { operands: newCol.operands, operators: newCol.operators }
+      col.displayAs = newCol.displayAs
     }
     const defaultVal: string | number = newCol.type === "text" ? "" : 0
     const next: RaioxState = {
@@ -448,7 +449,7 @@ export function RaioxPlanos({ initialState }: { initialState: RaioxState }) {
                         : "text-white"
                     }`}
                   >
-                    {col.type === "number" ? formatValue(col, total) : formatCurrency(total)}
+                    {formatValue(col, total)}
                   </td>
                 )
               })}
@@ -508,7 +509,25 @@ export function RaioxPlanos({ initialState }: { initialState: RaioxState }) {
 
             {/* Builder de fórmula */}
             {newCol.type === "formula" && (
-              <div className="space-y-2 rounded-lg border border-primary/20 bg-primary/5 p-3">
+              <div className="space-y-3 rounded-lg border border-primary/20 bg-primary/5 p-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Formato do resultado</Label>
+                  <Select
+                    value={newCol.displayAs}
+                    onValueChange={(v) =>
+                      setNewCol({ ...newCol, displayAs: v as "currency" | "number" | "percent" })
+                    }
+                  >
+                    <SelectTrigger className="bg-background/50 border-sidebar-border text-white h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover border-sidebar-border text-white">
+                      <SelectItem value="currency">Moeda (R$)</SelectItem>
+                      <SelectItem value="number">Número</SelectItem>
+                      <SelectItem value="percent">Percentual (%)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
                 <Label className="text-xs text-muted-foreground">
                   Monte a fórmula (× e ÷ são calculados antes de + e −)
                 </Label>
