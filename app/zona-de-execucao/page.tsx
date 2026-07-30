@@ -9,8 +9,8 @@ export default async function ZonaDeExecucaoPage() {
 
   const roles = (user.roles ?? [user.role]).map((r) => r.toLowerCase())
 
-  // Acesso permitido para admin, comercial, zona_execucao e gestor_ads
-  if (!roles.some((r) => ["admin", "comercial", "zona_execucao", "gestor_ads"].includes(r))) {
+  // Acesso permitido para admin, comercial, zona_execucao, gestor_ads e mineracao
+  if (!roles.some((r) => ["admin", "comercial", "zona_execucao", "gestor_ads", "mineracao"].includes(r))) {
     redirect("/login")
   }
 

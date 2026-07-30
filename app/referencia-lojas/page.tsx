@@ -6,7 +6,7 @@ import { createStoreReferencesTable, getStoreReferences } from "@/app/actions/st
 
 export default async function ReferenciaLojasPage() {
   const user = await requireAuth()
-  const roles = [user.role?.toLowerCase() || ""]
+  const roles = (user.roles ?? [user.role]).map((r) => r.toLowerCase())
 
   await createStoreReferencesTable()
   const stores = await getStoreReferences()

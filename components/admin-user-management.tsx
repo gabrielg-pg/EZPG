@@ -17,12 +17,12 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Plus, Pencil, Trash2, Search, Users, Shield, UserCheck, Loader2, Briefcase, KeyRound, Mail, UserCog, Rocket, ArrowRightLeft, Megaphone } from "lucide-react"
+import { Plus, Pencil, Trash2, Search, Users, Shield, UserCheck, Loader2, Briefcase, KeyRound, Mail, UserCog, Rocket, ArrowRightLeft, Megaphone, Pickaxe } from "lucide-react"
 import { createUserAction } from "@/app/actions/auth-actions"
 import { updateUser, deleteUser } from "@/app/actions/user-actions"
 import { cn } from "@/lib/utils"
 
-type RoleType = "admin" | "comercial" | "manager" | "user" | "zona_execucao" | "gestor_ads"
+type RoleType = "admin" | "comercial" | "manager" | "user" | "zona_execucao" | "gestor_ads" | "mineracao"
 
 interface User {
   id: number
@@ -42,6 +42,7 @@ const roleConfig = {
   user: { label: "Usuario", color: "bg-muted text-muted-foreground border-border", icon: Users, description: "Acesso basico ao sistema" },
   zona_execucao: { label: "Zona de Execucao", color: "bg-emerald-500/15 text-emerald-400 border-emerald-500/25", icon: Rocket, description: "Dashboard, lojas e zona de execucao" },
   gestor_ads: { label: "Gestor de ADS", color: "bg-orange-500/15 text-orange-400 border-orange-500/25", icon: Megaphone, description: "Acesso ao pipeline de Criativos na Zona de Execucao" },
+  mineracao: { label: "Mineração", color: "bg-teal-500/15 text-teal-400 border-teal-500/25", icon: Pickaxe, description: "Demandas, Zona de Execucao, Referencia de Lojas e o painel de Mineracao" },
 }
 
 export function AdminUserManagement({ initialUsers }: { initialUsers: User[] }) {

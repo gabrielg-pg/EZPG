@@ -8,7 +8,7 @@ import { getWeekStart } from "@/lib/week"
 
 export default async function DemandasPage() {
   const user = await requireAuth()
-  const roles = [user.role?.toLowerCase() || ""]
+  const roles = (user.roles ?? [user.role]).map((r) => r.toLowerCase())
 
   await createDemandasTable()
 
