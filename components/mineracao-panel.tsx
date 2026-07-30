@@ -24,6 +24,7 @@ import {
   Clapperboard,
   ShieldCheck,
   MonitorSmartphone,
+  FolderOpen,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -214,6 +215,28 @@ export function MineracaoPanel() {
           </p>
         </div>
       </div>
+
+      {/* Drive de Criativos - destaque */}
+      <a
+        href="https://drive.google.com/drive/folders/1UaLtpLBsUkOQzKzglRFp6SXjSdBKc2-3?hl=pt-br"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="group flex items-center justify-between gap-4 rounded-2xl border border-primary/30 bg-gradient-to-r from-primary/15 to-primary/5 p-5 transition-colors hover:border-primary/50 hover:from-primary/20"
+      >
+        <div className="flex items-center gap-4">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/20 text-primary">
+            <FolderOpen className="h-6 w-6" />
+          </div>
+          <div className="space-y-0.5">
+            <p className="text-base font-semibold text-foreground">Drive Criativos - Clientes</p>
+            <p className="text-sm text-muted-foreground">Pasta compartilhada com todos os criativos dos clientes.</p>
+          </div>
+        </div>
+        <span className="flex shrink-0 items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-transform group-hover:scale-105">
+          Abrir pasta
+          <ExternalLink className="h-4 w-4" />
+        </span>
+      </a>
 
       {/* Acessos */}
       <section className="space-y-4">
