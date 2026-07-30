@@ -23,6 +23,7 @@ import {
   Target,
   Clapperboard,
   ShieldCheck,
+  MonitorSmartphone,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -65,6 +66,12 @@ const credentials: Credential[] = [
     icon: Clapperboard,
     login: "suporteprogrowth@gmail.com",
     password: "#Luizpro76",
+  },
+  {
+    name: "ADSpower",
+    icon: MonitorSmartphone,
+    login: "hello@progrowthglobal.com.br",
+    password: "#Eusouprogrowth2030",
   },
 ]
 
