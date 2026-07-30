@@ -20,6 +20,9 @@ import {
   Mail,
   Image as ImageIcon,
   Globe,
+  Target,
+  Clapperboard,
+  ShieldCheck,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -49,6 +52,19 @@ const credentials: Credential[] = [
     login: "suporteprogrowth@gmail.com",
     password: "#Eusoufoda76",
     site: "https://www.magnific.com",
+  },
+  {
+    name: "WinningHunter",
+    icon: Target,
+    login: "suporteprogrowth@gmail.com",
+    password: "@ProGrowth2030#",
+    site: "https://app.winninghunter.com/dashboard",
+  },
+  {
+    name: "CapCut",
+    icon: Clapperboard,
+    login: "suporteprogrowth@gmail.com",
+    password: "#Luizpro76",
   },
 ]
 
@@ -111,6 +127,10 @@ const extensions: { name: string; url: string }[] = [
   {
     name: "PPSPY — Shopify Analytics",
     url: "https://chromewebstore.google.com/detail/ppspy-1-shopify-analytics/lppbajkahdbbadheilijoeegnfndhlab?hl=pt_BR",
+  },
+  {
+    name: "Poky — Product Importer",
+    url: "https://chromewebstore.google.com/detail/poky-product-importer/bgofkkdheiicamgmlpfcdlfclkjmdelb?hl=pt-BR",
   },
 ]
 
@@ -254,6 +274,22 @@ export function MineracaoPanel() {
                 </li>
               ))}
             </ol>
+
+            <div className="mt-6 space-y-2 rounded-xl border border-primary/25 bg-primary/5 p-4">
+              <p className="flex items-center gap-2 text-sm font-semibold text-primary">
+                <Search className="h-4 w-4" />
+                Informação importante
+              </p>
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                Caso ache poucos vídeos do concorrente, baixe todos os possíveis daquele produto e, em seguida, procure
+                no <span className="font-semibold text-foreground">WinningHunter</span> outros players que estão rodando
+                com criativos diferentes.
+              </p>
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                <span className="font-semibold text-foreground">PS:</span> os criativos precisam ter ângulos diferentes,
+                não apenas o mesmo criativo com músicas diferentes.
+              </p>
+            </div>
           </CardContent>
         </Card>
       </section>
@@ -306,6 +342,27 @@ export function MineracaoPanel() {
                 </div>
                 <p className="text-xs text-muted-foreground">
                   Adicione ao final da URL da loja para listar os produtos por mais vendidos.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <p className="flex items-center gap-2 text-sm font-medium text-foreground">
+                  <ShieldCheck className="h-4 w-4 text-primary" />
+                  Limpeza de metadados
+                </p>
+                <a
+                  href="https://online-metadata.com/remove-metadata"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-between gap-3 rounded-lg border border-border bg-secondary/40 px-4 py-3 transition-colors hover:border-primary/40 hover:bg-primary/5"
+                >
+                  <span className="flex items-center gap-3 text-sm font-medium text-foreground">
+                    <ShieldCheck className="h-4 w-4 text-primary" />
+                    online-metadata.com/remove-metadata
+                  </span>
+                  <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground" />
+                </a>
+                <p className="text-xs text-muted-foreground">
+                  Use para remover os metadados de todos os criativos baixados do concorrente.
                 </p>
               </div>
               <div className="flex items-start gap-3 rounded-lg border border-teal-500/20 bg-teal-500/5 px-4 py-3">
