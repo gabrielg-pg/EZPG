@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Check, Upload, Loader2, ImageIcon, RefreshCw, FileText, Eye, Clock, Plus, Tag } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { PIPELINE_ORDER, type BlogArticle, type BlogKeyword, type PipelineStatus } from "@/app/actions/blog-actions"
+import { PIPELINE_ORDER, type BlogArticle, type BlogKeyword, type PipelineStatus } from "@/lib/blog"
 
 const PIPELINE_LABELS: Record<PipelineStatus, string> = {
   briefing: "Briefing",
