@@ -38,10 +38,8 @@ import {
   setArticlePipeline,
   getBlogData,
   monthHasArticles,
-  type BlogArticle,
-  type BlogKeyword,
-  type PipelineStatus,
 } from "@/app/actions/blog-actions"
+import type { BlogArticle, BlogKeyword, PipelineStatus } from "@/lib/blog"
 
 const MONTHS = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
 

@@ -3,42 +3,9 @@
 import { sql } from "@/lib/db"
 import { requireAuth } from "@/lib/auth"
 import { revalidatePath } from "next/cache"
+import { PIPELINE_ORDER, type BlogArticle, type BlogKeyword, type PipelineStatus } from "@/lib/blog"
 
 const PATH = "/blog"
-
-export type KeywordStatus = "available" | "in_use" | "published"
-export type PipelineStatus = "briefing" | "writing" | "design" | "review" | "published"
-
-export type BlogKeyword = {
-  id: number
-  keyword: string
-  status: KeywordStatus
-}
-
-export type BlogArticle = {
-  id: number
-  month: number
-  year: number
-  order: number
-  funnel_stage: string
-  title: string
-  publish_date: string | null
-  word_count: number
-  pipeline_status: PipelineStatus
-  cta: string
-  objective: string
-  context: string
-  structure: string[]
-  tone: string
-  keywords: number[]
-  image_url: string | null
-  image_filename: string | null
-  views: number
-  avg_engagement: string
-}
-
-// Ordem canônica do pipeline editorial.
-export const PIPELINE_ORDER: PipelineStatus[] = ["briefing", "writing", "design", "review", "published"]
 
 // Garante que o usuário tem acesso ao módulo Blog (admin ou permissão "blog").
 async function requireBlogAccess() {

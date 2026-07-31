@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Plus, Trash2, Save, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import type { BlogArticle, BlogKeyword } from "@/app/actions/blog-actions"
+import type { BlogArticle, BlogKeyword } from "@/lib/blog"
 
 const FUNNEL_OPTIONS = ["Topo", "Meio", "Fundo"]
 
