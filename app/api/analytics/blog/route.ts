@@ -95,12 +95,24 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: error.message, code: "no_credentials" }, { status: 500 })
     }
     const msg = error instanceof Error ? error.message : String(error)
+    console.log("[v0] GA4 erro bruto:", msg.split("\n")[0])
+    // API Data do GA4 desabilitada no projeto do Google Cloud.
+    if (/Google Analytics Data API has not been used|analyticsdata\.googleapis\.com|SERVICE_DISABLED|has not been used in project/i.test(msg)) {
+      return NextResponse.json(
+        {
+          error:
+            "A Google Analytics Data API está desabilitada no projeto do Google Cloud. Ative-a em console.cloud.google.com (APIs e serviços → ative 'Google Analytics Data API') e tente de novo em alguns minutos.",
+          code: "api_disabled",
+        },
+        { status: 500 },
+      )
+    }
     // Erros típicos de chave privada malformada ou conta sem acesso à property.
     if (/DECODER|private key|invalid_grant|PERMISSION_DENIED|caller does not have permission/i.test(msg)) {
       return NextResponse.json(
         {
           error:
-            "Falha na autenticação com o Google Analytics. Verifique se GOOGLE_SERVICE_ACCOUNT_KEY é o JSON completo e se o e-mail da conta de serviço tem acesso à property do GA4.",
+            "Falha na autenticação com o Google Analytics. Verifique se a chave da conta de serviço é o JSON completo e se o e-mail da conta tem acesso à property do GA4.",
           code: "auth_failed",
         },
         { status: 500 },

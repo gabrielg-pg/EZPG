@@ -29,25 +29,82 @@ export function normalizeSlug(path: string): string {
 
 let cachedClient: BetaAnalyticsDataClient | null = null
 
+type ServiceAccount = { client_email?: string; private_key?: string }
+
+// Remove um eventual wrapper de shell ($'...' ou '...') colado por engano junto ao valor.
+function stripShellWrapper(value: string): string {
+  let v = value.trim()
+  if (v.startsWith("$'") && v.endsWith("'")) v = v.slice(2, -1)
+  else if (v.startsWith("'") && v.endsWith("'")) v = v.slice(1, -1)
+  else if (v.startsWith('"') && v.endsWith('"') && !v.includes('": ')) v = v.slice(1, -1)
+  return v
+}
+
+// Tenta transformar o valor bruto de uma env var em um JSON de conta de serviço válido.
+// Aceita: JSON puro, JSON em base64, e JSON com wrapper/escapes de shell ($'...').
+function parseServiceAccount(raw: string): ServiceAccount | null {
+  const attempts: string[] = []
+  const cleaned = stripShellWrapper(raw)
+  attempts.push(raw, cleaned)
+  // Escapes de shell ($'...'): \n \t \r \' \\ viram os caracteres reais.
+  attempts.push(
+    cleaned.replace(/\\n/g, "\n").replace(/\\t/g, "\t").replace(/\\r/g, "\r").replace(/\\'/g, "'").replace(/\\\\/g, "\\"),
+  )
+  // Base64.
+  try {
+    const decoded = Buffer.from(raw.trim(), "base64").toString("utf8")
+    if (decoded.trimStart().startsWith("{")) attempts.push(decoded)
+  } catch {
+    // ignora
+  }
+  for (const candidate of attempts) {
+    try {
+      const parsed = JSON.parse(candidate) as ServiceAccount
+      if (parsed.client_email && parsed.private_key) return parsed
+    } catch {
+      // tenta o próximo formato
+    }
+  }
+  // Último recurso: extrai os campos por regex direto do texto bruto. Isso é resiliente a
+  // wrappers de shell ($'...'), quebras de linha e escapes que quebram o JSON.parse.
+  const emailMatch = raw.match(/"client_email"\s*:\s*"([^"]+)"/)
+  const keyMatch = raw.match(/"private_key"\s*:\s*"((?:\\.|[^"\\])*)"/)
+  if (emailMatch && keyMatch) {
+    return { client_email: emailMatch[1], private_key: keyMatch[1] }
+  }
+  return null
+}
+
+function isValid(sa: ServiceAccount | null): sa is Required<ServiceAccount> {
+  if (!sa?.client_email || !sa.private_key) return false
+  const pk = sa.private_key.replace(/\\n/g, "\n")
+  return pk.includes("BEGIN PRIVATE KEY") && sa.client_email.includes("@")
+}
+
 function getClient(): BetaAnalyticsDataClient {
   if (cachedClient) return cachedClient
-  const raw = process.env.GOOGLE_SERVICE_ACCOUNT_KEY
-  if (!raw) throw new GaCredentialsError()
-  let credentials: { client_email?: string; private_key?: string }
-  try {
-    credentials = JSON.parse(raw)
-  } catch {
-    throw new GaCredentialsError("GOOGLE_SERVICE_ACCOUNT_KEY não é um JSON válido. Cole o conteúdo completo do arquivo .json da conta de serviço.")
+  // Aceita a chave em GOOGLE_SERVICE_ACCOUNT_KEY ou, como fallback, em GCP_SERVICE_ACCOUNT.
+  const candidates = [process.env.GOOGLE_SERVICE_ACCOUNT_KEY, process.env.GCP_SERVICE_ACCOUNT].filter(
+    (v): v is string => !!v && v.trim().length > 0,
+  )
+  if (candidates.length === 0) throw new GaCredentialsError()
+
+  let credentials: Required<ServiceAccount> | null = null
+  for (const raw of candidates) {
+    const parsed = parseServiceAccount(raw)
+    if (isValid(parsed)) {
+      credentials = parsed
+      break
+    }
   }
-  if (!credentials.client_email || !credentials.private_key) throw new GaCredentialsError()
-  // private_key pode vir com "\n" escapado quando colado como string.
-  const privateKey = credentials.private_key.replace(/\\n/g, "\n")
-  // Valida que a chave privada é um PEM real (o placeholder "..." não é).
-  if (!privateKey.includes("BEGIN PRIVATE KEY") || !credentials.client_email.includes("@")) {
+  if (!credentials) {
     throw new GaCredentialsError(
       "A chave da conta de serviço parece inválida ou é um placeholder. Cole o JSON completo baixado do Google Cloud em GOOGLE_SERVICE_ACCOUNT_KEY.",
     )
   }
+
+  // Converte "\n" e "\\" escapados (comuns quando a chave é colada como string) em caracteres reais.
+  const privateKey = credentials.private_key.replace(/\\n/g, "\n").replace(/\\\\/g, "\\")
   cachedClient = new BetaAnalyticsDataClient({
     credentials: { client_email: credentials.client_email, private_key: privateKey },
   })
