@@ -207,75 +207,11 @@ export function BlogRanking({ articles, onRefreshAll, onNavigate, year }: Props)
         </div>
       )}
 
-      {/* Tabela histórica */}
-      <div className="overflow-hidden rounded-xl border border-border">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border bg-secondary/40 text-left text-xs uppercase text-muted-foreground">
-                <th className="px-3 py-2.5 font-medium">#</th>
-                <th className="px-3 py-2.5 font-medium">Artigo</th>
-                <th className="px-3 py-2.5 font-medium">Funil</th>
-                <th className="px-3 py-2.5 font-medium">Mês</th>
-                <th className="px-3 py-2.5 text-right font-medium">Visualizações</th>
-                <th className="px-3 py-2.5 text-right font-medium">Engajamento</th>
-                <th className="px-3 py-2.5 font-medium">Score</th>
-              </tr>
-            </thead>
-            <tbody>
-              {ranked.length === 0 && (
-                <tr>
-                  <td colSpan={7} className="px-3 py-6 text-center text-muted-foreground">
-                    Nenhum artigo no período selecionado.
-                  </td>
-                </tr>
-              )}
-              {ranked.map((a, i) => {
-                const noSlug = !a.article_slug?.trim()
-                return (
-                  <tr
-                    key={a.id}
-                    onClick={() => onNavigate(a)}
-                    className={cn(
-                      "cursor-pointer border-b border-border/60 transition-colors last:border-0 hover:bg-secondary/40",
-                      noSlug && "opacity-60",
-                    )}
-                  >
-                    <td className="px-3 py-2.5 font-semibold text-muted-foreground">{i + 1}</td>
-                    <td className="max-w-[220px] truncate px-3 py-2.5 font-medium text-foreground">
-                      {a.title || `Artigo 0${a.order}`}
-                    </td>
-                    <td className="px-3 py-2.5">
-                      <Badge variant="outline" className={cn(FUNNEL_STYLE[a.funnel_stage] ?? "border-border")}>
-                        {a.funnel_stage}
-                      </Badge>
-                    </td>
-                    <td className="px-3 py-2.5 text-muted-foreground">{MONTH_NAMES[a.month - 1]}</td>
-                    <td className="px-3 py-2.5 text-right text-foreground">
-                      {(a.views ?? 0).toLocaleString("pt-BR")}
-                    </td>
-                    <td className="px-3 py-2.5 text-right text-foreground">
-                      {formatEngagement(a.avg_engagement_seconds ?? 0)}
-                    </td>
-                    <td className="px-3 py-2.5">
-                      {a.score === null ? (
-                        <span className="text-muted-foreground">—</span>
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          <span className="w-7 font-semibold text-foreground">{a.score}</span>
-                          <div className="h-1.5 w-16 overflow-hidden rounded-full bg-secondary">
-                            <div className="h-full rounded-full bg-primary" style={{ width: `${a.score}%` }} />
-                          </div>
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      {top4.length === 0 && (
+        <p className="rounded-xl border border-dashed border-border py-6 text-center text-sm text-muted-foreground">
+          Nenhum artigo no período selecionado.
+        </p>
+      )}
     </section>
   )
 }

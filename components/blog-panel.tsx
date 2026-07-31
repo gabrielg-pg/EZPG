@@ -4,15 +4,6 @@ import { useMemo, useState, useTransition } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import {
   FileText,
@@ -39,7 +30,6 @@ import {
   updateArticle,
   setArticlePipeline,
   getBlogData,
-  monthHasArticles,
 } from "@/app/actions/blog-actions"
 import type { BlogArticle, BlogKeyword, PipelineStatus } from "@/lib/blog"
 
@@ -79,11 +69,8 @@ export function BlogPanel({ initialKeywords, initialArticles, year, roles }: Pro
   // Destaque temporário ao navegar do ranking para um card
   const [highlightedId, setHighlightedId] = useState<number | null>(null)
 
-  // Novo mês
-  const [monthModalOpen, setMonthModalOpen] = useState(false)
-  const [selectedMonth, setSelectedMonth] = useState<string>(String(new Date().getMonth() + 1))
-  const [monthConfirm, setMonthConfirm] = useState<number | null>(null)
-  const [creatingMonth, setCreatingMonth] = useState(false)
+  // Mês sendo criado automaticamente (para spinner na aba clicada)
+  const [creatingMonthNum, setCreatingMonthNum] = useState<number | null>(null)
 
   const monthsWithData = useMemo(() => new Set(articles.map((a) => a.month)), [articles])
   const monthArticles = useMemo(
@@ -228,59 +215,68 @@ export function BlogPanel({ initialKeywords, initialArticles, year, roles }: Pro
     setDrawerOpen(true)
   }
 
-  // ---------- Novo mês ----------
-  const doCreateMonth = (month: number) => {
-    setCreatingMonth(true)
+  // ---------- Meses ----------
+  // Clicar num mês: se já tem artigos, apenas seleciona; se estiver vazio, cria os 4 artigos
+  // automaticamente e abre os cards para preencher.
+  const handleMonthClick = (month: number) => {
+    setActiveMonth(month)
+    if (monthsWithData.has(month)) return
+    setCreatingMonthNum(month)
     startTransition(async () => {
       const created = await createMonthArticles(month, year)
       setArticles((prev) => {
         const others = prev.filter((a) => a.month !== month)
         return [...others, ...created]
       })
-      setActiveMonth(month)
-      setCreatingMonth(false)
-      setMonthModalOpen(false)
-      setMonthConfirm(null)
-    })
-  }
-
-  const handleCreateMonthClick = () => {
-    const month = Number(selectedMonth)
-    startTransition(async () => {
-      const count = await monthHasArticles(month, year)
-      if (count > 0) {
-        setMonthConfirm(month)
-      } else {
-        doCreateMonth(month)
-      }
+      setCreatingMonthNum(null)
     })
   }
 
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/15 text-primary">
-            <FileText className="h-6 w-6" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Blog</h1>
-            <div className="mt-1 flex items-center gap-2">
-              <Badge variant="outline" className="border-primary/25 bg-primary/10 text-primary">
-                Redator + Designer
-              </Badge>
-              <span className="text-xs text-muted-foreground">{year}</span>
-            </div>
+      <div className="flex items-center gap-3">
+        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/15 text-primary">
+          <FileText className="h-6 w-6" />
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Blog</h1>
+          <div className="mt-1 flex items-center gap-2">
+            <Badge variant="outline" className="border-primary/25 bg-primary/10 text-primary">
+              Redator + Designer
+            </Badge>
+            <span className="text-xs text-muted-foreground">{year}</span>
           </div>
         </div>
-        <Button
-          onClick={() => setMonthModalOpen(true)}
-          className="gap-2 rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/20 hover:bg-primary/90"
-        >
-          <Plus className="h-4 w-4" />
-          Novo mês
-        </Button>
+      </div>
+
+      {/* Navegação de meses (sempre visível no topo) */}
+      <div className="flex flex-wrap gap-2">
+        {MONTHS.map((label, idx) => {
+          const month = idx + 1
+          const hasData = monthsWithData.has(month)
+          const active = activeMonth === month
+          const isCreating = creatingMonthNum === month
+          return (
+            <button
+              key={month}
+              type="button"
+              disabled={isPending && isCreating}
+              onClick={() => handleMonthClick(month)}
+              className={cn(
+                "flex items-center gap-1.5 rounded-lg border px-4 py-2 text-sm font-medium transition-colors",
+                active
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : hasData
+                    ? "border-primary/40 bg-primary/5 text-foreground hover:bg-primary/10"
+                    : "border-border bg-secondary/40 text-muted-foreground hover:bg-secondary/70",
+              )}
+            >
+              {isCreating && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+              {label}
+            </button>
+          )
+        })}
       </div>
 
       {/* Métricas */}
@@ -391,42 +387,22 @@ export function BlogPanel({ initialKeywords, initialArticles, year, roles }: Pro
       {/* Ranking de performance */}
       <BlogRanking articles={articles} onRefreshAll={handleRefreshAll} onNavigate={handleNavigate} year={year} />
 
-      {/* Abas de meses */}
-      <div className="flex flex-wrap gap-2">
-        {MONTHS.map((label, idx) => {
-          const month = idx + 1
-          const hasData = monthsWithData.has(month)
-          const active = activeMonth === month
-          return (
-            <button
-              key={month}
-              type="button"
-              onClick={() => setActiveMonth(month)}
-              className={cn(
-                "rounded-lg border px-4 py-2 text-sm font-medium transition-colors",
-                active
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : hasData
-                    ? "border-primary/40 bg-primary/5 text-foreground hover:bg-primary/10"
-                    : "border-border bg-secondary/40 text-muted-foreground hover:bg-secondary/70",
-              )}
-            >
-              {label}
-            </button>
-          )
-        })}
-      </div>
-
       {/* Grid de artigos */}
       {monthArticles.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-border bg-card/50 py-16 text-center">
-          <FileText className="h-8 w-8 text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">
-            Nenhum artigo em {MONTHS[activeMonth - 1]}. Use “Novo mês” para criar o planejamento.
-          </p>
-          <Button onClick={() => setMonthModalOpen(true)} variant="outline" className="gap-2 rounded-xl border-border">
-            <Plus className="h-4 w-4" /> Criar artigos
-          </Button>
+          {creatingMonthNum === activeMonth ? (
+            <>
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <p className="text-sm text-muted-foreground">Criando artigos de {MONTHS[activeMonth - 1]}…</p>
+            </>
+          ) : (
+            <>
+              <FileText className="h-8 w-8 text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">
+                Nenhum artigo em {MONTHS[activeMonth - 1]}. Clique novamente no mês para criar os 4 artigos.
+              </p>
+            </>
+          )}
         </div>
       ) : (
         <div className="grid gap-5 md:grid-cols-2">
@@ -458,75 +434,6 @@ export function BlogPanel({ initialKeywords, initialArticles, year, roles }: Pro
         onOpenChange={setDrawerOpen}
         onSave={handleSaveBriefing}
       />
-
-      {/* Modal Novo mês */}
-      <Dialog open={monthModalOpen} onOpenChange={setMonthModalOpen}>
-        <DialogContent className="rounded-2xl border-border bg-card text-foreground">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/15 text-primary">
-                <Plus className="h-4 w-4" />
-              </div>
-              Novo mês
-            </DialogTitle>
-            <DialogDescription className="text-muted-foreground">
-              Cria automaticamente 4 artigos (Artigo 01 a 04) no status Briefing para o mês escolhido.
-            </DialogDescription>
-          </DialogHeader>
-
-          {monthConfirm !== null ? (
-            <div className="space-y-4 py-2">
-              <p className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-foreground">
-                Este mês ({MONTHS[monthConfirm - 1]}) já tem artigos. Adicionar mais artigos (até completar 4)?
-              </p>
-              <DialogFooter className="gap-2 sm:gap-2">
-                <Button variant="outline" onClick={() => setMonthConfirm(null)} className="rounded-xl border-border">
-                  Cancelar
-                </Button>
-                <Button
-                  onClick={() => doCreateMonth(monthConfirm)}
-                  disabled={creatingMonth}
-                  className="gap-2 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90"
-                >
-                  {creatingMonth ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                  Adicionar artigos
-                </Button>
-              </DialogFooter>
-            </div>
-          ) : (
-            <div className="space-y-4 py-2">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">Mês</label>
-                <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                  <SelectTrigger className="rounded-lg border-input bg-secondary/50">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-xl border-border bg-popover">
-                    {MONTHS.map((label, idx) => (
-                      <SelectItem key={idx} value={String(idx + 1)} className="rounded-lg">
-                        {label} · {year}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <DialogFooter className="gap-2 sm:gap-2">
-                <Button variant="outline" onClick={() => setMonthModalOpen(false)} className="rounded-xl border-border">
-                  Cancelar
-                </Button>
-                <Button
-                  onClick={handleCreateMonthClick}
-                  disabled={isPending || creatingMonth}
-                  className="gap-2 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90"
-                >
-                  {creatingMonth ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                  Criar mês
-                </Button>
-              </DialogFooter>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }
