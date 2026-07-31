@@ -3,6 +3,7 @@ import { redirect } from "next/navigation"
 export const dynamic = "force-dynamic"
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { MineracaoPanel } from "@/components/mineracao-panel"
+import { createClientStoresTable, getClientStores } from "@/app/actions/client-store-actions"
 
 export default async function MineracaoPage() {
   const user = await requireAuth()
@@ -13,9 +14,12 @@ export default async function MineracaoPage() {
     redirect("/dashboard")
   }
 
+  await createClientStoresTable()
+  const clientStores = await getClientStores()
+
   return (
     <DashboardLayout userRoles={roles}>
-      <MineracaoPanel />
+      <MineracaoPanel initialClientStores={clientStores} />
     </DashboardLayout>
   )
 }

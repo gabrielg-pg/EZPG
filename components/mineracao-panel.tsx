@@ -27,6 +27,8 @@ import {
   FolderOpen,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { ClientStoresBlock } from "@/components/client-stores-block"
+import type { ClientStoreEntry } from "@/app/actions/client-store-actions"
 
 type Credential = {
   name: string
@@ -198,7 +200,7 @@ function CredentialField({ label, value, secret = false }: { label: string; valu
   )
 }
 
-export function MineracaoPanel() {
+export function MineracaoPanel({ initialClientStores = [] }: { initialClientStores?: ClientStoreEntry[] }) {
   const bestSellingCode = "collections/all?sort_by=best-selling"
 
   return (
@@ -406,6 +408,9 @@ export function MineracaoPanel() {
           </Card>
         </section>
       </div>
+
+      {/* Lojas de nossos clientes */}
+      <ClientStoresBlock initialStores={initialClientStores} />
     </div>
   )
 }
