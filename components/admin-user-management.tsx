@@ -151,13 +151,12 @@ export function AdminUserManagement({ initialUsers }: { initialUsers: User[] }) 
 
   const handleDelete = () => {
     if (!selectedUser) return
-    if (!transferToUserId) {
-      setError("Selecione um usuario para transferir os dados")
-      return
-    }
+    setError(null)
 
     startTransition(async () => {
-      const result = await deleteUser(selectedUser.id, parseInt(transferToUserId))
+      // Transferência é opcional: sem destino selecionado, exclui diretamente.
+      const transferId = transferToUserId ? Number.parseInt(transferToUserId) : null
+      const result = await deleteUser(selectedUser.id, transferId)
 
       if (result.success) {
         setUsers(users.filter((user) => user.id !== selectedUser.id))
@@ -779,17 +778,20 @@ export function AdminUserManagement({ initialUsers }: { initialUsers: User[] }) 
             </div>
           )}
           <div className="space-y-4 py-2">
-            <div className="p-3 rounded-xl bg-primary/5 border border-primary/20">
+            <div className="p-3 rounded-xl bg-secondary/40 border border-border">
               <div className="flex items-center gap-2 mb-2">
-                <ArrowRightLeft className="h-4 w-4 text-primary" />
-                <span className="text-sm font-medium text-foreground">Transferir dados para</span>
+                <ArrowRightLeft className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium text-foreground">Transferir dados antes de excluir</span>
+                <span className="text-xs text-muted-foreground">(opcional)</span>
               </div>
               <p className="text-xs text-muted-foreground mb-3">
-                Todas as lojas, reunioes e demais registros de <span className="text-foreground font-medium">{selectedUser?.name}</span> serao transferidos para o usuario selecionado.
+                Se quiser, transfira as lojas, reunioes e demais registros de{" "}
+                <span className="text-foreground font-medium">{selectedUser?.name}</span> para outro usuario. Caso
+                contrario, deixe em branco e o usuario sera excluido diretamente.
               </p>
               <Select value={transferToUserId} onValueChange={setTransferToUserId}>
                 <SelectTrigger className="bg-secondary/50 border-input text-foreground h-10 rounded-xl">
-                  <SelectValue placeholder="Selecione um usuario..." />
+                  <SelectValue placeholder="Nao transferir (excluir direto)" />
                 </SelectTrigger>
                 <SelectContent className="bg-popover border-border rounded-xl">
                   {users
@@ -804,6 +806,15 @@ export function AdminUserManagement({ initialUsers }: { initialUsers: User[] }) 
                     ))}
                 </SelectContent>
               </Select>
+              {transferToUserId && (
+                <button
+                  type="button"
+                  onClick={() => setTransferToUserId("")}
+                  className="mt-2 text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
+                >
+                  Limpar seleção (excluir sem transferir)
+                </button>
+              )}
             </div>
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
@@ -814,14 +825,16 @@ export function AdminUserManagement({ initialUsers }: { initialUsers: User[] }) 
             >
               Cancelar
             </Button>
-            <Button onClick={handleDelete} disabled={isPending || !transferToUserId} variant="destructive" className="rounded-xl">
+            <Button onClick={handleDelete} disabled={isPending} variant="destructive" className="rounded-xl">
               {isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Excluindo...
                 </>
-              ) : (
+              ) : transferToUserId ? (
                 "Excluir e Transferir"
+              ) : (
+                "Excluir Usuário"
               )}
             </Button>
           </DialogFooter>

@@ -85,7 +85,9 @@ export async function updateUser(
   }
 }
 
-export async function deleteUser(userId: number, transferToUserId: number) {
+// transferToUserId é OPCIONAL. Se informado, os registros do usuário são transferidos para
+// o destino antes da exclusão. Se não, o usuário é excluído diretamente (sem transferência).
+export async function deleteUser(userId: number, transferToUserId?: number | null) {
   const { user } = await getSession()
   if (!user || !user.role.includes("admin")) {
     return { success: false, error: "Não autorizado" }
@@ -96,28 +98,31 @@ export async function deleteUser(userId: number, transferToUserId: number) {
     return { success: false, error: "Não é possível excluir o próprio usuário" }
   }
 
-  if (!transferToUserId) {
-    return { success: false, error: "Selecione um usuário para transferir os dados" }
-  }
-
-  if (transferToUserId === userId) {
+  if (transferToUserId && transferToUserId === userId) {
     return { success: false, error: "Não é possível transferir para o mesmo usuário" }
   }
 
   try {
-    // Transfer stores created by the user
-    await sql`UPDATE stores SET created_by = ${transferToUserId} WHERE created_by = ${userId}`
+    if (transferToUserId) {
+      // Modo transferência: reatribui os registros ao usuário escolhido.
+      await sql`UPDATE stores SET created_by = ${transferToUserId} WHERE created_by = ${userId}`
+      await sql`UPDATE meetings SET attendant_user_id = ${transferToUserId} WHERE attendant_user_id = ${userId}`
+      await sql`UPDATE meetings SET performer_user_id = ${transferToUserId} WHERE performer_user_id = ${userId}`
+      await sql`UPDATE demandas SET created_by = ${transferToUserId} WHERE created_by = ${userId}`
+      await sql`UPDATE followups SET created_by = ${transferToUserId} WHERE created_by = ${userId}`
+    } else {
+      // Modo exclusão direta: solta as referências que aceitam NULL e remove as que não aceitam.
+      await sql`UPDATE stores SET created_by = NULL WHERE created_by = ${userId}`
+      await sql`UPDATE demandas SET created_by = NULL WHERE created_by = ${userId}`
+      await sql`UPDATE followups SET created_by = NULL WHERE created_by = ${userId}`
+      // meetings.attendant_user_id / performer_user_id são NOT NULL: as reuniões do usuário
+      // são removidas junto com ele.
+      await sql`DELETE FROM meetings WHERE attendant_user_id = ${userId} OR performer_user_id = ${userId}`
+    }
 
-    // Transfer meetings where user is attendant
-    await sql`UPDATE meetings SET attendant_user_id = ${transferToUserId} WHERE attendant_user_id = ${userId}`
-
-    // Transfer meetings where user is performer
-    await sql`UPDATE meetings SET performer_user_id = ${transferToUserId} WHERE performer_user_id = ${userId}`
-
-    // Delete user roles
+    // user_roles e sessions têm ON DELETE CASCADE, mas removemos explicitamente por clareza.
     await sql`DELETE FROM user_roles WHERE user_id = ${userId}`
-
-    // Delete the user
+    await sql`DELETE FROM sessions WHERE user_id = ${userId}`
     await sql`DELETE FROM users WHERE id = ${userId}`
 
     revalidatePath("/admin")
