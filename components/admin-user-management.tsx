@@ -83,17 +83,22 @@ export function AdminUserManagement({ initialUsers }: { initialUsers: User[] }) 
   }
   
   const toggleRole = (role: RoleType) => {
-    setFormData(prev => {
+    setFormData((prev) => {
+      // Respeita exatamente a seleção do admin: marcar adiciona, desmarcar remove.
+      // Não forçamos nenhuma role de volta; a validação de "ao menos uma" ocorre no salvar.
       const newRoles = prev.roles.includes(role)
-        ? prev.roles.filter(r => r !== role)
+        ? prev.roles.filter((r) => r !== role)
         : [...prev.roles, role]
-      // Ensure at least one role is selected
-      return { ...prev, roles: newRoles.length > 0 ? newRoles : ["user"] }
+      return { ...prev, roles: newRoles }
     })
   }
 
   const handleCreate = () => {
     setError(null)
+    if (formData.roles.length === 0) {
+      setError("Selecione ao menos uma permissão de acesso")
+      return
+    }
     startTransition(async () => {
       const result = await createUserAction({
         name: formData.name,
@@ -114,6 +119,10 @@ export function AdminUserManagement({ initialUsers }: { initialUsers: User[] }) 
   const handleEdit = () => {
     if (!selectedUser) return
     setError(null)
+    if (formData.roles.length === 0) {
+      setError("Selecione ao menos uma permissão de acesso")
+      return
+    }
 
     startTransition(async () => {
       const result = await updateUser(selectedUser.id, {

@@ -136,16 +136,16 @@ export async function getSession(): Promise<{
 
     const session = sessions[0]
 
-    // Carrega todas as roles do usuário (tabela user_roles), com fallback para a role legada
+    // A tabela user_roles é a fonte da verdade das permissões. Se existir ao menos um registro,
+    // usamos EXATAMENTE essas roles (não reinjetamos users.role, que é só um espelho técnico —
+    // caso contrário "user" reapareceria para quem tem apenas módulos como "blog").
+    // Só recorremos a users.role como fallback quando não há nenhuma role em user_roles.
     let roles: string[] = []
     try {
       const roleRows = await sql`SELECT role FROM user_roles WHERE user_id = ${session.user_id}`
       roles = (roleRows as Array<{ role: string }>).map((r) => r.role)
     } catch {
       roles = []
-    }
-    if (session.role && !roles.includes(session.role)) {
-      roles.push(session.role)
     }
     if (roles.length === 0 && session.role) {
       roles = [session.role]

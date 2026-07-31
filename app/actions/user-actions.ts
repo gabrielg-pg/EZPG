@@ -50,25 +50,31 @@ export async function updateUser(
   }
 
   try {
-    // "blog" e outros módulos são permissões, não níveis de acesso: não podem virar a role
-    // primária de users.role. Filtramos os módulos e usamos o primeiro nível de acesso.
+    // Persistimos EXATAMENTE as permissões marcadas pelo admin — nada é adicionado
+    // automaticamente. O array de roles é a fonte da verdade (tabela user_roles).
+    const selectedRoles = Array.from(new Set(data.roles.filter((r) => r && r.trim() !== "")))
+    if (selectedRoles.length === 0) {
+      return { success: false, error: "Selecione ao menos uma permissão para o usuário" }
+    }
+
+    // users.role é apenas um espelho técnico (compat. legada) e sua constraint NÃO aceita
+    // módulos como "blog". Usamos o primeiro NÍVEL DE ACESSO marcado; se só houver módulos
+    // selecionados, gravamos "user" na coluna espelho — mas user_roles guarda exatamente o
+    // que foi marcado (é o que de fato controla o acesso no sistema).
     const MODULE_ROLES = ["blog"]
-    const accessRoles = data.roles.filter((r) => !MODULE_ROLES.includes(r))
+    const accessRoles = selectedRoles.filter((r) => !MODULE_ROLES.includes(r))
     const primaryRole = accessRoles[0] || "user"
-    const allRoles = Array.from(new Set([primaryRole, ...data.roles]))
+
     await sql`
       UPDATE users 
       SET name = ${data.name}, email = ${data.email}, role = ${primaryRole}, status = ${data.status}, updated_at = NOW()
       WHERE id = ${userId}
     `
 
-    // Update user_roles table
+    // Substitui as roles pelo conjunto exato selecionado.
     await sql`DELETE FROM user_roles WHERE user_id = ${userId}`
-    
-    for (const role of allRoles) {
-      await sql`
-        INSERT INTO user_roles (user_id, role) VALUES (${userId}, ${role})
-      `
+    for (const role of selectedRoles) {
+      await sql`INSERT INTO user_roles (user_id, role) VALUES (${userId}, ${role})`
     }
 
     revalidatePath("/admin")

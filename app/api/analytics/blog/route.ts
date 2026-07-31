@@ -95,7 +95,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: error.message, code: "no_credentials" }, { status: 500 })
     }
     const msg = error instanceof Error ? error.message : String(error)
-    console.log("[v0] GA4 erro bruto:", msg.split("\n")[0])
     // API Data do GA4 desabilitada no projeto do Google Cloud.
     if (/Google Analytics Data API has not been used|analyticsdata\.googleapis\.com|SERVICE_DISABLED|has not been used in project/i.test(msg)) {
       return NextResponse.json(

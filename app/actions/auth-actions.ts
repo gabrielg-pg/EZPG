@@ -54,14 +54,18 @@ export async function createUserAction(data: {
     return { success: false, error: "Não autorizado" }
   }
 
-  // "blog" e outros módulos são permissões, não níveis de acesso: nunca podem virar a role
-  // primária de users.role (constraint só aceita níveis de acesso). Filtramos os módulos e
-  // usamos o primeiro nível de acesso como role primária, com "user" como padrão.
+  // Persistimos EXATAMENTE as permissões marcadas pelo admin (fonte da verdade: user_roles).
+  const selectedRoles = Array.from(new Set(data.role.filter((r) => r && r.trim() !== "")))
+  if (selectedRoles.length === 0) {
+    return { success: false, error: "Selecione ao menos uma permissão para o usuário" }
+  }
+
+  // "blog" e outros módulos não podem virar a role primária de users.role (constraint só aceita
+  // níveis de acesso). users.role é apenas um espelho técnico; o array selecionado é preservado.
   const MODULE_ROLES = ["blog"]
-  const accessRoles = data.role.filter((r) => !MODULE_ROLES.includes(r))
+  const accessRoles = selectedRoles.filter((r) => !MODULE_ROLES.includes(r))
   const primaryRole = accessRoles[0] || "user"
-  const allRoles = Array.from(new Set([primaryRole, ...data.role]))
-  const result = await createUser({ ...data, role: primaryRole, roles: allRoles })
+  const result = await createUser({ ...data, role: primaryRole, roles: selectedRoles })
   if (result.success) {
     revalidatePath("/admin")
   }
