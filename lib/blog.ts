@@ -9,6 +9,9 @@ export type BlogKeyword = {
   status: KeywordStatus
 }
 
+export type BlogImage = { url: string; filename: string }
+export type ReviewItem = { label: string; done: boolean }
+
 export type BlogArticle = {
   id: number
   month: number
@@ -27,9 +30,23 @@ export type BlogArticle = {
   keywords: number[]
   image_url: string | null
   image_filename: string | null
+  images: BlogImage[]
+  content: string
+  review: ReviewItem[]
   views: number
   avg_engagement: string
 }
+
+// Tópicos padrão de revisão editorial (usados quando o artigo ainda não tem checklist).
+export const DEFAULT_REVIEW_TOPICS = [
+  "Título e meta description otimizados para SEO",
+  "Palavras-chave presentes ao longo do texto",
+  "Ortografia e gramática revisadas",
+  "Links internos e externos funcionando",
+  "CTA claro e bem posicionado",
+  "Imagens inseridas e otimizadas",
+  "Escaneabilidade (intertítulos, listas, parágrafos curtos)",
+]
 
 // Ordem canônica do pipeline editorial.
 export const PIPELINE_ORDER: PipelineStatus[] = ["briefing", "writing", "design", "review", "published"]

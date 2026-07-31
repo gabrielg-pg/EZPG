@@ -155,17 +155,32 @@ export function BlogPanel({ initialKeywords, initialArticles, year, roles }: Pro
     if (patch.keywords !== undefined) await refresh()
   }
 
-  const handleUploadImage = async (id: number, file: File) => {
-    const fd = new FormData()
-    fd.append("file", file)
-    const res = await fetch("/api/blog/upload", { method: "POST", body: fd })
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}))
-      alert(err.error || "Falha no upload da imagem")
-      return
+  const handleAddImages = async (id: number, files: File[]) => {
+    const uploaded: { url: string; filename: string }[] = []
+    for (const file of files) {
+      const fd = new FormData()
+      fd.append("file", file)
+      const res = await fetch("/api/blog/upload", { method: "POST", body: fd })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        alert(err.error || `Falha no upload de ${file.name}`)
+        continue
+      }
+      const { url, filename } = await res.json()
+      uploaded.push({ url, filename })
     }
-    const { url, filename } = await res.json()
-    handleUpdateArticle(id, { image_url: url, image_filename: filename })
+    if (uploaded.length === 0) return
+    const current = articles.find((a) => a.id === id)
+    const nextImages = [...(current?.images ?? []), ...uploaded]
+    handleUpdateArticle(id, { images: nextImages })
+  }
+
+  const handleCreateKeyword = async (text: string): Promise<BlogKeyword | null> => {
+    const value = text.trim()
+    if (!value) return null
+    const created = await addKeyword(value)
+    setKeywords((prev) => (prev.some((k) => k.id === created.id) ? prev : [...prev, created]))
+    return created
   }
 
   const openBriefing = (article: BlogArticle) => {
@@ -379,7 +394,8 @@ export function BlogPanel({ initialKeywords, initialArticles, year, roles }: Pro
               keywords={keywords}
               onPipelineChange={handlePipelineChange}
               onUpdate={handleUpdateArticle}
-              onUploadImage={handleUploadImage}
+              onAddImages={handleAddImages}
+              onCreateKeyword={handleCreateKeyword}
               onOpenBriefing={openBriefing}
             />
           ))}

@@ -3,7 +3,7 @@
 import { sql } from "@/lib/db"
 import { requireAuth } from "@/lib/auth"
 import { revalidatePath } from "next/cache"
-import { PIPELINE_ORDER, type BlogArticle, type BlogKeyword, type PipelineStatus } from "@/lib/blog"
+import { PIPELINE_ORDER, type BlogArticle, type BlogImage, type BlogKeyword, type KeywordStatus, type PipelineStatus, type ReviewItem } from "@/lib/blog"
 
 const PATH = "/blog"
 
@@ -36,6 +36,9 @@ function mapArticle(row: Record<string, unknown>): BlogArticle {
     keywords: Array.isArray(row.keywords) ? (row.keywords as unknown[]).map((k) => Number(k)) : [],
     image_url: row.image_url ? String(row.image_url) : null,
     image_filename: row.image_filename ? String(row.image_filename) : null,
+    images: Array.isArray(row.images) ? (row.images as BlogImage[]) : [],
+    content: String(row.content ?? ""),
+    review: Array.isArray(row.review) ? (row.review as ReviewItem[]) : [],
     views: Number(row.views ?? 0),
     avg_engagement: String(row.avg_engagement ?? ""),
   }
@@ -70,7 +73,8 @@ export async function getBlogData(year: number): Promise<{ keywords: BlogKeyword
   const keywordRows = await sql`SELECT id, keyword, status FROM pg_blog_keywords ORDER BY created_at ASC`
   const articleRows = await sql`
     SELECT id, month, year, "order", funnel_stage, title, publish_date, word_count, pipeline_status,
-           cta, objective, context, structure, tone, keywords, image_url, image_filename, views, avg_engagement
+           cta, objective, context, structure, tone, keywords, image_url, image_filename,
+           images, content, review, views, avg_engagement
     FROM pg_blog_articles
     WHERE year = ${year}
     ORDER BY month ASC, "order" ASC
@@ -138,7 +142,8 @@ export async function createMonthArticles(month: number, year: number): Promise<
   revalidatePath(PATH)
   const rows = await sql`
     SELECT id, month, year, "order", funnel_stage, title, publish_date, word_count, pipeline_status,
-           cta, objective, context, structure, tone, keywords, image_url, image_filename, views, avg_engagement
+           cta, objective, context, structure, tone, keywords, image_url, image_filename,
+           images, content, review, views, avg_engagement
     FROM pg_blog_articles WHERE month = ${month} AND year = ${year} ORDER BY "order" ASC
   `
   return (rows as Array<Record<string, unknown>>).map(mapArticle)
@@ -162,6 +167,13 @@ export async function updateArticle(
   if (patch.views !== undefined) await sql`UPDATE pg_blog_articles SET views = ${patch.views} WHERE id = ${id}`
   if (patch.avg_engagement !== undefined) await sql`UPDATE pg_blog_articles SET avg_engagement = ${patch.avg_engagement} WHERE id = ${id}`
   if (patch.image_url !== undefined) await sql`UPDATE pg_blog_articles SET image_url = ${patch.image_url}, image_filename = ${patch.image_filename ?? null} WHERE id = ${id}`
+  if (patch.images !== undefined) await sql`UPDATE pg_blog_articles SET images = ${JSON.stringify(patch.images)}::jsonb WHERE id = ${id}`
+  if (patch.review !== undefined) await sql`UPDATE pg_blog_articles SET review = ${JSON.stringify(patch.review)}::jsonb WHERE id = ${id}`
+  if (patch.content !== undefined) {
+    // Conteúdo da redação: recalcula a contagem de palavras automaticamente.
+    const words = patch.content.trim() ? patch.content.trim().split(/\s+/).length : 0
+    await sql`UPDATE pg_blog_articles SET content = ${patch.content}, word_count = ${words} WHERE id = ${id}`
+  }
   if (patch.keywords !== undefined) {
     await sql`UPDATE pg_blog_articles SET keywords = ${JSON.stringify(patch.keywords)}::jsonb WHERE id = ${id}`
   }
@@ -171,12 +183,19 @@ export async function updateArticle(
   revalidatePath(PATH)
 }
 
-export async function setArticlePipeline(id: number, status: PipelineStatus): Promise<void> {
+export async function setArticlePipeline(id: number, status: PipelineStatus): Promise<{ publish_date: string | null }> {
   await requireBlogAccess()
   await sql`UPDATE pg_blog_articles SET pipeline_status = ${status}, updated_at = NOW() WHERE id = ${id}`
+  // Ao publicar, grava automaticamente a data de hoje (se ainda não houver data definida).
+  if (status === "published") {
+    await sql`UPDATE pg_blog_articles SET publish_date = CURRENT_DATE WHERE id = ${id} AND publish_date IS NULL`
+  }
   // Publicar/despublicar afeta o status das keywords associadas.
   await recomputeKeywordStatuses()
   revalidatePath(PATH)
+  const rows = await sql`SELECT publish_date FROM pg_blog_articles WHERE id = ${id}`
+  const pd = (rows as Array<{ publish_date: unknown }>)[0]?.publish_date
+  return { publish_date: pd ? String(pd) : null }
 }
 
 export async function deleteArticle(id: number): Promise<void> {
