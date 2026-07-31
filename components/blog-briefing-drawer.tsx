@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -24,11 +24,64 @@ type Props = {
 
 export function BlogBriefingDrawer({ article, keywords, open, onOpenChange, onSave }: Props) {
   const [draft, setDraft] = useState<BlogArticle | null>(article)
-  const [saving, setSaving] = useState(false)
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle")
 
+  const draftRef = useRef(draft)
+  draftRef.current = draft
+  // Evita salvar logo ao abrir (quando o draft é apenas preenchido com o artigo).
+  const skipRef = useRef(true)
+
+  // Ao abrir/trocar de artigo, recarrega o rascunho e reseta o controle de autosave.
   useEffect(() => {
     setDraft(article)
+    skipRef.current = true
+    setSaveState("idle")
   }, [article])
+
+  // Persiste o rascunho atual no banco (sem fechar o painel).
+  const persist = async () => {
+    const d = draftRef.current
+    if (!d) return
+    setSaveState("saving")
+    try {
+      await onSave(d.id, {
+        funnel_stage: d.funnel_stage,
+        title: d.title,
+        article_slug: d.article_slug,
+        publish_date: d.publish_date,
+        word_count: d.word_count,
+        cta: d.cta,
+        objective: d.objective,
+        context: d.context,
+        structure: d.structure.filter((s) => s.trim() !== ""),
+        tone: d.tone,
+        keywords: d.keywords,
+      })
+      setSaveState("saved")
+    } catch (e) {
+      console.error("[v0] Erro ao salvar briefing:", e)
+      setSaveState("idle")
+    }
+  }
+
+  // Autosave com debounce sempre que o rascunho muda.
+  useEffect(() => {
+    if (skipRef.current) {
+      skipRef.current = false
+      return
+    }
+    const t = setTimeout(() => {
+      void persist()
+    }, 800)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draft])
+
+  // Fecha garantindo que qualquer alteração pendente seja gravada.
+  const handleOpenChange = (o: boolean) => {
+    if (!o) void persist()
+    onOpenChange(o)
+  }
 
   if (!draft) return null
 
@@ -43,30 +96,8 @@ export function BlogBriefingDrawer({ article, keywords, open, onOpenChange, onSa
   const toggleKeyword = (id: number) =>
     set("keywords", draft.keywords.includes(id) ? draft.keywords.filter((k) => k !== id) : [...draft.keywords, id])
 
-  const handleSave = async () => {
-    setSaving(true)
-    try {
-      await onSave(draft.id, {
-        funnel_stage: draft.funnel_stage,
-        title: draft.title,
-        article_slug: draft.article_slug,
-        publish_date: draft.publish_date,
-        word_count: draft.word_count,
-        cta: draft.cta,
-        objective: draft.objective,
-        context: draft.context,
-        structure: draft.structure.filter((s) => s.trim() !== ""),
-        tone: draft.tone,
-        keywords: draft.keywords,
-      })
-      onOpenChange(false)
-    } finally {
-      setSaving(false)
-    }
-  }
-
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
+    <Sheet open={open} onOpenChange={handleOpenChange}>
       <SheetContent className="flex w-full flex-col gap-0 overflow-hidden border-border bg-card p-0 sm:max-w-xl">
         <SheetHeader className="border-b border-border px-6 py-4">
           <span className="text-xs font-semibold uppercase tracking-wider text-primary">
@@ -232,14 +263,27 @@ export function BlogBriefingDrawer({ article, keywords, open, onOpenChange, onSa
           </div>
         </div>
 
-        <div className="border-t border-border px-6 py-4">
+        <div className="flex items-center gap-3 border-t border-border px-6 py-4">
+          <span className="flex flex-1 items-center gap-1.5 text-xs text-muted-foreground">
+            {saveState === "saving" ? (
+              <>
+                <Loader2 className="h-3.5 w-3.5 animate-spin" /> Salvando…
+              </>
+            ) : saveState === "saved" ? (
+              <>
+                <Save className="h-3.5 w-3.5 text-emerald-400" /> Salvo automaticamente
+              </>
+            ) : (
+              <>
+                <Save className="h-3.5 w-3.5" /> As alterações são salvas automaticamente
+              </>
+            )}
+          </span>
           <Button
-            onClick={handleSave}
-            disabled={saving}
-            className="w-full gap-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90"
+            onClick={() => handleOpenChange(false)}
+            className="gap-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90"
           >
-            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-            Guardar alterações
+            Concluir
           </Button>
         </div>
       </SheetContent>

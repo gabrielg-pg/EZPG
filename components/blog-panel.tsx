@@ -61,6 +61,7 @@ export function BlogPanel({ initialKeywords, initialArticles, year, roles }: Pro
   const [newKeyword, setNewKeyword] = useState("")
   const [editingKw, setEditingKw] = useState<number | null>(null)
   const [editKwText, setEditKwText] = useState("")
+  const [addingKw, setAddingKw] = useState(false)
 
   // Drawer
   const [drawerArticle, setDrawerArticle] = useState<BlogArticle | null>(null)
@@ -130,14 +131,22 @@ export function BlogPanel({ initialKeywords, initialArticles, year, roles }: Pro
   }
 
   // ---------- Keywords ----------
-  const handleAddKeyword = () => {
+  // Usa estado próprio (não o isPending compartilhado) para não ficar bloqueado por outras
+  // operações da página, e trata erros para o clique nunca "não fazer nada" silenciosamente.
+  const handleAddKeyword = async () => {
     const text = newKeyword.trim()
-    if (!text) return
-    startTransition(async () => {
+    if (!text || addingKw) return
+    setAddingKw(true)
+    try {
       const created = await addKeyword(text)
       setKeywords((prev) => [...prev, created])
       setNewKeyword("")
-    })
+    } catch (e) {
+      console.error("[v0] Erro ao adicionar keyword:", e)
+      alert("Não foi possível adicionar a palavra-chave. Tente novamente.")
+    } finally {
+      setAddingKw(false)
+    }
   }
 
   const handleUpdateKeyword = (id: number) => {
@@ -309,8 +318,8 @@ export function BlogPanel({ initialKeywords, initialArticles, year, roles }: Pro
               placeholder="Nova palavra-chave"
               className="h-9 w-48 rounded-lg border-input bg-secondary/50 text-sm"
             />
-            <Button onClick={handleAddKeyword} disabled={isPending} size="sm" className="gap-1 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90">
-              <Plus className="h-4 w-4" /> Adicionar
+            <Button onClick={handleAddKeyword} disabled={addingKw || !newKeyword.trim()} size="sm" className="gap-1 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90">
+              {addingKw ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} Adicionar
             </Button>
           </div>
         </div>

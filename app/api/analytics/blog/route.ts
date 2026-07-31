@@ -94,6 +94,18 @@ export async function GET(request: NextRequest) {
     if (error instanceof GaCredentialsError) {
       return NextResponse.json({ error: error.message, code: "no_credentials" }, { status: 500 })
     }
+    const msg = error instanceof Error ? error.message : String(error)
+    // Erros típicos de chave privada malformada ou conta sem acesso à property.
+    if (/DECODER|private key|invalid_grant|PERMISSION_DENIED|caller does not have permission/i.test(msg)) {
+      return NextResponse.json(
+        {
+          error:
+            "Falha na autenticação com o Google Analytics. Verifique se GOOGLE_SERVICE_ACCOUNT_KEY é o JSON completo e se o e-mail da conta de serviço tem acesso à property do GA4.",
+          code: "auth_failed",
+        },
+        { status: 500 },
+      )
+    }
     console.error("[v0] Erro GA4:", error)
     return NextResponse.json({ error: "Erro ao carregar métricas — tente novamente" }, { status: 500 })
   }

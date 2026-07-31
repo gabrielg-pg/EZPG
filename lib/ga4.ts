@@ -8,9 +8,10 @@ export type GaMetric = { slug: string; views: number; avg_engagement_seconds: nu
 
 // Erro de credenciais para tratamento claro no client.
 export class GaCredentialsError extends Error {
-  constructor() {
+  constructor(message?: string) {
     super(
-      "Credenciais do Google não configuradas. Adicione GOOGLE_SERVICE_ACCOUNT_KEY nas variáveis de ambiente do Vercel.",
+      message ??
+        "Credenciais do Google não configuradas. Adicione GOOGLE_SERVICE_ACCOUNT_KEY (o JSON completo da conta de serviço) nas variáveis de ambiente do Vercel.",
     )
     this.name = "GaCredentialsError"
   }
@@ -36,11 +37,17 @@ function getClient(): BetaAnalyticsDataClient {
   try {
     credentials = JSON.parse(raw)
   } catch {
-    throw new GaCredentialsError()
+    throw new GaCredentialsError("GOOGLE_SERVICE_ACCOUNT_KEY não é um JSON válido. Cole o conteúdo completo do arquivo .json da conta de serviço.")
   }
   if (!credentials.client_email || !credentials.private_key) throw new GaCredentialsError()
   // private_key pode vir com "\n" escapado quando colado como string.
   const privateKey = credentials.private_key.replace(/\\n/g, "\n")
+  // Valida que a chave privada é um PEM real (o placeholder "..." não é).
+  if (!privateKey.includes("BEGIN PRIVATE KEY") || !credentials.client_email.includes("@")) {
+    throw new GaCredentialsError(
+      "A chave da conta de serviço parece inválida ou é um placeholder. Cole o JSON completo baixado do Google Cloud em GOOGLE_SERVICE_ACCOUNT_KEY.",
+    )
+  }
   cachedClient = new BetaAnalyticsDataClient({
     credentials: { client_email: credentials.client_email, private_key: privateKey },
   })

@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -49,6 +49,36 @@ const KEYWORD_STATUS_STYLE: Record<BlogKeyword["status"], string> = {
   available: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
   in_use: "bg-primary/15 text-primary border-primary/30",
   published: "bg-muted text-muted-foreground border-border",
+}
+
+/**
+ * Salva automaticamente um valor que muda ao digitar:
+ * - com debounce (para não gravar a cada tecla),
+ * - e imediatamente ao desmontar o componente (ex.: trocar de aba do pipeline),
+ * garantindo que nada digitado se perca mesmo sem clicar fora ou ao fechar o navegador.
+ */
+function useAutosave(value: string, saved: string, save: (v: string) => void, delay = 700) {
+  const savedRef = useRef(saved)
+  savedRef.current = saved
+  const valueRef = useRef(value)
+  valueRef.current = value
+  const saveRef = useRef(save)
+  saveRef.current = save
+
+  useEffect(() => {
+    if (value === savedRef.current) return
+    const t = setTimeout(() => {
+      if (valueRef.current !== savedRef.current) saveRef.current(valueRef.current)
+    }, delay)
+    return () => clearTimeout(t)
+  }, [value, delay])
+
+  // Salva pendências ao desmontar (troca de etapa, navegação).
+  useEffect(() => {
+    return () => {
+      if (valueRef.current !== savedRef.current) saveRef.current(valueRef.current)
+    }
+  }, [])
 }
 
 type Props = {
@@ -393,6 +423,7 @@ function BriefingPanel({
   onOpenBriefing: (article: BlogArticle) => void
 }) {
   const [cta, setCta] = useState(article.cta)
+  useAutosave(cta, article.cta, (v) => onUpdate(article.id, { cta: v }))
   return (
     <div className="space-y-3">
       <div className="space-y-1.5">
@@ -437,7 +468,9 @@ function WritingPanel({
   onUpdate: (id: number, patch: Partial<BlogArticle>) => void
 }) {
   const [content, setContent] = useState(article.content)
+  useAutosave(content, article.content, (v) => onUpdate(article.id, { content: v }))
   const wordCount = content.trim() ? content.trim().split(/\s+/).length : 0
+  const dirty = content !== article.content
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
@@ -450,10 +483,20 @@ function WritingPanel({
         value={content}
         onChange={(e) => setContent(e.target.value)}
         onBlur={() => content !== article.content && onUpdate(article.id, { content })}
-        placeholder="Escreva aqui todo o conteúdo do artigo — título, introdução, intertítulos, desenvolvimento e conclusão. O texto é salvo automaticamente ao clicar fora."
+        placeholder="Escreva aqui todo o conteúdo do artigo — título, introdução, intertítulos, desenvolvimento e conclusão. O texto é salvo automaticamente."
         className="min-h-[320px] resize-y rounded-lg border-input bg-secondary/40 text-sm leading-relaxed"
       />
-      <p className="text-[10px] text-muted-foreground">Salvo automaticamente ao clicar fora do campo.</p>
+      <p className="flex items-center gap-1 text-[10px] text-muted-foreground">
+        {dirty ? (
+          <>
+            <Loader2 className="h-3 w-3 animate-spin" /> Salvando…
+          </>
+        ) : (
+          <>
+            <Check className="h-3 w-3 text-emerald-400" /> Salvo automaticamente
+          </>
+        )}
+      </p>
     </div>
   )
 }
