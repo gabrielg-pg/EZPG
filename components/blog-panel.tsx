@@ -30,6 +30,7 @@ import { cn } from "@/lib/utils"
 import { BlogArticleCard } from "@/components/blog-article-card"
 import { BlogBriefingDrawer } from "@/components/blog-briefing-drawer"
 import { BlogRanking } from "@/components/blog-ranking"
+import { BlogTopAllTime } from "@/components/blog-top-alltime"
 import {
   addKeyword,
   updateKeyword,
@@ -123,6 +124,13 @@ export function BlogPanel({ initialKeywords, initialArticles, year, roles }: Pro
     }
     await refresh()
   }
+
+  // Timestamp mais recente de sincronização entre todos os artigos (compartilhado com o Top 10).
+  const allTimeLastSync = useMemo(() => {
+    const dates = articles.map((a) => a.last_synced_at).filter(Boolean) as string[]
+    if (dates.length === 0) return null
+    return dates.reduce((max, d) => (new Date(d) > new Date(max) ? d : max))
+  }, [articles])
 
   // Navega do ranking para o card do artigo: troca o mês, faz scroll e destaca.
   const handleNavigate = (article: BlogArticle) => {
@@ -438,6 +446,9 @@ export function BlogPanel({ initialKeywords, initialArticles, year, roles }: Pro
           ))}
         </div>
       )}
+
+      {/* Top 10 — todos os tempos (fixo, independente do mês) */}
+      <BlogTopAllTime articles={articles} onNavigate={handleNavigate} lastSync={allTimeLastSync} />
 
       {/* Drawer de briefing */}
       <BlogBriefingDrawer
