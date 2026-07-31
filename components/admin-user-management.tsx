@@ -17,12 +17,19 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Plus, Pencil, Trash2, Search, Users, Shield, UserCheck, Loader2, Briefcase, KeyRound, Mail, UserCog, Rocket, ArrowRightLeft, Megaphone, Pickaxe } from "lucide-react"
+import { Plus, Pencil, Trash2, Search, Users, Shield, UserCheck, Loader2, Briefcase, KeyRound, Mail, UserCog, Rocket, ArrowRightLeft, Megaphone, Pickaxe, FileText } from "lucide-react"
 import { createUserAction } from "@/app/actions/auth-actions"
 import { updateUser, deleteUser } from "@/app/actions/user-actions"
 import { cn } from "@/lib/utils"
 
-type RoleType = "admin" | "comercial" | "manager" | "user" | "zona_execucao" | "gestor_ads" | "mineracao"
+type RoleType = "admin" | "comercial" | "manager" | "user" | "zona_execucao" | "gestor_ads" | "mineracao" | "blog"
+
+// Permissões de módulo (separadas dos níveis de acesso), persistidas via user_roles.
+const moduleConfig = {
+  blog: { label: "Blog", color: "bg-primary/15 text-primary border-primary/25", icon: FileText, description: "Acesso ao módulo Blog e ao planejamento editorial" },
+} as const
+
+type ModuleType = keyof typeof moduleConfig
 
 interface User {
   id: number
@@ -310,7 +317,10 @@ export function AdminUserManagement({ initialUsers }: { initialUsers: User[] }) 
                       <TableCell>
                         <div className="flex flex-wrap gap-1.5">
                           {(user.roles || [user.role]).map((role) => {
-                            const config = roleConfig[role] || roleConfig.user
+                            const config =
+                              (roleConfig as Record<string, typeof roleConfig.user>)[role] ||
+                              (moduleConfig as Record<string, (typeof moduleConfig)["blog"]>)[role] ||
+                              roleConfig.user
                             const IconComponent = config.icon
                             return (
                               <Badge key={role} variant="outline" className={cn("gap-1", config.color)}>
@@ -489,6 +499,45 @@ export function AdminUserManagement({ initialUsers }: { initialUsers: User[] }) 
                 })}
               </div>
             </div>
+
+            <div className="space-y-3">
+              <Label className="text-foreground font-medium flex items-center gap-2">
+                <FileText className="h-4 w-4 text-primary" />
+                Permissões de módulos
+              </Label>
+              <div className="grid grid-cols-1 gap-2">
+                {(Object.entries(moduleConfig) as [ModuleType, typeof moduleConfig.blog][]).map(([mod, config]) => {
+                  const IconComponent = config.icon
+                  const isSelected = formData.roles.includes(mod)
+                  return (
+                    <div
+                      key={mod}
+                      onClick={() => toggleRole(mod)}
+                      className={cn(
+                        "flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all duration-200",
+                        isSelected ? "border-primary/50 bg-primary/10" : "border-border bg-secondary/30 hover:bg-secondary/50",
+                      )}
+                    >
+                      <Checkbox
+                        id={`create-mod-${mod}`}
+                        checked={isSelected}
+                        onCheckedChange={() => toggleRole(mod)}
+                        className="border-input data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                      />
+                      <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center", isSelected ? "bg-primary/20" : "bg-muted")}>
+                        <IconComponent className={cn("h-4 w-4", isSelected ? "text-primary" : "text-muted-foreground")} />
+                      </div>
+                      <div className="flex-1">
+                        <Label htmlFor={`create-mod-${mod}`} className="text-sm text-foreground cursor-pointer font-medium">
+                          {config.label}
+                        </Label>
+                        <p className="text-xs text-muted-foreground">{config.description}</p>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button
@@ -597,6 +646,45 @@ export function AdminUserManagement({ initialUsers }: { initialUsers: User[] }) 
                           htmlFor={`edit-role-${role}`}
                           className="text-sm text-foreground cursor-pointer font-medium"
                         >
+                          {config.label}
+                        </Label>
+                        <p className="text-xs text-muted-foreground">{config.description}</p>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <Label className="text-foreground font-medium flex items-center gap-2">
+                <FileText className="h-4 w-4 text-primary" />
+                Permissões de módulos
+              </Label>
+              <div className="grid grid-cols-1 gap-2">
+                {(Object.entries(moduleConfig) as [ModuleType, typeof moduleConfig.blog][]).map(([mod, config]) => {
+                  const IconComponent = config.icon
+                  const isSelected = formData.roles.includes(mod)
+                  return (
+                    <div
+                      key={mod}
+                      onClick={() => toggleRole(mod)}
+                      className={cn(
+                        "flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all duration-200",
+                        isSelected ? "border-primary/50 bg-primary/10" : "border-border bg-secondary/30 hover:bg-secondary/50",
+                      )}
+                    >
+                      <Checkbox
+                        id={`edit-mod-${mod}`}
+                        checked={isSelected}
+                        onCheckedChange={() => toggleRole(mod)}
+                        className="border-input data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                      />
+                      <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center", isSelected ? "bg-primary/20" : "bg-muted")}>
+                        <IconComponent className={cn("h-4 w-4", isSelected ? "text-primary" : "text-muted-foreground")} />
+                      </div>
+                      <div className="flex-1">
+                        <Label htmlFor={`edit-mod-${mod}`} className="text-sm text-foreground cursor-pointer font-medium">
                           {config.label}
                         </Label>
                         <p className="text-xs text-muted-foreground">{config.description}</p>
