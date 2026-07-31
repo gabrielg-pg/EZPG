@@ -49,6 +49,7 @@ export function BlogBriefingDrawer({ article, keywords, open, onOpenChange, onSa
       await onSave(draft.id, {
         funnel_stage: draft.funnel_stage,
         title: draft.title,
+        article_slug: draft.article_slug,
         publish_date: draft.publish_date,
         word_count: draft.word_count,
         cta: draft.cta,
@@ -82,6 +83,19 @@ export function BlogBriefingDrawer({ article, keywords, open, onOpenChange, onSa
               onChange={(e) => set("title", e.target.value)}
               className="rounded-lg border-input bg-secondary/50"
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-foreground">Slug do artigo (URL)</Label>
+            <Input
+              value={draft.article_slug ?? ""}
+              onChange={(e) => set("article_slug", e.target.value)}
+              placeholder="/nome-do-artigo/"
+              className="rounded-lg border-input bg-secondary/50 font-mono text-sm"
+            />
+            <p className="text-xs text-muted-foreground">
+              Path da URL no site (progrowthglobal.com.br). Necessário para puxar as métricas do Google Analytics.
+            </p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">

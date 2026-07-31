@@ -41,6 +41,9 @@ function mapArticle(row: Record<string, unknown>): BlogArticle {
     review: Array.isArray(row.review) ? (row.review as ReviewItem[]) : [],
     views: Number(row.views ?? 0),
     avg_engagement: String(row.avg_engagement ?? ""),
+    avg_engagement_seconds: Number(row.avg_engagement_seconds ?? 0),
+    article_slug: String(row.article_slug ?? ""),
+    last_synced_at: row.last_synced_at ? String(row.last_synced_at) : null,
   }
 }
 
@@ -74,7 +77,7 @@ export async function getBlogData(year: number): Promise<{ keywords: BlogKeyword
   const articleRows = await sql`
     SELECT id, month, year, "order", funnel_stage, title, publish_date, word_count, pipeline_status,
            cta, objective, context, structure, tone, keywords, image_url, image_filename,
-           images, content, review, views, avg_engagement
+           images, content, review, views, avg_engagement, avg_engagement_seconds, article_slug, last_synced_at
     FROM pg_blog_articles
     WHERE year = ${year}
     ORDER BY month ASC, "order" ASC
@@ -143,7 +146,7 @@ export async function createMonthArticles(month: number, year: number): Promise<
   const rows = await sql`
     SELECT id, month, year, "order", funnel_stage, title, publish_date, word_count, pipeline_status,
            cta, objective, context, structure, tone, keywords, image_url, image_filename,
-           images, content, review, views, avg_engagement
+           images, content, review, views, avg_engagement, avg_engagement_seconds, article_slug, last_synced_at
     FROM pg_blog_articles WHERE month = ${month} AND year = ${year} ORDER BY "order" ASC
   `
   return (rows as Array<Record<string, unknown>>).map(mapArticle)
@@ -166,6 +169,7 @@ export async function updateArticle(
   if (patch.structure !== undefined) await sql`UPDATE pg_blog_articles SET structure = ${JSON.stringify(patch.structure)}::jsonb WHERE id = ${id}`
   if (patch.views !== undefined) await sql`UPDATE pg_blog_articles SET views = ${patch.views} WHERE id = ${id}`
   if (patch.avg_engagement !== undefined) await sql`UPDATE pg_blog_articles SET avg_engagement = ${patch.avg_engagement} WHERE id = ${id}`
+  if (patch.article_slug !== undefined) await sql`UPDATE pg_blog_articles SET article_slug = ${patch.article_slug} WHERE id = ${id}`
   if (patch.image_url !== undefined) await sql`UPDATE pg_blog_articles SET image_url = ${patch.image_url}, image_filename = ${patch.image_filename ?? null} WHERE id = ${id}`
   if (patch.images !== undefined) await sql`UPDATE pg_blog_articles SET images = ${JSON.stringify(patch.images)}::jsonb WHERE id = ${id}`
   if (patch.review !== undefined) await sql`UPDATE pg_blog_articles SET review = ${JSON.stringify(patch.review)}::jsonb WHERE id = ${id}`

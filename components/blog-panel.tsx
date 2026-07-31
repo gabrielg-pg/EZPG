@@ -29,6 +29,7 @@ import {
 import { cn } from "@/lib/utils"
 import { BlogArticleCard } from "@/components/blog-article-card"
 import { BlogBriefingDrawer } from "@/components/blog-briefing-drawer"
+import { BlogRanking } from "@/components/blog-ranking"
 import {
   addKeyword,
   updateKeyword,
@@ -74,6 +75,9 @@ export function BlogPanel({ initialKeywords, initialArticles, year, roles }: Pro
   const [drawerArticle, setDrawerArticle] = useState<BlogArticle | null>(null)
   const [drawerOpen, setDrawerOpen] = useState(false)
 
+  // Destaque temporário ao navegar do ranking para um card
+  const [highlightedId, setHighlightedId] = useState<number | null>(null)
+
   // Novo mês
   const [monthModalOpen, setMonthModalOpen] = useState(false)
   const [selectedMonth, setSelectedMonth] = useState<string>(String(new Date().getMonth() + 1))
@@ -100,6 +104,34 @@ export function BlogPanel({ initialKeywords, initialArticles, year, roles }: Pro
     const data = await getBlogData(year)
     setKeywords(data.keywords)
     setArticles(data.articles)
+  }
+
+  // Atualiza apenas o estado local após sincronizar métricas de um card (o banco já foi
+  // atualizado pela API route, evitando uma nova gravação).
+  const handleMetricsSynced = (id: number, patch: Partial<BlogArticle>) => {
+    setArticles((prev) => prev.map((a) => (a.id === id ? { ...a, ...patch } : a)))
+  }
+
+  // "Atualizar todos" do ranking: chama a API (que grava no banco) e recarrega os dados.
+  const handleRefreshAll = async (month?: number, yr?: number) => {
+    const query = month && yr ? `?month=${month}&year=${yr}` : "?all=true"
+    const res = await fetch(`/api/analytics/blog${query}`)
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      alert(err.error || "Erro ao atualizar métricas.")
+      return
+    }
+    await refresh()
+  }
+
+  // Navega do ranking para o card do artigo: troca o mês, faz scroll e destaca.
+  const handleNavigate = (article: BlogArticle) => {
+    setActiveMonth(article.month)
+    setHighlightedId(article.id)
+    setTimeout(() => {
+      document.getElementById(`article-${article.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" })
+    }, 80)
+    setTimeout(() => setHighlightedId(null), 2500)
   }
 
   // ---------- Keywords ----------
@@ -348,6 +380,9 @@ export function BlogPanel({ initialKeywords, initialArticles, year, roles }: Pro
         </div>
       </section>
 
+      {/* Ranking de performance */}
+      <BlogRanking articles={articles} onRefreshAll={handleRefreshAll} onNavigate={handleNavigate} year={year} />
+
       {/* Abas de meses */}
       <div className="flex flex-wrap gap-2">
         {MONTHS.map((label, idx) => {
@@ -397,6 +432,8 @@ export function BlogPanel({ initialKeywords, initialArticles, year, roles }: Pro
               onAddImages={handleAddImages}
               onCreateKeyword={handleCreateKeyword}
               onOpenBriefing={openBriefing}
+              onMetricsSynced={handleMetricsSynced}
+              highlighted={highlightedId === article.id}
             />
           ))}
         </div>

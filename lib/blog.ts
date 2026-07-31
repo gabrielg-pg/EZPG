@@ -35,6 +35,33 @@ export type BlogArticle = {
   review: ReviewItem[]
   views: number
   avg_engagement: string
+  avg_engagement_seconds: number
+  article_slug: string
+  last_synced_at: string | null
+}
+
+// Formata segundos em "Xm Ys" (ou "Ys" quando < 1 min). Sempre inteiros.
+export function formatEngagement(seconds: number): string {
+  const s = Math.round(seconds || 0)
+  if (s <= 0) return "—"
+  if (s < 60) return `${s}s`
+  const m = Math.floor(s / 60)
+  const rem = s % 60
+  return `${m}m ${String(rem).padStart(2, "0")}s`
+}
+
+// Score de performance 0–100 a partir de views e engajamento, normalizados pelo máximo do período.
+// score = (views/maxViews * 0.6 + engRatio * 0.4) * 100
+export function computeScore(
+  article: Pick<BlogArticle, "views" | "avg_engagement_seconds">,
+  maxViews: number,
+  maxEngagement: number,
+): number | null {
+  const hasData = (article.views ?? 0) > 0 || (article.avg_engagement_seconds ?? 0) > 0
+  if (!hasData) return null
+  const viewRatio = maxViews > 0 ? (article.views ?? 0) / maxViews : 0
+  const engRatio = maxEngagement > 0 ? (article.avg_engagement_seconds ?? 0) / maxEngagement : 0
+  return Math.round((viewRatio * 0.6 + engRatio * 0.4) * 100)
 }
 
 // Tópicos padrão de revisão editorial (usados quando o artigo ainda não tem checklist).

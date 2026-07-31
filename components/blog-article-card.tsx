@@ -22,11 +22,14 @@ import {
   X,
   CheckCircle2,
   CalendarCheck,
+  RefreshCw,
+  AlertCircle,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
   PIPELINE_ORDER,
   DEFAULT_REVIEW_TOPICS,
+  formatEngagement,
   type BlogArticle,
   type BlogImage,
   type BlogKeyword,
@@ -56,6 +59,8 @@ type Props = {
   onAddImages: (id: number, files: File[]) => Promise<void>
   onCreateKeyword: (text: string) => Promise<BlogKeyword | null>
   onOpenBriefing: (article: BlogArticle) => void
+  onMetricsSynced: (id: number, patch: Partial<BlogArticle>) => void
+  highlighted?: boolean
 }
 
 export function BlogArticleCard({
@@ -66,12 +71,20 @@ export function BlogArticleCard({
   onAddImages,
   onCreateKeyword,
   onOpenBriefing,
+  onMetricsSynced,
+  highlighted,
 }: Props) {
   const currentIndex = PIPELINE_ORDER.indexOf(article.pipeline_status)
   const articleKeywords = keywords.filter((k) => article.keywords.includes(k.id))
 
   return (
-    <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-5">
+    <div
+      id={`article-${article.id}`}
+      className={cn(
+        "flex scroll-mt-24 flex-col gap-4 rounded-2xl border bg-card p-5 transition-all duration-500",
+        highlighted ? "border-primary ring-2 ring-primary/40" : "border-border",
+      )}
+    >
       {/* Header */}
       <div className="space-y-1">
         <div className="flex items-center justify-between gap-2">
@@ -128,8 +141,110 @@ export function BlogArticleCard({
         {article.pipeline_status === "writing" && <WritingPanel article={article} onUpdate={onUpdate} />}
         {article.pipeline_status === "design" && <DesignPanel article={article} onUpdate={onUpdate} onAddImages={onAddImages} />}
         {article.pipeline_status === "review" && <ReviewPanel article={article} onUpdate={onUpdate} />}
-        {article.pipeline_status === "published" && <PublishedPanel article={article} onUpdate={onUpdate} onPipelineChange={onPipelineChange} />}
+        {article.pipeline_status === "published" && <PublishedPanel article={article} onPipelineChange={onPipelineChange} />}
       </div>
+
+      {/* Footer de métricas (Google Analytics) */}
+      <MetricsFooter article={article} onMetricsSynced={onMetricsSynced} />
+    </div>
+  )
+}
+
+/* ---------------- Métricas (GA4) ---------------- */
+
+function timeAgo(iso: string | null): string {
+  if (!iso) return "nunca sincronizado"
+  const diff = Date.now() - new Date(iso).getTime()
+  const min = Math.floor(diff / 60000)
+  if (min < 1) return "agora mesmo"
+  if (min < 60) return `há ${min} min`
+  const h = Math.floor(min / 60)
+  if (h < 24) return `há ${h}h`
+  const d = Math.floor(h / 24)
+  return `há ${d}d`
+}
+
+function MetricsFooter({
+  article,
+  onMetricsSynced,
+}: {
+  article: BlogArticle
+  onMetricsSynced: (id: number, patch: Partial<BlogArticle>) => void
+}) {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const hasSlug = !!article.article_slug?.trim()
+
+  const refresh = async () => {
+    if (!hasSlug) return
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await fetch(
+        `/api/analytics/blog?all=true&slug=${encodeURIComponent(article.article_slug)}`,
+      )
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error || "Erro ao carregar métricas — tente novamente")
+      }
+      const { results, synced_at } = await res.json()
+      const row = (results as Array<{ views: number; avg_engagement_seconds: number }>)[0]
+      const views = row?.views ?? 0
+      const seconds = row?.avg_engagement_seconds ?? 0
+      onMetricsSynced(article.id, {
+        views,
+        avg_engagement_seconds: seconds,
+        avg_engagement: formatEngagement(seconds),
+        last_synced_at: synced_at,
+      })
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Erro ao carregar métricas — tente novamente")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="space-y-2 border-t border-border pt-3">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-4">
+          <span className="flex items-center gap-1.5 text-sm text-foreground">
+            <Eye className="h-4 w-4 text-primary" />
+            <span className="font-semibold">{(article.views ?? 0).toLocaleString("pt-BR")}</span>
+            <span className="text-xs text-muted-foreground">views</span>
+          </span>
+          <span className="flex items-center gap-1.5 text-sm text-foreground">
+            <Clock className="h-4 w-4 text-primary" />
+            <span className="font-semibold">{formatEngagement(article.avg_engagement_seconds ?? 0)}</span>
+            <span className="text-xs text-muted-foreground">médio</span>
+          </span>
+        </div>
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={refresh}
+          disabled={loading || !hasSlug}
+          className="h-8 gap-1.5 px-2 text-xs text-primary hover:bg-primary/10 disabled:opacity-50"
+        >
+          {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+          Atualizar métricas
+        </Button>
+      </div>
+      {!hasSlug && (
+        <p className="flex items-center gap-1.5 text-xs text-amber-500">
+          <AlertCircle className="h-3.5 w-3.5" />
+          Slug não definido — adicione no briefing
+        </p>
+      )}
+      {error && (
+        <p className="flex items-center gap-1.5 text-xs text-destructive">
+          <AlertCircle className="h-3.5 w-3.5" />
+          {error}
+        </p>
+      )}
+      {hasSlug && !error && (
+        <p className="text-[10px] text-muted-foreground">Última atualização: {timeAgo(article.last_synced_at)}</p>
+      )}
     </div>
   )
 }
@@ -549,17 +664,11 @@ function ReviewPanel({
 
 function PublishedPanel({
   article,
-  onUpdate,
   onPipelineChange,
 }: {
   article: BlogArticle
-  onUpdate: (id: number, patch: Partial<BlogArticle>) => void
   onPipelineChange: (id: number, status: PipelineStatus) => void
 }) {
-  const [views, setViews] = useState(String(article.views ?? 0))
-  const [engagement, setEngagement] = useState(article.avg_engagement)
-  const publishedToday = !article.publish_date
-
   return (
     <div className="space-y-3">
       {article.publish_date ? (
@@ -585,37 +694,10 @@ function PublishedPanel({
           Publicar agora (registra a data de hoje)
         </Button>
       )}
-
-      <div className="grid grid-cols-2 gap-2">
-        <div className="space-y-1">
-          <label className="flex items-center gap-1 text-[10px] font-medium uppercase text-muted-foreground">
-            <Eye className="h-3 w-3" /> Visualizações
-          </label>
-          <Input
-            value={views}
-            onChange={(e) => setViews(e.target.value.replace(/[^0-9]/g, ""))}
-            onBlur={() => Number(views) !== article.views && onUpdate(article.id, { views: Number(views) || 0 })}
-            className="h-8 rounded-lg border-input bg-secondary/50 text-sm"
-          />
-        </div>
-        <div className="space-y-1">
-          <label className="flex items-center gap-1 text-[10px] font-medium uppercase text-muted-foreground">
-            <Clock className="h-3 w-3" /> Tempo médio
-          </label>
-          <Input
-            value={engagement}
-            onChange={(e) => setEngagement(e.target.value)}
-            onBlur={() => engagement !== article.avg_engagement && onUpdate(article.id, { avg_engagement: engagement })}
-            placeholder="Ex: 2m 30s"
-            className="h-8 rounded-lg border-input bg-secondary/50 text-sm"
-          />
-        </div>
-      </div>
-      {publishedToday && (
-        <p className="text-[10px] text-muted-foreground">
-          Ao publicar, a data de hoje é registrada automaticamente.
-        </p>
-      )}
+      <p className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+        <RefreshCw className="h-3 w-3" />
+        As visualizações e o tempo médio são puxados do Google Analytics no rodapé do card.
+      </p>
     </div>
   )
 }
