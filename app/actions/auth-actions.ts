@@ -14,21 +14,27 @@ export async function loginAction(formData: FormData): Promise<{ success: boolea
   const result = await login(username, password)
 
   if (result.success) {
-    // Get user session to determine redirect
+    // Get user session to determine redirect (considera TODAS as roles, não só a role legada)
     const { user } = await getSession()
-    const role = user?.role?.toLowerCase() || ""
-    
-    let redirectTo = "/dashboard"
-    if (role === "comercial") {
-      redirectTo = "/reunioes"
-    } else if (role !== "admin") {
-      redirectTo = "/zona-de-execucao"
-    }
-    
-    return { success: true, redirectTo }
+    const roles = (user?.roles ?? (user?.role ? [user.role] : [])).map((r) => (r ?? "").toLowerCase())
+    return { success: true, redirectTo: resolveLandingPage(roles) }
   }
 
   return result
+}
+
+// Escolhe a primeira página de destino a que o usuário realmente tem acesso, por ordem de
+// prioridade. Evita mandar o usuário para uma rota cujo guard o expulsaria (ex.: um usuário
+// só com o módulo "blog" não pode entrar em /zona-de-execucao).
+function resolveLandingPage(roles: string[]): string {
+  if (roles.includes("admin")) return "/dashboard"
+  if (roles.includes("zona_execucao")) return "/zona-de-execucao"
+  if (roles.includes("comercial")) return "/reunioes"
+  if (roles.includes("gestor_ads")) return "/zona-de-execucao/criativos"
+  if (roles.includes("mineracao")) return "/mineracao"
+  if (roles.includes("blog")) return "/blog"
+  // "user" e qualquer outra role básica têm acesso a Demandas.
+  return "/demandas"
 }
 
 export async function logoutAction() {
