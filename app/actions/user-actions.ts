@@ -50,8 +50,12 @@ export async function updateUser(
   }
 
   try {
-    // Update user basic info (keep first role as legacy role field)
-    const primaryRole = data.roles[0] || "user"
+    // "blog" e outros módulos são permissões, não níveis de acesso: não podem virar a role
+    // primária de users.role. Filtramos os módulos e usamos o primeiro nível de acesso.
+    const MODULE_ROLES = ["blog"]
+    const accessRoles = data.roles.filter((r) => !MODULE_ROLES.includes(r))
+    const primaryRole = accessRoles[0] || "user"
+    const allRoles = Array.from(new Set([primaryRole, ...data.roles]))
     await sql`
       UPDATE users 
       SET name = ${data.name}, email = ${data.email}, role = ${primaryRole}, status = ${data.status}, updated_at = NOW()
@@ -61,7 +65,7 @@ export async function updateUser(
     // Update user_roles table
     await sql`DELETE FROM user_roles WHERE user_id = ${userId}`
     
-    for (const role of data.roles) {
+    for (const role of allRoles) {
       await sql`
         INSERT INTO user_roles (user_id, role) VALUES (${userId}, ${role})
       `

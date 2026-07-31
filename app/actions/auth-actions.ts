@@ -48,9 +48,14 @@ export async function createUserAction(data: {
     return { success: false, error: "Não autorizado" }
   }
 
-  // Use primary role for legacy field, persiste todas as roles em user_roles
-  const primaryRole = data.role[0] || "user"
-  const result = await createUser({ ...data, role: primaryRole, roles: data.role })
+  // "blog" e outros módulos são permissões, não níveis de acesso: nunca podem virar a role
+  // primária de users.role (constraint só aceita níveis de acesso). Filtramos os módulos e
+  // usamos o primeiro nível de acesso como role primária, com "user" como padrão.
+  const MODULE_ROLES = ["blog"]
+  const accessRoles = data.role.filter((r) => !MODULE_ROLES.includes(r))
+  const primaryRole = accessRoles[0] || "user"
+  const allRoles = Array.from(new Set([primaryRole, ...data.role]))
+  const result = await createUser({ ...data, role: primaryRole, roles: allRoles })
   if (result.success) {
     revalidatePath("/admin")
   }
