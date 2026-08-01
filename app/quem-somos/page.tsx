@@ -183,8 +183,10 @@ export default function QuemSomosPage() {
           </div>
         </section>
 
-        {/* CTA WhatsApp — aparece somente aos 5:30 */}
-        <section className="w-full flex flex-col items-center min-h-[140px] justify-center py-10">
+        {/* CTA WhatsApp — aparece somente aos 5:30 (sem reservar espaço enquanto oculto) */}
+        <section
+          className={`w-full flex flex-col items-center justify-center ${ctaVisible ? "py-10" : "py-0"}`}
+        >
           {ctaVisible && (
             <div className="cta-reveal flex flex-col items-center text-center">
               <a
