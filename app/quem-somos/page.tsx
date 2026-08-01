@@ -89,24 +89,29 @@ export default function QuemSomosPage() {
     let cancelled = false
     let soundOn = false
 
-    // Ativa o som e garante que o vídeo esteja tocando. Os navegadores bloqueiam áudio
-    // sem interação, então tentamos no início e também no primeiro gesto do usuário.
+    // Ativa o som e garante que o vídeo esteja tocando. No mobile (iOS/Android) a liberação
+    // de áudio exige que as chamadas ocorram DE FORMA SÍNCRONA dentro do gesto do usuário —
+    // por isso disparamos setMuted/setVolume/play direto, sem encadear promises (que perderiam
+    // o contexto do gesto). Removemos os listeners apenas quando o play com som confirma.
     const enableSound = () => {
       const player = playerRef.current
       if (!player || soundOn) return
-      Promise.resolve(player.setMuted(false))
-        .then(() => player.setVolume(1))
-        .then(() => player.play())
-        .then(() => {
-          soundOn = true
-          removeGestureListeners()
-        })
-        .catch(() => {
-          // Ainda bloqueado: aguarda o próximo gesto do usuário.
-        })
+      soundOn = true
+      try {
+        player.setMuted(false)
+        player.setVolume(1)
+        Promise.resolve(player.play())
+          .then(() => removeGestureListeners())
+          .catch(() => {
+            // Se falhar, permite nova tentativa no próximo gesto.
+            soundOn = false
+          })
+      } catch {
+        soundOn = false
+      }
     }
 
-    const gestureEvents = ["pointerdown", "click", "touchstart", "keydown", "scroll", "wheel"] as const
+    const gestureEvents = ["pointerdown", "click", "touchstart", "touchend", "keydown"] as const
     const onGesture = () => enableSound()
     const addGestureListeners = () => {
       gestureEvents.forEach((evt) =>
@@ -122,7 +127,7 @@ export default function QuemSomosPage() {
       if (cancelled) return
       const iframe = iframeRef.current
       if (!window.Vimeo || !iframe) {
-        window.setTimeout(init, 250)
+        window.setTimeout(init, 50)
         return
       }
       const player = new window.Vimeo.Player(iframe)

@@ -30,7 +30,13 @@ export const metadata: Metadata = {
 export default function QuemSomosLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
-      <Script src="https://player.vimeo.com/api/player.js" strategy="afterInteractive" />
+      {/* Preconnect aos domínios do Vimeo para o vídeo carregar rápido, sem delay perceptível */}
+      <link rel="preconnect" href="https://player.vimeo.com" crossOrigin="" />
+      <link rel="preconnect" href="https://i.vimeocdn.com" crossOrigin="" />
+      <link rel="preconnect" href="https://f.vimeocdn.com" crossOrigin="" />
+      <link rel="dns-prefetch" href="https://player.vimeo.com" />
+      {/* SDK carregado o quanto antes para o controle de som/tempo ficar pronto rapidamente */}
+      <Script src="https://player.vimeo.com/api/player.js" strategy="beforeInteractive" />
       {children}
     </>
   )
