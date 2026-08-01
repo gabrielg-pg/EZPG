@@ -3,21 +3,88 @@
 import { useEffect, useRef, useState } from "react"
 
 // Vimeo Player SDK é carregado via <Script> no layout desta rota.
+type VimeoPlayer = {
+  on: (event: string, cb: (data: { seconds: number }) => void) => void
+  setMuted: (muted: boolean) => Promise<boolean>
+  setVolume: (volume: number) => Promise<number>
+  play: () => Promise<void>
+}
 declare global {
   interface Window {
     Vimeo?: {
-      Player: new (el: HTMLIFrameElement | HTMLElement) => {
-        on: (event: string, cb: (data: { seconds: number }) => void) => void
-      }
+      Player: new (el: HTMLIFrameElement | HTMLElement) => VimeoPlayer
     }
   }
 }
 
 const REVEAL_AT_SECONDS = 330 // 5:30
 
+// Contador animado (count-up) que dispara ao entrar na viewport.
+function StatCounter({
+  target,
+  prefix = "",
+  suffix = "",
+  duration = 1400,
+}: {
+  target: number
+  prefix?: string
+  suffix?: string
+  duration?: number
+}) {
+  const ref = useRef<HTMLSpanElement>(null)
+  const [value, setValue] = useState(0)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+
+    let raf = 0
+    let started = false
+
+    const run = () => {
+      const start = performance.now()
+      const tick = (now: number) => {
+        const progress = Math.min((now - start) / duration, 1)
+        // easeOutExpo para um crescimento rápido que desacelera no fim.
+        const eased = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress)
+        setValue(Math.round(eased * target))
+        if (progress < 1) raf = requestAnimationFrame(tick)
+      }
+      raf = requestAnimationFrame(tick)
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !started) {
+          started = true
+          run()
+          observer.disconnect()
+        }
+      },
+      { threshold: 0.4 },
+    )
+    observer.observe(el)
+
+    return () => {
+      observer.disconnect()
+      cancelAnimationFrame(raf)
+    }
+  }, [target, duration])
+
+  return (
+    <span ref={ref}>
+      {prefix}
+      {value.toLocaleString("pt-BR")}
+      {suffix}
+    </span>
+  )
+}
+
 export default function QuemSomosPage() {
   const iframeRef = useRef<HTMLIFrameElement>(null)
+  const playerRef = useRef<VimeoPlayer | null>(null)
   const [ctaVisible, setCtaVisible] = useState(false)
+  const [muted, setMuted] = useState(true)
 
   useEffect(() => {
     let cancelled = false
@@ -31,6 +98,7 @@ export default function QuemSomosPage() {
         return
       }
       const player = new window.Vimeo.Player(iframe)
+      playerRef.current = player
       let shown = false
       player.on("timeupdate", (data) => {
         if (!shown && data.seconds >= REVEAL_AT_SECONDS) {
@@ -45,6 +113,19 @@ export default function QuemSomosPage() {
       cancelled = true
     }
   }, [])
+
+  // Ativa o som (o autoplay só é permitido pelos navegadores quando iniciado mudo).
+  const enableSound = () => {
+    const player = playerRef.current
+    if (!player) return
+    Promise.resolve(player.setMuted(false))
+      .then(() => player.setVolume(1))
+      .then(() => player.play())
+      .then(() => setMuted(false))
+      .catch(() => {
+        // Ignora: se falhar, o usuário pode tentar novamente.
+      })
+  }
 
   return (
     <main className="min-h-screen bg-[#0A0A0A] text-white flex flex-col font-sans">
@@ -75,12 +156,30 @@ export default function QuemSomosPage() {
           >
             <iframe
               ref={iframeRef}
-              src="https://player.vimeo.com/video/1214853650?title=0&byline=0&portrait=0"
+              src="https://player.vimeo.com/video/1214853650?autoplay=1&muted=1&controls=0&title=0&byline=0&portrait=0&pip=0&keyboard=0&playsinline=1"
               className="absolute inset-0 h-full w-full"
               allow="autoplay; fullscreen; picture-in-picture"
               allowFullScreen
               title="Quem é a Pro Growth"
             />
+
+            {/* Overlay para ativar o som (autoplay exige início mudo nos navegadores) */}
+            {muted && (
+              <button
+                type="button"
+                onClick={enableSound}
+                className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-black/45 backdrop-blur-[2px] transition-opacity hover:bg-black/55"
+                aria-label="Ativar o som do vídeo"
+              >
+                <span className="flex h-16 w-16 items-center justify-center rounded-full bg-[#8B5CF6] shadow-lg shadow-[#8B5CF6]/40 ring-4 ring-white/10">
+                  <svg viewBox="0 0 24 24" className="h-7 w-7 text-white" fill="currentColor" aria-hidden="true">
+                    <path d="M3 10v4a1 1 0 0 0 1 1h3l4 4V5L7 9H4a1 1 0 0 0-1 1Z" />
+                    <path d="M16 8.5a4 4 0 0 1 0 7M18.5 6a7 7 0 0 1 0 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                  </svg>
+                </span>
+                <span className="text-sm font-semibold text-white">Toque para ativar o som</span>
+              </button>
+            )}
           </div>
         </section>
 
@@ -104,18 +203,35 @@ export default function QuemSomosPage() {
           )}
         </section>
 
-        {/* Faixa de prova — discreta, uma linha */}
-        <section className="w-full pb-14">
-          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-center text-xs sm:text-sm text-[#A1A1AA]">
-            <span>15 anos de mercado</span>
-            <span className="text-[#C9A227]" aria-hidden="true">
-              ·
-            </span>
-            <span>R$67MM gerados para clientes</span>
-            <span className="text-[#C9A227]" aria-hidden="true">
-              ·
-            </span>
-            <span>2.157+ operações estruturadas</span>
+        {/* Faixa de prova — números animados (count-up) em destaque */}
+        <section className="w-full pb-16 pt-2">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-3 sm:gap-4">
+            <div className="flex flex-col items-center rounded-2xl border border-white/5 bg-white/[0.02] px-4 py-7 text-center">
+              <div className="text-4xl font-extrabold tracking-tight text-[#8B5CF6] sm:text-5xl tabular-nums">
+                <StatCounter target={15} />
+              </div>
+              <p className="mt-2 text-xs font-medium uppercase tracking-wide text-[#A1A1AA] sm:text-sm">
+                anos de mercado
+              </p>
+            </div>
+
+            <div className="flex flex-col items-center rounded-2xl border border-white/5 bg-white/[0.02] px-4 py-7 text-center">
+              <div className="text-4xl font-extrabold tracking-tight text-[#8B5CF6] sm:text-5xl tabular-nums">
+                <StatCounter target={67} prefix="R$" suffix="MM" />
+              </div>
+              <p className="mt-2 text-xs font-medium uppercase tracking-wide text-[#A1A1AA] sm:text-sm">
+                gerados para clientes
+              </p>
+            </div>
+
+            <div className="flex flex-col items-center rounded-2xl border border-white/5 bg-white/[0.02] px-4 py-7 text-center">
+              <div className="text-4xl font-extrabold tracking-tight text-[#8B5CF6] sm:text-5xl tabular-nums">
+                <StatCounter target={2157} suffix="+" />
+              </div>
+              <p className="mt-2 text-xs font-medium uppercase tracking-wide text-[#A1A1AA] sm:text-sm">
+                operações estruturadas
+              </p>
+            </div>
           </div>
         </section>
       </div>
@@ -127,7 +243,7 @@ export default function QuemSomosPage() {
           <span className="hidden sm:inline" aria-hidden="true">
             ·
           </span>
-          <span>CNPJ 00.000.000/0001-00</span>
+          <span>CNPJ 39.980.588/0001-22</span>
           <span className="hidden sm:inline" aria-hidden="true">
             ·
           </span>
