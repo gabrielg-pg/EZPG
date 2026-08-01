@@ -84,10 +84,38 @@ export default function QuemSomosPage() {
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const playerRef = useRef<VimeoPlayer | null>(null)
   const [ctaVisible, setCtaVisible] = useState(false)
-  const [muted, setMuted] = useState(true)
 
   useEffect(() => {
     let cancelled = false
+    let soundOn = false
+
+    // Ativa o som e garante que o vídeo esteja tocando. Os navegadores bloqueiam áudio
+    // sem interação, então tentamos no início e também no primeiro gesto do usuário.
+    const enableSound = () => {
+      const player = playerRef.current
+      if (!player || soundOn) return
+      Promise.resolve(player.setMuted(false))
+        .then(() => player.setVolume(1))
+        .then(() => player.play())
+        .then(() => {
+          soundOn = true
+          removeGestureListeners()
+        })
+        .catch(() => {
+          // Ainda bloqueado: aguarda o próximo gesto do usuário.
+        })
+    }
+
+    const gestureEvents = ["pointerdown", "click", "touchstart", "keydown", "scroll", "wheel"] as const
+    const onGesture = () => enableSound()
+    const addGestureListeners = () => {
+      gestureEvents.forEach((evt) =>
+        window.addEventListener(evt, onGesture, { passive: true }),
+      )
+    }
+    const removeGestureListeners = () => {
+      gestureEvents.forEach((evt) => window.removeEventListener(evt, onGesture))
+    }
 
     // Aguarda o SDK do Vimeo ficar disponível (o script é afterInteractive).
     function init() {
@@ -99,6 +127,12 @@ export default function QuemSomosPage() {
       }
       const player = new window.Vimeo.Player(iframe)
       playerRef.current = player
+
+      // Tenta iniciar imediatamente com som (funciona em navegadores permissivos).
+      enableSound()
+      // Fallback: ativa o som no primeiro gesto do usuário, sem mostrar nenhuma mensagem.
+      addGestureListeners()
+
       let shown = false
       player.on("timeupdate", (data) => {
         if (!shown && data.seconds >= REVEAL_AT_SECONDS) {
@@ -111,21 +145,9 @@ export default function QuemSomosPage() {
     init()
     return () => {
       cancelled = true
+      removeGestureListeners()
     }
   }, [])
-
-  // Ativa o som (o autoplay só é permitido pelos navegadores quando iniciado mudo).
-  const enableSound = () => {
-    const player = playerRef.current
-    if (!player) return
-    Promise.resolve(player.setMuted(false))
-      .then(() => player.setVolume(1))
-      .then(() => player.play())
-      .then(() => setMuted(false))
-      .catch(() => {
-        // Ignora: se falhar, o usuário pode tentar novamente.
-      })
-  }
 
   return (
     <main className="min-h-screen bg-[#0A0A0A] text-white flex flex-col font-sans">
@@ -162,24 +184,6 @@ export default function QuemSomosPage() {
               allowFullScreen
               title="Quem é a Pro Growth"
             />
-
-            {/* Overlay para ativar o som (autoplay exige início mudo nos navegadores) */}
-            {muted && (
-              <button
-                type="button"
-                onClick={enableSound}
-                className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-black/45 backdrop-blur-[2px] transition-opacity hover:bg-black/55"
-                aria-label="Ativar o som do vídeo"
-              >
-                <span className="flex h-16 w-16 items-center justify-center rounded-full bg-[#8B5CF6] shadow-lg shadow-[#8B5CF6]/40 ring-4 ring-white/10">
-                  <svg viewBox="0 0 24 24" className="h-7 w-7 text-white" fill="currentColor" aria-hidden="true">
-                    <path d="M3 10v4a1 1 0 0 0 1 1h3l4 4V5L7 9H4a1 1 0 0 0-1 1Z" />
-                    <path d="M16 8.5a4 4 0 0 1 0 7M18.5 6a7 7 0 0 1 0 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                  </svg>
-                </span>
-                <span className="text-sm font-semibold text-white">Toque para ativar o som</span>
-              </button>
-            )}
           </div>
         </section>
 
