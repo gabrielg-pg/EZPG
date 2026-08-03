@@ -27,6 +27,8 @@ export const metadata: Metadata = {
   },
 }
 
+const META_PIXEL_ID = "1072489904995751"
+
 export default function QuemSomosLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
@@ -38,6 +40,31 @@ export default function QuemSomosLayout({ children }: { children: React.ReactNod
       {/* SDK do Vimeo — afterInteractive é o correto em layout aninhado do App Router.
           O vídeo em si dá autoplay pelo próprio iframe; o SDK só controla som e tempo. */}
       <Script src="https://player.vimeo.com/api/player.js" strategy="afterInteractive" />
+
+      {/* Meta Pixel Code */}
+      <Script id="meta-pixel" strategy="afterInteractive">
+        {`!function(f,b,e,v,n,t,s)
+        {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+        n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+        if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+        n.queue=[];t=b.createElement(e);t.async=!0;
+        t.src=v;s=b.getElementsByTagName(e)[0];
+        s.parentNode.insertBefore(t,s)}(window,document,'script',
+        'https://connect.facebook.net/en_US/fbevents.js');
+        fbq('init', '${META_PIXEL_ID}');
+        fbq('track', 'PageView');`}
+      </Script>
+      <noscript>
+        <img
+          height="1"
+          width="1"
+          style={{ display: "none" }}
+          src={`https://www.facebook.com/tr?id=${META_PIXEL_ID}&ev=PageView&noscript=1`}
+          alt=""
+        />
+      </noscript>
+      {/* End Meta Pixel Code */}
+
       {children}
     </>
   )
