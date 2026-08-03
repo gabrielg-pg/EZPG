@@ -35,8 +35,9 @@ export default function QuemSomosLayout({ children }: { children: React.ReactNod
       <link rel="preconnect" href="https://i.vimeocdn.com" crossOrigin="" />
       <link rel="preconnect" href="https://f.vimeocdn.com" crossOrigin="" />
       <link rel="dns-prefetch" href="https://player.vimeo.com" />
-      {/* SDK carregado o quanto antes para o controle de som/tempo ficar pronto rapidamente */}
-      <Script src="https://player.vimeo.com/api/player.js" strategy="beforeInteractive" />
+      {/* SDK do Vimeo — afterInteractive é o correto em layout aninhado do App Router.
+          O vídeo em si dá autoplay pelo próprio iframe; o SDK só controla som e tempo. */}
+      <Script src="https://player.vimeo.com/api/player.js" strategy="afterInteractive" />
       {children}
     </>
   )

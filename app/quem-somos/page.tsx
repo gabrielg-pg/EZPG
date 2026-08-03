@@ -133,9 +133,12 @@ export default function QuemSomosPage() {
       const player = new window.Vimeo.Player(iframe)
       playerRef.current = player
 
-      // Tenta iniciar imediatamente com som (funciona em navegadores permissivos).
-      enableSound()
-      // Fallback: ativa o som no primeiro gesto do usuário, sem mostrar nenhuma mensagem.
+      // NÃO forçamos som no início: o iframe já dá autoplay MUDO (única forma garantida pelos
+      // navegadores). Interferir aqui com setMuted(false)+play() faria o navegador bloquear e
+      // travar o vídeo. Garantimos apenas que o autoplay mudo esteja de fato rodando.
+      Promise.resolve(player.play()).catch(() => {})
+
+      // O som é ativado no primeiro gesto do usuário (clique/toque), sem nenhuma mensagem.
       addGestureListeners()
 
       let shown = false
