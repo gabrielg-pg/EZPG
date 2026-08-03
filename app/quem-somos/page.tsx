@@ -5,9 +5,6 @@ import { useEffect, useRef, useState } from "react"
 // Vimeo Player SDK é carregado via <Script> no layout desta rota.
 type VimeoPlayer = {
   on: (event: string, cb: (data: { seconds: number }) => void) => void
-  setMuted: (muted: boolean) => Promise<boolean>
-  setVolume: (volume: number) => Promise<number>
-  play: () => Promise<void>
 }
 declare global {
   interface Window {
@@ -82,64 +79,22 @@ function StatCounter({
 
 export default function QuemSomosPage() {
   const iframeRef = useRef<HTMLIFrameElement>(null)
-  const playerRef = useRef<VimeoPlayer | null>(null)
   const [ctaVisible, setCtaVisible] = useState(false)
 
   useEffect(() => {
     let cancelled = false
-    let soundOn = false
-
-    // Ativa o som e garante que o vídeo esteja tocando. No mobile (iOS/Android) a liberação
-    // de áudio exige que as chamadas ocorram DE FORMA SÍNCRONA dentro do gesto do usuário —
-    // por isso disparamos setMuted/setVolume/play direto, sem encadear promises (que perderiam
-    // o contexto do gesto). Removemos os listeners apenas quando o play com som confirma.
-    const enableSound = () => {
-      const player = playerRef.current
-      if (!player || soundOn) return
-      soundOn = true
-      try {
-        player.setMuted(false)
-        player.setVolume(1)
-        Promise.resolve(player.play())
-          .then(() => removeGestureListeners())
-          .catch(() => {
-            // Se falhar, permite nova tentativa no próximo gesto.
-            soundOn = false
-          })
-      } catch {
-        soundOn = false
-      }
-    }
-
-    const gestureEvents = ["pointerdown", "click", "touchstart", "touchend", "keydown"] as const
-    const onGesture = () => enableSound()
-    const addGestureListeners = () => {
-      gestureEvents.forEach((evt) =>
-        window.addEventListener(evt, onGesture, { passive: true }),
-      )
-    }
-    const removeGestureListeners = () => {
-      gestureEvents.forEach((evt) => window.removeEventListener(evt, onGesture))
-    }
 
     // Aguarda o SDK do Vimeo ficar disponível (o script é afterInteractive).
+    // Usamos o SDK apenas para revelar o CTA aos 5:30 — o vídeo é iniciado pelo
+    // próprio usuário no botão de play do player (comportamento padrão do Vimeo).
     function init() {
       if (cancelled) return
       const iframe = iframeRef.current
       if (!window.Vimeo || !iframe) {
-        window.setTimeout(init, 50)
+        window.setTimeout(init, 100)
         return
       }
       const player = new window.Vimeo.Player(iframe)
-      playerRef.current = player
-
-      // NÃO forçamos som no início: o iframe já dá autoplay MUDO (única forma garantida pelos
-      // navegadores). Interferir aqui com setMuted(false)+play() faria o navegador bloquear e
-      // travar o vídeo. Garantimos apenas que o autoplay mudo esteja de fato rodando.
-      Promise.resolve(player.play()).catch(() => {})
-
-      // O som é ativado no primeiro gesto do usuário (clique/toque), sem nenhuma mensagem.
-      addGestureListeners()
 
       let shown = false
       player.on("timeupdate", (data) => {
@@ -153,7 +108,6 @@ export default function QuemSomosPage() {
     init()
     return () => {
       cancelled = true
-      removeGestureListeners()
     }
   }, [])
 
@@ -186,7 +140,7 @@ export default function QuemSomosPage() {
           >
             <iframe
               ref={iframeRef}
-              src="https://player.vimeo.com/video/1214853650?autoplay=1&muted=1&controls=0&title=0&byline=0&portrait=0&pip=0&keyboard=0&playsinline=1"
+              src="https://player.vimeo.com/video/1214853650?title=0&byline=0&portrait=0&playsinline=1"
               className="absolute inset-0 h-full w-full"
               allow="autoplay; fullscreen; picture-in-picture"
               allowFullScreen
