@@ -7,7 +7,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { LayoutDashboard, Store, Users, LogOut, Menu, X, ChevronRight, Loader2, Calendar, Rocket, Globe, KeyRound, TrendingUp, KanbanSquare, ClipboardList, Megaphone, Gauge, MessageSquareText, Sparkles, HandCoins, BarChart3, Pickaxe, FileText } from "lucide-react"
+import { LayoutDashboard, Store, Users, LogOut, Menu, X, ChevronRight, Loader2, Calendar, Rocket, Globe, KeyRound, TrendingUp, KanbanSquare, ClipboardList, Megaphone, Gauge, MessageSquareText, Sparkles, HandCoins, BarChart3, Pickaxe, FileText, Layers } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { logoutAction } from "@/app/actions/auth-actions"
 
@@ -35,6 +35,7 @@ export function DashboardLayout({ children, userRoles = ["user"] }: DashboardLay
     { name: "Growth Clientes", href: "/zona-de-execucao/growth-clientes", icon: TrendingUp, roles: ["admin"] },
     { name: "Referência de Lojas", href: "/referencia-lojas", icon: Globe, roles: ["admin", "comercial", "zona_execucao", "user", "mineracao"] },
     { name: "Mineração", href: "/mineracao", icon: Pickaxe, roles: ["admin", "mineracao"] },
+    { name: "Esteira", href: "/zona-de-execucao/esteira", icon: Layers, roles: ["admin", "esteira"] },
     { name: "Cofre", href: "/cofre", icon: KeyRound, roles: ["admin"] },
     { name: "PG Dash", href: "/pg-dash", icon: Gauge, roles: ["admin", "zona_execucao"] },
     { name: "CRM", href: "/crm", icon: KanbanSquare, roles: ["admin", "gestor_ads"] },

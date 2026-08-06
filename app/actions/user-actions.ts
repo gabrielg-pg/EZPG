@@ -61,7 +61,7 @@ export async function updateUser(
     // módulos como "blog". Usamos o primeiro NÍVEL DE ACESSO marcado; se só houver módulos
     // selecionados, gravamos "user" na coluna espelho — mas user_roles guarda exatamente o
     // que foi marcado (é o que de fato controla o acesso no sistema).
-    const MODULE_ROLES = ["blog"]
+    const MODULE_ROLES = ["blog", "esteira"]
     const accessRoles = selectedRoles.filter((r) => !MODULE_ROLES.includes(r))
     const primaryRole = accessRoles[0] || "user"
 

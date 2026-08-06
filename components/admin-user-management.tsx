@@ -17,16 +17,17 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Plus, Pencil, Trash2, Search, Users, Shield, UserCheck, Loader2, Briefcase, KeyRound, Mail, UserCog, Rocket, ArrowRightLeft, Megaphone, Pickaxe, FileText } from "lucide-react"
+import { Plus, Pencil, Trash2, Search, Users, Shield, UserCheck, Loader2, Briefcase, KeyRound, Mail, UserCog, Rocket, ArrowRightLeft, Megaphone, Pickaxe, FileText, Layers } from "lucide-react"
 import { createUserAction } from "@/app/actions/auth-actions"
 import { updateUser, deleteUser } from "@/app/actions/user-actions"
 import { cn } from "@/lib/utils"
 
-type RoleType = "admin" | "comercial" | "manager" | "user" | "zona_execucao" | "gestor_ads" | "mineracao" | "blog"
+type RoleType = "admin" | "comercial" | "manager" | "user" | "zona_execucao" | "gestor_ads" | "mineracao" | "blog" | "esteira"
 
 // Permissões de módulo (separadas dos níveis de acesso), persistidas via user_roles.
 const moduleConfig = {
   blog: { label: "Blog", color: "bg-primary/15 text-primary border-primary/25", icon: FileText, description: "Acesso ao módulo Blog e ao planejamento editorial" },
+  esteira: { label: "Esteira", color: "bg-[#10B981]/15 text-[#10B981] border-[#10B981]/25", icon: Layers, description: "Acesso à aba Esteira (mineração e arquivo por mês) na Zona de Execução" },
 } as const
 
 type ModuleType = keyof typeof moduleConfig
@@ -325,10 +326,11 @@ export function AdminUserManagement({ initialUsers }: { initialUsers: User[] }) 
                       <TableCell>
                         <div className="flex flex-wrap gap-1.5">
                           {(user.roles || [user.role]).map((role) => {
+                            type RoleMeta = { label: string; color: string; icon: typeof Layers; description: string }
                             const config =
-                              (roleConfig as Record<string, typeof roleConfig.user>)[role] ||
-                              (moduleConfig as Record<string, (typeof moduleConfig)["blog"]>)[role] ||
-                              roleConfig.user
+                              (roleConfig as unknown as Record<string, RoleMeta>)[role] ||
+                              (moduleConfig as unknown as Record<string, RoleMeta>)[role] ||
+                              (roleConfig.user as RoleMeta)
                             const IconComponent = config.icon
                             return (
                               <Badge key={role} variant="outline" className={cn("gap-1", config.color)}>
