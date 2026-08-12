@@ -71,6 +71,7 @@ export async function createClientStore(data: {
       RETURNING id, name, site, niche, type, created_by, created_by_name, created_at
     `
     revalidatePath("/mineracao")
+    revalidatePath("/demandas")
     return { success: true, store: rows[0] as ClientStoreEntry }
   } catch (error: unknown) {
     console.error("Create client store error:", error)
@@ -89,6 +90,7 @@ export async function deleteClientStore(id: number): Promise<{ success: boolean;
   try {
     await sql`DELETE FROM pg_client_stores WHERE id = ${id}`
     revalidatePath("/mineracao")
+    revalidatePath("/demandas")
     return { success: true }
   } catch (error) {
     console.error("Delete client store error:", error)
