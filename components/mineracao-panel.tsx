@@ -1,14 +1,10 @@
 "use client"
 
 import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import {
   Pickaxe,
-  KeyRound,
-  Eye,
-  EyeOff,
   Copy,
   Check,
   ExternalLink,
@@ -16,67 +12,14 @@ import {
   Puzzle,
   Code2,
   Search,
-  ShoppingBag,
-  Mail,
-  Image as ImageIcon,
   Globe,
-  Target,
-  Clapperboard,
   ShieldCheck,
-  MonitorSmartphone,
   FolderOpen,
 } from "lucide-react"
-import { cn } from "@/lib/utils"
 import { ClientStoresBlock } from "@/components/client-stores-block"
+import { AccessCredentialsBlock } from "@/components/access-credentials-block"
 import type { ClientStoreEntry } from "@/app/actions/client-store-actions"
-
-type Credential = {
-  name: string
-  icon: React.ComponentType<{ className?: string }>
-  login: string
-  password: string
-  site?: string
-}
-
-const credentials: Credential[] = [
-  { name: "Gmail", icon: Mail, login: "suporteprogrowth@gmail.com", password: "#Eusouprogrowth2030" },
-  { name: "Zona de Execução", icon: Pickaxe, login: "karolsantosangeli266@gmail.com", password: "#PG2026" },
-  { name: "Shopify", icon: ShoppingBag, login: "hello@progrowthglobal.com", password: "#Eusoupg2026" },
-  { name: "Poky", icon: ImageIcon, login: "suporteprogrowth@gmail.com", password: "@MineracaoProGrowth2030#" },
-  {
-    name: "E-mail Pro Growth",
-    icon: Mail,
-    login: "hello@progrowthglobal.com",
-    password: "@PinterestProGrowth2030#",
-    site: "https://mail.hostinger.com/old/?_task=mail&_mbox=INBOX",
-  },
-  {
-    name: "Magnific — Imagens",
-    icon: ImageIcon,
-    login: "suporteprogrowth@gmail.com",
-    password: "#Eusoufoda76",
-    site: "https://www.magnific.com",
-  },
-  {
-    name: "WinningHunter",
-    icon: Target,
-    login: "suporteprogrowth@gmail.com",
-    password: "@ProGrowth2030#",
-    site: "https://app.winninghunter.com/dashboard",
-  },
-  {
-    name: "CapCut",
-    icon: Clapperboard,
-    login: "suporteprogrowth@gmail.com",
-    password: "#Luizpro76",
-  },
-  {
-    name: "ADSpower",
-    icon: MonitorSmartphone,
-    login: "hello@progrowthglobal.com.br",
-    password: "#Eusouprogrowth2030",
-  },
-]
+import type { AccessCredential } from "@/app/actions/access-actions"
 
 const steps: { title: string; description: string }[] = [
   {
@@ -171,36 +114,13 @@ function CopyButton({ value, label }: { value: string; label: string }) {
   )
 }
 
-function CredentialField({ label, value, secret = false }: { label: string; value: string; secret?: boolean }) {
-  const [revealed, setRevealed] = useState(false)
-  const display = secret && !revealed ? "•".repeat(Math.min(value.length, 16)) : value
-
-  return (
-    <div className="space-y-1">
-      <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
-      <div className="flex items-center gap-1 rounded-lg border border-border bg-secondary/40 px-3 py-2">
-        <span className={cn("flex-1 truncate text-sm text-foreground", secret && "font-mono tracking-wide")}>
-          {display}
-        </span>
-        {secret && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            onClick={() => setRevealed((v) => !v)}
-            aria-label={revealed ? "Ocultar senha" : "Mostrar senha"}
-            className="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground hover:bg-white/5"
-          >
-            {revealed ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-          </Button>
-        )}
-        <CopyButton value={value} label={label} />
-      </div>
-    </div>
-  )
-}
-
-export function MineracaoPanel({ initialClientStores = [] }: { initialClientStores?: ClientStoreEntry[] }) {
+export function MineracaoPanel({
+  initialClientStores = [],
+  initialCredentials = [],
+}: {
+  initialClientStores?: ClientStoreEntry[]
+  initialCredentials?: AccessCredential[]
+}) {
   const bestSellingCode = "collections/all?sort_by=best-selling"
 
   return (
@@ -240,50 +160,8 @@ export function MineracaoPanel({ initialClientStores = [] }: { initialClientStor
         </span>
       </a>
 
-      {/* Acessos */}
-      <section className="space-y-4">
-        <div className="flex items-center gap-2">
-          <KeyRound className="h-5 w-5 text-primary" />
-          <h3 className="text-lg font-semibold text-foreground">Acessos</h3>
-          <Badge variant="outline" className="ml-1 border-teal-500/25 bg-teal-500/15 text-teal-400">
-            {credentials.length} plataformas
-          </Badge>
-        </div>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {credentials.map((cred) => {
-            const Icon = cred.icon
-            return (
-              <Card key={cred.name} className="border-border bg-card/50 backdrop-blur-sm">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <CardTitle className="flex items-center gap-2 text-base text-foreground">
-                      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/15 text-primary">
-                        <Icon className="h-4 w-4" />
-                      </span>
-                      {cred.name}
-                    </CardTitle>
-                    {cred.site && (
-                      <a
-                        href={cred.site}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1 text-xs font-medium text-primary hover:underline"
-                      >
-                        Abrir
-                        <ExternalLink className="h-3 w-3" />
-                      </a>
-                    )}
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <CredentialField label="Login" value={cred.login} />
-                  <CredentialField label="Senha" value={cred.password} secret />
-                </CardContent>
-              </Card>
-            )
-          })}
-        </div>
-      </section>
+      {/* Acessos (contas dinâmicas: adicionar/editar/excluir) */}
+      <AccessCredentialsBlock initialCredentials={initialCredentials} />
 
       {/* Estrutura de Mineração */}
       <section className="space-y-4">

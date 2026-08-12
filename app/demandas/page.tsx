@@ -8,6 +8,7 @@ import { MineracaoPanel } from "@/components/mineracao-panel"
 import { createDemandasTable, getDemandas } from "@/app/actions/demandas-actions"
 import { createEsteiraTable, getEsteiraProducts } from "@/app/actions/esteira-actions"
 import { createClientStoresTable, getClientStores } from "@/app/actions/client-store-actions"
+import { createAccessCredentialsTable, getAccessCredentials } from "@/app/actions/access-actions"
 import { getWeekStart } from "@/lib/week"
 
 export default async function DemandasPage() {
@@ -17,11 +18,13 @@ export default async function DemandasPage() {
   await createDemandasTable()
   await createEsteiraTable()
   await createClientStoresTable()
+  await createAccessCredentialsTable()
 
   const weekStart = getWeekStart()
   const demandas = await getDemandas(weekStart)
   const esteiraProducts = await getEsteiraProducts()
   const clientStores = await getClientStores()
+  const accessCredentials = await getAccessCredentials()
 
   return (
     <DashboardLayout userRoles={roles}>
@@ -29,7 +32,7 @@ export default async function DemandasPage() {
         <DemandasBoard initialDemandas={demandas} weekStart={weekStart} />
         <EsteiraBoard initialProducts={esteiraProducts} />
         <DemandasExtras />
-        <MineracaoPanel initialClientStores={clientStores} />
+        <MineracaoPanel initialClientStores={clientStores} initialCredentials={accessCredentials} />
       </div>
     </DashboardLayout>
   )
