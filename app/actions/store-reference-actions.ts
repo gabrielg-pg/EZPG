@@ -66,6 +66,7 @@ export async function createStoreReference(data: {
       RETURNING id, name, site, niche, country, created_by, created_by_name, created_at
     `
     revalidatePath("/referencia-lojas")
+    revalidatePath("/demandas")
     return { success: true, store: rows[0] as StoreReferenceEntry }
   } catch (error: unknown) {
     console.error("Create store reference error:", error)
@@ -84,6 +85,7 @@ export async function deleteStoreReference(id: number): Promise<{ success: boole
   try {
     await sql`DELETE FROM pg_store_references WHERE id = ${id}`
     revalidatePath("/referencia-lojas")
+    revalidatePath("/demandas")
     return { success: true }
   } catch (error) {
     console.error("Delete store reference error:", error)

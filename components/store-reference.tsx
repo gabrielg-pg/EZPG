@@ -127,10 +127,12 @@ export function StoreReference({ initialStores }: { initialStores: StoreReferenc
   const activeCountryData = COUNTRIES.find((c) => c.code === activeCountry)
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       <div className="space-y-1">
-        <h1 className="text-2xl font-bold text-white tracking-tight">Referência de Lojas</h1>
-        <p className="text-muted-foreground text-sm">Banco de lojas de referência organizadas por mercado global.</p>
+        <h1 className="text-2xl font-bold text-white tracking-tight">Lojas Winners para Mineração</h1>
+        <p className="text-muted-foreground text-sm">
+          Insira lojas vencedoras que você encontrar aqui nesse banco de dados para não perder.
+        </p>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {COUNTRIES.map((country) => {
