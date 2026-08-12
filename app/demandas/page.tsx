@@ -16,6 +16,12 @@ import {
   createStoreReferenceCountriesTable,
   getStoreReferenceCountries,
 } from "@/app/actions/store-reference-actions"
+import {
+  createMiningExtensionsTable,
+  getMiningExtensions,
+  createUsefulCodesTable,
+  getUsefulCodes,
+} from "@/app/actions/mining-tools-actions"
 import { getWeekStart } from "@/lib/week"
 
 export default async function DemandasPage() {
@@ -28,6 +34,8 @@ export default async function DemandasPage() {
   await createAccessCredentialsTable()
   await createStoreReferencesTable()
   await createStoreReferenceCountriesTable()
+  await createMiningExtensionsTable()
+  await createUsefulCodesTable()
 
   const weekStart = getWeekStart()
   const demandas = await getDemandas(weekStart)
@@ -36,6 +44,8 @@ export default async function DemandasPage() {
   const accessCredentials = await getAccessCredentials()
   const storeReferences = await getStoreReferences()
   const storeReferenceCountries = await getStoreReferenceCountries()
+  const miningExtensions = await getMiningExtensions()
+  const usefulCodes = await getUsefulCodes()
 
   return (
     <DashboardLayout userRoles={roles}>
@@ -43,7 +53,12 @@ export default async function DemandasPage() {
         <DemandasBoard initialDemandas={demandas} weekStart={weekStart} />
         <EsteiraBoard initialProducts={esteiraProducts} />
         <DemandasExtras />
-        <MineracaoPanel initialClientStores={clientStores} initialCredentials={accessCredentials} />
+        <MineracaoPanel
+          initialClientStores={clientStores}
+          initialCredentials={accessCredentials}
+          initialExtensions={miningExtensions}
+          initialUsefulCodes={usefulCodes}
+        />
         <StoreReference initialStores={storeReferences} initialCountries={storeReferenceCountries} />
       </div>
     </DashboardLayout>

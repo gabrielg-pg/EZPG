@@ -1,25 +1,13 @@
 "use client"
 
-import { useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import {
-  Pickaxe,
-  Copy,
-  Check,
-  ExternalLink,
-  ListChecks,
-  Puzzle,
-  Code2,
-  Search,
-  Globe,
-  ShieldCheck,
-  FolderOpen,
-} from "lucide-react"
+import { Pickaxe, ExternalLink, ListChecks, Search, FolderOpen } from "lucide-react"
 import { ClientStoresBlock } from "@/components/client-stores-block"
 import { AccessCredentialsBlock } from "@/components/access-credentials-block"
+import { MiningToolsBlocks } from "@/components/mining-tools-blocks"
 import type { ClientStoreEntry } from "@/app/actions/client-store-actions"
 import type { AccessCredential } from "@/app/actions/access-actions"
+import type { MiningExtension, UsefulCode } from "@/app/actions/mining-tools-actions"
 
 const steps: { title: string; description: string }[] = [
   {
@@ -68,61 +56,17 @@ const steps: { title: string; description: string }[] = [
   },
 ]
 
-const extensions: { name: string; url: string }[] = [
-  {
-    name: "Similarweb — Website Traffic",
-    url: "https://chromewebstore.google.com/detail/similarweb-website-traffi/hoklmmgfnpapgjgcpechhaamimifchmp",
-  },
-  {
-    name: "Ad Cloud Library",
-    url: "https://chromewebstore.google.com/detail/ad-library-cloud/mmehdbhpbgoegockemckbpjeoflflobc?hl=pt",
-  },
-  {
-    name: "PPSPY — Shopify Analytics",
-    url: "https://chromewebstore.google.com/detail/ppspy-1-shopify-analytics/lppbajkahdbbadheilijoeegnfndhlab?hl=pt_BR",
-  },
-  {
-    name: "Poky — Product Importer",
-    url: "https://chromewebstore.google.com/detail/poky-product-importer/bgofkkdheiicamgmlpfcdlfclkjmdelb?hl=pt-BR",
-  },
-]
-
-function CopyButton({ value, label }: { value: string; label: string }) {
-  const [copied, setCopied] = useState(false)
-
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(value)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 1500)
-    } catch {
-      // ignora falha de clipboard
-    }
-  }
-
-  return (
-    <Button
-      type="button"
-      variant="ghost"
-      size="icon"
-      onClick={handleCopy}
-      aria-label={`Copiar ${label}`}
-      className="h-8 w-8 shrink-0 text-muted-foreground hover:text-primary hover:bg-primary/10"
-    >
-      {copied ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
-    </Button>
-  )
-}
-
 export function MineracaoPanel({
   initialClientStores = [],
   initialCredentials = [],
+  initialExtensions = [],
+  initialUsefulCodes = [],
 }: {
   initialClientStores?: ClientStoreEntry[]
   initialCredentials?: AccessCredential[]
+  initialExtensions?: MiningExtension[]
+  initialUsefulCodes?: UsefulCode[]
 }) {
-  const bestSellingCode = "collections/all?sort_by=best-selling"
-
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -204,88 +148,8 @@ export function MineracaoPanel({
         </Card>
       </section>
 
-      {/* Ferramentas & códigos */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* Extensões */}
-        <section className="space-y-4">
-          <div className="flex items-center gap-2">
-            <Puzzle className="h-5 w-5 text-primary" />
-            <h3 className="text-lg font-semibold text-foreground">Extensões</h3>
-          </div>
-          <Card className="border-border bg-card/50 backdrop-blur-sm">
-            <CardContent className="space-y-2 p-4">
-              {extensions.map((ext) => (
-                <a
-                  key={ext.name}
-                  href={ext.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-between gap-3 rounded-lg border border-border bg-secondary/40 px-4 py-3 transition-colors hover:border-primary/40 hover:bg-primary/5"
-                >
-                  <span className="flex items-center gap-3 text-sm font-medium text-foreground">
-                    <Puzzle className="h-4 w-4 text-primary" />
-                    {ext.name}
-                  </span>
-                  <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground" />
-                </a>
-              ))}
-            </CardContent>
-          </Card>
-        </section>
-
-        {/* Códigos úteis */}
-        <section className="space-y-4">
-          <div className="flex items-center gap-2">
-            <Code2 className="h-5 w-5 text-primary" />
-            <h3 className="text-lg font-semibold text-foreground">Códigos úteis</h3>
-          </div>
-          <Card className="border-border bg-card/50 backdrop-blur-sm">
-            <CardContent className="space-y-4 p-4">
-              <div className="space-y-2">
-                <p className="flex items-center gap-2 text-sm font-medium text-foreground">
-                  <Search className="h-4 w-4 text-primary" />
-                  Produtos mais vendidos da loja concorrente
-                </p>
-                <div className="flex items-center gap-1 rounded-lg border border-border bg-secondary/40 px-3 py-2">
-                  <code className="flex-1 truncate font-mono text-sm text-teal-400">{bestSellingCode}</code>
-                  <CopyButton value={bestSellingCode} label="código" />
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Adicione ao final da URL da loja para listar os produtos por mais vendidos.
-                </p>
-              </div>
-              <div className="space-y-2">
-                <p className="flex items-center gap-2 text-sm font-medium text-foreground">
-                  <ShieldCheck className="h-4 w-4 text-primary" />
-                  Limpeza de metadados
-                </p>
-                <a
-                  href="https://online-metadata.com/remove-metadata"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-between gap-3 rounded-lg border border-border bg-secondary/40 px-4 py-3 transition-colors hover:border-primary/40 hover:bg-primary/5"
-                >
-                  <span className="flex items-center gap-3 text-sm font-medium text-foreground">
-                    <ShieldCheck className="h-4 w-4 text-primary" />
-                    online-metadata.com/remove-metadata
-                  </span>
-                  <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground" />
-                </a>
-                <p className="text-xs text-muted-foreground">
-                  Use para remover os metadados de todos os criativos baixados do concorrente.
-                </p>
-              </div>
-              <div className="flex items-start gap-3 rounded-lg border border-teal-500/20 bg-teal-500/5 px-4 py-3">
-                <Globe className="mt-0.5 h-4 w-4 shrink-0 text-teal-400" />
-                <p className="text-xs leading-relaxed text-muted-foreground">
-                  Lembre-se: minere apenas lojas com <span className="font-semibold text-foreground">10 mil visitas
-                  ou mais</span> (confira no Similarweb) e priorize os primeiros produtos da esquerda para a direita.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </section>
-      </div>
+      {/* Ferramentas & códigos (extensões e códigos úteis dinâmicos) */}
+      <MiningToolsBlocks initialExtensions={initialExtensions} initialUsefulCodes={initialUsefulCodes} />
 
       {/* Lojas de nossos clientes */}
       <ClientStoresBlock initialStores={initialClientStores} />

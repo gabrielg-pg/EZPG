@@ -5,6 +5,12 @@ import { DashboardLayout } from "@/components/dashboard-layout"
 import { MineracaoPanel } from "@/components/mineracao-panel"
 import { createClientStoresTable, getClientStores } from "@/app/actions/client-store-actions"
 import { createAccessCredentialsTable, getAccessCredentials } from "@/app/actions/access-actions"
+import {
+  createMiningExtensionsTable,
+  getMiningExtensions,
+  createUsefulCodesTable,
+  getUsefulCodes,
+} from "@/app/actions/mining-tools-actions"
 
 export default async function MineracaoPage() {
   const user = await requireAuth()
@@ -17,12 +23,21 @@ export default async function MineracaoPage() {
 
   await createClientStoresTable()
   await createAccessCredentialsTable()
+  await createMiningExtensionsTable()
+  await createUsefulCodesTable()
   const clientStores = await getClientStores()
   const accessCredentials = await getAccessCredentials()
+  const miningExtensions = await getMiningExtensions()
+  const usefulCodes = await getUsefulCodes()
 
   return (
     <DashboardLayout userRoles={roles}>
-      <MineracaoPanel initialClientStores={clientStores} initialCredentials={accessCredentials} />
+      <MineracaoPanel
+        initialClientStores={clientStores}
+        initialCredentials={accessCredentials}
+        initialExtensions={miningExtensions}
+        initialUsefulCodes={usefulCodes}
+      />
     </DashboardLayout>
   )
 }
