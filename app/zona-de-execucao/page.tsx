@@ -3,6 +3,7 @@ import { redirect } from "next/navigation"
 export const dynamic = "force-dynamic"
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { ExecutionZoneCards } from "@/components/execution-zone-cards"
+import { createExecutionZoneCardsTable, getExecutionZoneCards } from "@/app/actions/execution-zone-actions"
 
 export default async function ZonaDeExecucaoPage() {
   const user = await requireAuth()
@@ -19,9 +20,12 @@ export default async function ZonaDeExecucaoPage() {
     redirect("/zona-de-execucao/criativos")
   }
 
+  await createExecutionZoneCardsTable()
+  const cards = await getExecutionZoneCards()
+
   return (
     <DashboardLayout userRoles={roles}>
-      <ExecutionZoneCards />
+      <ExecutionZoneCards initialCards={cards} />
     </DashboardLayout>
   )
 }
