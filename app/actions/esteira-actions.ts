@@ -71,7 +71,7 @@ export async function addEsteiraProduct(data: {
       VALUES (${region}, ${link}, ${itemDate})
       RETURNING *
     `
-    revalidatePath("/zona-de-execucao/esteira")
+    revalidatePath("/demandas")
     return { success: true, product: (rows as EsteiraProduct[])[0] }
   } catch (error) {
     console.error("Add esteira product error:", error)
@@ -94,7 +94,7 @@ export async function toggleEsteiraDone(
     } else {
       await sql`UPDATE pg_esteira_products SET is_done = FALSE, done_at = NULL WHERE id = ${id}`
     }
-    revalidatePath("/zona-de-execucao/esteira")
+    revalidatePath("/demandas")
     return { success: true }
   } catch (error) {
     console.error("Toggle esteira done error:", error)
@@ -108,7 +108,7 @@ export async function deleteEsteiraProduct(id: number): Promise<{ success: boole
   }
   try {
     await sql`DELETE FROM pg_esteira_products WHERE id = ${id}`
-    revalidatePath("/zona-de-execucao/esteira")
+    revalidatePath("/demandas")
     return { success: true }
   } catch (error) {
     console.error("Delete esteira product error:", error)
