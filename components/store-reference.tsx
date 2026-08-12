@@ -7,11 +7,14 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Plus, ExternalLink, X, Store, Loader2 } from "lucide-react"
+import { Plus, ExternalLink, X, Store, Loader2, Globe, Trash2 } from "lucide-react"
 import {
   createStoreReference,
   deleteStoreReference,
+  addStoreReferenceCountry,
+  deleteStoreReferenceCountry,
   type StoreReferenceEntry,
+  type StoreReferenceCountry,
 } from "@/app/actions/store-reference-actions"
 
 const NICHES = [
@@ -37,7 +40,8 @@ const NICHES = [
   "Outro",
 ]
 
-const COUNTRIES = [
+// Lista mestre de países disponíveis para adicionar (código ISO para a bandeira)
+const ALL_COUNTRIES = [
   { name: "Brasil", code: "br" },
   { name: "Estados Unidos", code: "us" },
   { name: "Portugal", code: "pt" },
@@ -48,6 +52,27 @@ const COUNTRIES = [
   { name: "Austrália", code: "au" },
   { name: "França", code: "fr" },
   { name: "Itália", code: "it" },
+  { name: "Holanda", code: "nl" },
+  { name: "Bélgica", code: "be" },
+  { name: "Suíça", code: "ch" },
+  { name: "Áustria", code: "at" },
+  { name: "Irlanda", code: "ie" },
+  { name: "Suécia", code: "se" },
+  { name: "Noruega", code: "no" },
+  { name: "Dinamarca", code: "dk" },
+  { name: "Finlândia", code: "fi" },
+  { name: "Polônia", code: "pl" },
+  { name: "México", code: "mx" },
+  { name: "Argentina", code: "ar" },
+  { name: "Chile", code: "cl" },
+  { name: "Colômbia", code: "co" },
+  { name: "Japão", code: "jp" },
+  { name: "China", code: "cn" },
+  { name: "Coreia do Sul", code: "kr" },
+  { name: "Índia", code: "in" },
+  { name: "Emirados Árabes", code: "ae" },
+  { name: "Nova Zelândia", code: "nz" },
+  { name: "África do Sul", code: "za" },
 ]
 
 function CountryFlag({ code, name, className = "" }: { code: string; name: string; className?: string }) {
@@ -67,13 +92,61 @@ interface AddStoreForm {
   niche: string
 }
 
-export function StoreReference({ initialStores }: { initialStores: StoreReferenceEntry[] }) {
+export function StoreReference({
+  initialStores,
+  initialCountries = [],
+}: {
+  initialStores: StoreReferenceEntry[]
+  initialCountries?: StoreReferenceCountry[]
+}) {
   const [stores, setStores] = useState<StoreReferenceEntry[]>(initialStores)
+  const [countries, setCountries] = useState<StoreReferenceCountry[]>(initialCountries)
   const [modalOpen, setModalOpen] = useState(false)
   const [activeCountry, setActiveCountry] = useState<string | null>(null)
   const [form, setForm] = useState<AddStoreForm>({ name: "", site: "", niche: "" })
   const [error, setError] = useState("")
   const [isPending, startTransition] = useTransition()
+
+  // Modal de adicionar país
+  const [countryModalOpen, setCountryModalOpen] = useState(false)
+  const [selectedCountry, setSelectedCountry] = useState("")
+  const [countryError, setCountryError] = useState("")
+  const [isCountryPending, startCountryTransition] = useTransition()
+
+  const availableCountries = ALL_COUNTRIES.filter((ac) => !countries.some((c) => c.code === ac.code))
+
+  const openCountryModal = () => {
+    setSelectedCountry("")
+    setCountryError("")
+    setCountryModalOpen(true)
+  }
+
+  const handleAddCountry = () => {
+    if (!selectedCountry) {
+      setCountryError("Selecione um país.")
+      return
+    }
+    const country = ALL_COUNTRIES.find((c) => c.code === selectedCountry)
+    if (!country) return
+
+    startCountryTransition(async () => {
+      const result = await addStoreReferenceCountry({ code: country.code, name: country.name })
+      if (result.success && result.country) {
+        setCountries((prev) => [...prev, result.country as StoreReferenceCountry])
+        setCountryModalOpen(false)
+      } else {
+        setCountryError(result.error || "Erro ao adicionar país.")
+      }
+    })
+  }
+
+  const handleRemoveCountry = (code: string) => {
+    setCountries((prev) => prev.filter((c) => c.code !== code))
+    setStores((prev) => prev.filter((s) => s.country !== code))
+    startCountryTransition(async () => {
+      await deleteStoreReferenceCountry(code)
+    })
+  }
 
   const openModal = (countryCode: string) => {
     setActiveCountry(countryCode)
@@ -124,21 +197,31 @@ export function StoreReference({ initialStores }: { initialStores: StoreReferenc
     })
   }
 
-  const activeCountryData = COUNTRIES.find((c) => c.code === activeCountry)
+  const activeCountryData = countries.find((c) => c.code === activeCountry)
 
   return (
     <div className="space-y-6">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-bold text-white tracking-tight">Lojas Winners para Mineração</h1>
-        <p className="text-muted-foreground text-sm">
-          Insira lojas vencedoras que você encontrar aqui nesse banco de dados para não perder.
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-bold text-white tracking-tight">Lojas Winners para Mineração</h1>
+          <p className="text-muted-foreground text-sm">
+            Insira lojas vencedoras que você encontrar aqui nesse banco de dados para não perder.
+          </p>
+        </div>
+        <Button
+          className="shrink-0 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-white shadow-lg shadow-primary/25"
+          onClick={openCountryModal}
+          disabled={availableCountries.length === 0}
+        >
+          <Plus className="h-4 w-4 mr-1.5" />
+          Adicionar
+        </Button>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        {COUNTRIES.map((country) => {
+        {countries.map((country) => {
           const countryStores = stores.filter((s) => s.country === country.code)
           return (
-            <Card key={country.code} className="bg-sidebar border-sidebar-border flex flex-col">
+            <Card key={country.code} className="group/card bg-sidebar border-sidebar-border flex flex-col">
               <CardHeader className="pb-3 border-b border-sidebar-border">
                 <CardTitle className="flex items-center gap-2 text-base text-white">
                   <CountryFlag code={country.code} name={country.name} className="w-7 h-5" />
@@ -146,6 +229,13 @@ export function StoreReference({ initialStores }: { initialStores: StoreReferenc
                   <span className="ml-auto text-xs font-normal text-muted-foreground bg-white/5 px-2 py-0.5 rounded-full">
                     {countryStores.length} {countryStores.length === 1 ? "loja" : "lojas"}
                   </span>
+                  <button
+                    onClick={() => handleRemoveCountry(country.code)}
+                    className="opacity-0 group-hover/card:opacity-100 transition-opacity text-muted-foreground hover:text-red-400 p-1 rounded"
+                    title="Remover país"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
                 </CardTitle>
               </CardHeader>
               <CardContent className="flex-1 pt-3 space-y-2">
@@ -194,6 +284,62 @@ export function StoreReference({ initialStores }: { initialStores: StoreReferenc
           )
         })}
       </div>
+      <Dialog open={countryModalOpen} onOpenChange={(open) => !open && setCountryModalOpen(false)}>
+        <DialogContent className="bg-sidebar border-sidebar-border text-white sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-white">
+              <Globe className="h-5 w-5 text-primary" />
+              Adicionar País
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="country-select" className="text-sm text-muted-foreground">
+                País
+              </Label>
+              <Select value={selectedCountry} onValueChange={setSelectedCountry}>
+                <SelectTrigger id="country-select" className="bg-background/50 border-sidebar-border text-white">
+                  <SelectValue placeholder="Selecione o país" />
+                </SelectTrigger>
+                <SelectContent className="bg-sidebar border-sidebar-border text-white max-h-72">
+                  {availableCountries.map((c) => (
+                    <SelectItem key={c.code} value={c.code} className="focus:bg-white/10 focus:text-white">
+                      <span className="flex items-center gap-2">
+                        <CountryFlag code={c.code} name={c.name} className="w-5 h-3.5" />
+                        {c.name}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {countryError && <p className="text-xs text-red-400">{countryError}</p>}
+            <div className="flex gap-2 pt-1">
+              <Button
+                variant="outline"
+                className="flex-1 border-sidebar-border text-muted-foreground hover:text-white hover:bg-white/5"
+                onClick={() => setCountryModalOpen(false)}
+                disabled={isCountryPending}
+              >
+                Cancelar
+              </Button>
+              <Button
+                className="flex-1 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-white shadow-lg shadow-primary/25"
+                onClick={handleAddCountry}
+                disabled={isCountryPending}
+              >
+                {isCountryPending ? (
+                  <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                ) : (
+                  <Plus className="h-4 w-4 mr-1.5" />
+                )}
+                Adicionar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={modalOpen} onOpenChange={(open) => !open && closeModal()}>
         <DialogContent className="bg-sidebar border-sidebar-border text-white sm:max-w-md">
           <DialogHeader>
