@@ -111,17 +111,6 @@ export function QuizFlow() {
 
   return (
     <div className="mx-auto flex min-h-[100dvh] w-full max-w-2xl flex-col items-center justify-center px-4 py-10">
-      {/* Marca */}
-      <div className="mb-8 flex items-center justify-center">
-        <Image
-          src="https://i.imgur.com/jfNDVLp.png"
-          alt="Logotipo Pro Growth Global"
-          width={40}
-          height={40}
-          className="rounded-xl shadow-lg shadow-primary/20"
-        />
-      </div>
-
       {/* TELA INICIAL */}
       {screen === "start" && (
         <div className="w-full rounded-2xl border border-border bg-card/60 p-8 text-center backdrop-blur-sm md:p-10">

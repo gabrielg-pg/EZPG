@@ -17,18 +17,17 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Plus, Pencil, Trash2, Search, Users, Shield, UserCheck, Loader2, Briefcase, KeyRound, Mail, UserCog, Rocket, ArrowRightLeft, Megaphone, Pickaxe, FileText, Layers, Filter } from "lucide-react"
+import { Plus, Pencil, Trash2, Search, Users, Shield, UserCheck, Loader2, Briefcase, KeyRound, Mail, UserCog, Rocket, ArrowRightLeft, Megaphone, Pickaxe, FileText, Layers } from "lucide-react"
 import { createUserAction } from "@/app/actions/auth-actions"
 import { updateUser, deleteUser } from "@/app/actions/user-actions"
 import { cn } from "@/lib/utils"
 
-type RoleType = "admin" | "comercial" | "manager" | "user" | "zona_execucao" | "gestor_ads" | "mineracao" | "blog" | "esteira" | "funil"
+type RoleType = "admin" | "comercial" | "manager" | "user" | "zona_execucao" | "gestor_ads" | "mineracao" | "blog" | "esteira"
 
 // Permissões de módulo (separadas dos níveis de acesso), persistidas via user_roles.
 const moduleConfig = {
   blog: { label: "Blog", color: "bg-primary/15 text-primary border-primary/25", icon: FileText, description: "Acesso ao módulo Blog e ao planejamento editorial" },
   esteira: { label: "Esteira", color: "bg-[#10B981]/15 text-[#10B981] border-[#10B981]/25", icon: Layers, description: "Acesso à aba Esteira (mineração e arquivo por mês) na Zona de Execução" },
-  funil: { label: "Funil", color: "bg-sky-500/15 text-sky-400 border-sky-500/25", icon: Filter, description: "Acesso à aba Funil QUIZ (leads do quiz de qualificação)" },
 } as const
 
 type ModuleType = keyof typeof moduleConfig
@@ -50,7 +49,7 @@ const roleConfig = {
   manager: { label: "Gerente", color: "bg-primary/15 text-primary border-primary/25", icon: UserCog, description: "Gerencia equipe e lojas" },
   user: { label: "Usuario", color: "bg-muted text-muted-foreground border-border", icon: Users, description: "Acesso basico ao sistema" },
   zona_execucao: { label: "Zona de Execucao", color: "bg-emerald-500/15 text-emerald-400 border-emerald-500/25", icon: Rocket, description: "Dashboard, lojas e zona de execucao" },
-  gestor_ads: { label: "Gestor de ADS", color: "bg-orange-500/15 text-orange-400 border-orange-500/25", icon: Megaphone, description: "Acesso ao pipeline de Criativos na Zona de Execucao" },
+  gestor_ads: { label: "Gestor de ADS", color: "bg-orange-500/15 text-orange-400 border-orange-500/25", icon: Megaphone, description: "Acesso ao pipeline de Criativos e ao Funil QUIZ na Zona de Execucao" },
   mineracao: { label: "Mineração", color: "bg-teal-500/15 text-teal-400 border-teal-500/25", icon: Pickaxe, description: "Demandas, Zona de Execucao, Referencia de Lojas e o painel de Mineracao" },
 }
 

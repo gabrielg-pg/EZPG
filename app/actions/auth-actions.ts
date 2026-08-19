@@ -62,7 +62,7 @@ export async function createUserAction(data: {
 
   // "blog" e outros módulos não podem virar a role primária de users.role (constraint só aceita
   // níveis de acesso). users.role é apenas um espelho técnico; o array selecionado é preservado.
-  const MODULE_ROLES = ["blog", "esteira", "funil"]
+  const MODULE_ROLES = ["blog", "esteira"]
   const accessRoles = selectedRoles.filter((r) => !MODULE_ROLES.includes(r))
   const primaryRole = accessRoles[0] || "user"
   const result = await createUser({ ...data, role: primaryRole, roles: selectedRoles })
