@@ -11,7 +11,6 @@ import {
   ShieldAlert,
   Loader2,
   CheckCircle2,
-  Target,
 } from "lucide-react"
 import {
   QUIZ_QUESTIONS,
@@ -113,22 +112,27 @@ export function QuizFlow() {
   return (
     <div className="mx-auto flex min-h-[100dvh] w-full max-w-2xl flex-col items-center justify-center px-4 py-10">
       {/* Marca */}
-      <div className="mb-8 flex items-center gap-2.5 text-sm font-semibold tracking-wide text-muted-foreground">
+      <div className="mb-8 flex items-center justify-center">
         <Image
           src="https://i.imgur.com/jfNDVLp.png"
           alt="Logotipo Pro Growth Global"
-          width={28}
-          height={28}
-          className="rounded-lg shadow-lg shadow-primary/20"
+          width={40}
+          height={40}
+          className="rounded-xl shadow-lg shadow-primary/20"
         />
-        PRO GROWTH GLOBAL
       </div>
 
       {/* TELA INICIAL */}
       {screen === "start" && (
         <div className="w-full rounded-2xl border border-border bg-card/60 p-8 text-center backdrop-blur-sm md:p-10">
-          <div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-blue-500 text-white shadow-lg shadow-primary/25">
-            <Target className="h-7 w-7" />
+          <div className="mx-auto mb-6 flex items-center justify-center">
+            <Image
+              src="https://i.imgur.com/jfNDVLp.png"
+              alt="Logotipo Pro Growth Global"
+              width={64}
+              height={64}
+              className="rounded-2xl shadow-lg shadow-primary/25"
+            />
           </div>
           <h1 className="text-balance text-3xl font-bold tracking-tight text-foreground md:text-4xl">
             Será que a Pro Growth é para você?

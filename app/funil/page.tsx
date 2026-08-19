@@ -10,8 +10,8 @@ export default async function FunilPage() {
   const user = await requireAuth()
   const roles = (user.roles ?? [user.role]).map((r) => r.toLowerCase())
 
-  // Acesso restrito: Admin, Comercial e Gestor de ADS
-  if (!roles.some((r) => ["admin", "comercial", "gestor_ads"].includes(r))) {
+  // Acesso restrito: Admin ou quem tiver a permissão de módulo "funil"
+  if (!roles.some((r) => ["admin", "funil"].includes(r))) {
     redirect("/dashboard")
   }
 
