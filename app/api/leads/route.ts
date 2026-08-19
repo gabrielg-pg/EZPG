@@ -1,4 +1,4 @@
-import { type NextRequest, NextResponse } from "next/server"
+import { type NextRequest, NextResponse, after } from "next/server"
 import { getSession } from "@/lib/auth"
 import {
   ensureQuizLeadsTable,
@@ -50,18 +50,19 @@ export async function POST(request: NextRequest) {
     // Insere no Neon (fonte da verdade) — score/perfil recalculados no servidor
     const inserted = await insertQuizLead({ nome, whatsapp, email, respostas })
 
-    // Envia ao CRM em segundo plano (best-effort, não bloqueia a resposta ao lead)
-    void forwardLeadToCrm({
-      nome,
-      whatsapp,
-      email,
-      score: inserted.score,
-      perfil: inserted.perfil,
-      respostas,
-      pontos: inserted.pontos,
-      created_at: new Date().toISOString(),
-    }).then((crmId) => {
-      if (crmId) return setQuizLeadCrmId(inserted.id, crmId).catch(() => {})
+    // Envia ao CRM após a resposta ser enviada ao lead (best-effort, não bloqueia o redirect)
+    after(async () => {
+      const crmId = await forwardLeadToCrm({
+        nome,
+        whatsapp,
+        email,
+        score: inserted.score,
+        perfil: inserted.perfil,
+        respostas,
+        pontos: inserted.pontos,
+        created_at: new Date().toISOString(),
+      })
+      if (crmId) await setQuizLeadCrmId(inserted.id, crmId).catch(() => {})
     })
 
     return NextResponse.json({
