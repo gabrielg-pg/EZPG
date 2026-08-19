@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -8,7 +9,6 @@ import {
   ArrowLeft,
   ArrowRight,
   ShieldAlert,
-  Sparkles,
   Loader2,
   CheckCircle2,
   Target,
@@ -98,25 +98,29 @@ export function QuizFlow() {
         }),
       })
     } catch {
-      // Não bloqueia o lead caso o envio falhe — segue para o resultado
+      // Não bloqueia o lead caso o envio falhe, seguimos para o resultado
     }
 
     setFinalScore(score)
     setScreen("result")
 
-    // Redireciona para a VSL em 2 segundos
+    // Mantém o resultado visível por alguns segundos antes de ir para a VSL
     setTimeout(() => {
       window.location.href = VSL_URL
-    }, 2000)
+    }, 7000)
   }
 
   return (
     <div className="mx-auto flex min-h-[100dvh] w-full max-w-2xl flex-col items-center justify-center px-4 py-10">
       {/* Marca */}
-      <div className="mb-8 flex items-center gap-2 text-sm font-semibold tracking-wide text-muted-foreground">
-        <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-blue-500 text-white">
-          <Sparkles className="h-4 w-4" />
-        </span>
+      <div className="mb-8 flex items-center gap-2.5 text-sm font-semibold tracking-wide text-muted-foreground">
+        <Image
+          src="https://i.imgur.com/jfNDVLp.png"
+          alt="Logotipo Pro Growth Global"
+          width={28}
+          height={28}
+          className="rounded-lg shadow-lg shadow-primary/20"
+        />
         PRO GROWTH GLOBAL
       </div>
 
@@ -160,7 +164,7 @@ export function QuizFlow() {
             </p>
             <p>
               Esta avaliação existe para entendermos o seu momento e verificar se faz sentido seguirmos juntos. Não há
-              resposta certa ou errada — responda com sinceridade.
+              resposta certa ou errada, então responda com sinceridade.
             </p>
           </div>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -341,13 +345,13 @@ export function QuizFlow() {
 
       {/* TELA DE RESULTADO */}
       {screen === "result" && (
-        <ResultScreen score={finalScore} />
+        <ResultScreen score={finalScore} vslUrl={VSL_URL} />
       )}
     </div>
   )
 }
 
-function ResultScreen({ score }: { score: number }) {
+function ResultScreen({ score, vslUrl }: { score: number; vslUrl: string }) {
   const profile = PROFILE_META[getProfile(score)]
   const pct = Math.round((score / MAX_SCORE) * 100)
 
@@ -384,9 +388,20 @@ function ResultScreen({ score }: { score: number }) {
 
       <p className="mx-auto mt-4 max-w-sm text-pretty leading-relaxed text-muted-foreground">{profile.description}</p>
 
-      <div className="mt-8 flex items-center justify-center gap-2 text-sm text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" />
-        Redirecionando para o próximo passo...
+      <Button
+        size="lg"
+        className="mt-8 w-full bg-gradient-to-r from-primary to-blue-500 text-white shadow-lg shadow-primary/25 hover:from-primary/90 hover:to-blue-500/90 sm:w-auto sm:px-10"
+        onClick={() => {
+          window.location.href = vslUrl
+        }}
+      >
+        Continuar para o próximo passo
+        <ArrowRight className="ml-1.5 h-4 w-4" />
+      </Button>
+
+      <div className="mt-5 flex items-center justify-center gap-2 text-xs text-muted-foreground">
+        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        Você será direcionado automaticamente em instantes
       </div>
     </div>
   )
