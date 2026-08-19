@@ -20,6 +20,7 @@ import {
   TrendingUp,
   Sigma,
 } from "lucide-react"
+import { FunnelLinkCard } from "@/components/funil-link-card"
 import { PROFILE_META, MAX_SCORE, getAnswerLabel, type QuizProfile } from "@/lib/quiz"
 import { timeAgo, toWhatsAppNumber } from "@/lib/leads"
 import { refreshQuizLeads } from "@/app/actions/quiz-actions"
@@ -97,6 +98,13 @@ export function FunilDashboard({ initialLeads }: { initialLeads: QuizLead[] }) {
           Atualizar
         </Button>
       </div>
+
+      {/* Link público que alimenta este funil */}
+      <FunnelLinkCard
+        title="Funil QUIZ"
+        path="/quiz"
+        hint="Este é o link do quiz que alimenta este funil. Use para identificar a origem dos leads e ajustar o pipeline sem perder nenhum."
+      />
 
       {/* Estatísticas de perfil */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">

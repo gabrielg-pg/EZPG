@@ -36,13 +36,18 @@ import {
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
+import { FunnelLinkCard } from "@/components/funil-link-card"
 import {
-  PIPELINE_COLUMNS,
+  BOARD_COLUMNS,
+  MOVE_TARGETS,
   CAPITAL_TIERS,
+  getLeadColumnKey,
+  boardKeyToPipelineStatus,
+  currentMoveTarget,
   toWhatsAppNumber,
   timeAgo,
   type Lead,
-  type PipelineStatus,
+  type BoardColumnKey,
 } from "@/lib/leads"
 import {
   movePipelineLead,
@@ -65,7 +70,7 @@ export function LeadsPipeline({ initialLeads }: { initialLeads: Lead[] }) {
   const [periodFilter, setPeriodFilter] = useState("all")
   const [selected, setSelected] = useState<Lead | null>(null)
   const [draggingId, setDraggingId] = useState<string | null>(null)
-  const [dragOverCol, setDragOverCol] = useState<PipelineStatus | null>(null)
+  const [dragOverCol, setDragOverCol] = useState<BoardColumnKey | null>(null)
   const [, startTransition] = useTransition()
 
   // Lista de campanhas únicas para o filtro
@@ -98,18 +103,19 @@ export function LeadsPipeline({ initialLeads }: { initialLeads: Lead[] }) {
   }, [leads, search, capitalFilter, campaignFilter, periodFilter])
 
   const leadsByColumn = useCallback(
-    (status: PipelineStatus) => filtered.filter((l) => l.pipeline_status === status),
+    (key: BoardColumnKey) => filtered.filter((l) => getLeadColumnKey(l) === key),
     [filtered],
   )
 
-  const handleMove = (lead: Lead, toStatus: PipelineStatus) => {
-    if (lead.pipeline_status === toStatus) return
+  const handleMove = (lead: Lead, toKey: string) => {
+    if (getLeadColumnKey(lead) === toKey) return
+    const newStatus = boardKeyToPipelineStatus(toKey)
     setLeads((prev) =>
-      prev.map((l) => (l.id === lead.id ? { ...l, pipeline_status: toStatus } : l)),
+      prev.map((l) => (l.id === lead.id ? { ...l, pipeline_status: newStatus } : l)),
     )
-    setSelected((prev) => (prev?.id === lead.id ? { ...prev, pipeline_status: toStatus } : prev))
+    setSelected((prev) => (prev?.id === lead.id ? { ...prev, pipeline_status: newStatus } : prev))
     startTransition(async () => {
-      await movePipelineLead(lead.id, toStatus)
+      await movePipelineLead(lead.id, toKey)
     })
   }
 
@@ -139,12 +145,19 @@ export function LeadsPipeline({ initialLeads }: { initialLeads: Lead[] }) {
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/15">
             <KanbanSquare className="h-5 w-5 text-primary" />
           </div>
-          <h1 className="text-2xl font-bold text-foreground">Pipeline de Leads</h1>
+          <h1 className="text-2xl font-bold text-foreground">Funil Formulário</h1>
         </div>
         <p className="text-sm text-muted-foreground">
-          Leads qualificados vindos do formulário de campanha — {filtered.length} de {leads.length}.
+          Leads qualificados vindos do formulário de campanha. {filtered.length} de {leads.length}.
         </p>
       </div>
+
+      {/* Link público que alimenta este funil */}
+      <FunnelLinkCard
+        title="Funil Formulário"
+        path="/qualificacao"
+        hint="Este é o link do formulário no CRM que vira o Funil Formulário. Use para ajustar o pipeline sem perder leads."
+      />
 
       {/* Filtros */}
       <div className="flex flex-col gap-3 rounded-2xl border border-border/60 bg-card/40 p-4 lg:flex-row lg:items-center">
@@ -209,7 +222,7 @@ export function LeadsPipeline({ initialLeads }: { initialLeads: Lead[] }) {
 
       {/* Kanban desktop */}
       <div className="hidden flex-1 gap-4 overflow-x-auto pb-2 lg:flex">
-        {PIPELINE_COLUMNS.map((col) => {
+        {BOARD_COLUMNS.map((col) => {
           const colLeads = leadsByColumn(col.key)
           return (
             <div
@@ -265,16 +278,16 @@ export function LeadsPipeline({ initialLeads }: { initialLeads: Lead[] }) {
 
       {/* Mobile: tabs */}
       <div className="flex-1 lg:hidden">
-        <Tabs defaultValue={PIPELINE_COLUMNS[0].key}>
+        <Tabs defaultValue={BOARD_COLUMNS[0].key}>
           <TabsList className="flex w-full overflow-x-auto">
-            {PIPELINE_COLUMNS.map((col) => (
+            {BOARD_COLUMNS.map((col) => (
               <TabsTrigger key={col.key} value={col.key} className="flex-1 gap-1.5 text-xs">
                 <span className="h-2 w-2 rounded-full" style={{ backgroundColor: col.color }} />
                 {leadsByColumn(col.key).length}
               </TabsTrigger>
             ))}
           </TabsList>
-          {PIPELINE_COLUMNS.map((col) => (
+          {BOARD_COLUMNS.map((col) => (
             <TabsContent key={col.key} value={col.key} className="mt-4">
               <div className="mb-3 flex items-center gap-2">
                 <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: col.color }} />
@@ -336,7 +349,7 @@ function LeadCard({
   lead: Lead
   isDragging: boolean
   onClick: () => void
-  onMove: (status: PipelineStatus) => void
+  onMove: (key: string) => void
   onDragStart?: () => void
   onDragEnd?: () => void
 }) {
@@ -366,10 +379,10 @@ function LeadCard({
           <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
             <DropdownMenuLabel>Mover para</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            {PIPELINE_COLUMNS.filter((c) => c.key !== lead.pipeline_status).map((c) => (
-              <DropdownMenuItem key={c.key} onClick={() => onMove(c.key)}>
-                <span className="mr-2 h-2 w-2 rounded-full" style={{ backgroundColor: c.color }} />
-                {c.label}
+            {MOVE_TARGETS.filter((t) => t.key !== currentMoveTarget(lead)).map((t) => (
+              <DropdownMenuItem key={t.key} onClick={() => onMove(t.key)}>
+                <span className="mr-2 h-2 w-2 rounded-full" style={{ backgroundColor: t.color }} />
+                {t.label}
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>
@@ -421,7 +434,7 @@ function LeadDrawer({
 }: {
   lead: Lead | null
   onClose: () => void
-  onMove: (lead: Lead, status: PipelineStatus) => void
+  onMove: (lead: Lead, key: string) => void
   onDelete: (lead: Lead) => void
   onNotesSaved: (id: string, notas: string) => void
 }) {
@@ -446,7 +459,7 @@ function LeadDrawer({
     })
   }
 
-  const col = PIPELINE_COLUMNS.find((c) => c.key === lead?.pipeline_status)
+  const col = lead ? BOARD_COLUMNS.find((c) => c.key === getLeadColumnKey(lead)) : undefined
   const waNumber = lead ? toWhatsAppNumber(lead.whatsapp) : ""
 
   return (
@@ -503,14 +516,14 @@ function LeadDrawer({
               <div>
                 <p className="mb-2 text-sm font-semibold text-foreground">Mover para</p>
                 <div className="flex flex-wrap gap-2">
-                  {PIPELINE_COLUMNS.filter((c) => c.key !== lead.pipeline_status).map((c) => (
+                  {MOVE_TARGETS.filter((t) => t.key !== currentMoveTarget(lead)).map((t) => (
                     <button
-                      key={c.key}
-                      onClick={() => onMove(lead, c.key)}
+                      key={t.key}
+                      onClick={() => onMove(lead, t.key)}
                       className="flex items-center gap-1.5 rounded-lg border border-border/60 px-3 py-1.5 text-xs text-foreground transition-colors hover:border-primary/40 hover:bg-primary/10"
                     >
-                      <span className="h-2 w-2 rounded-full" style={{ backgroundColor: c.color }} />
-                      {c.label}
+                      <span className="h-2 w-2 rounded-full" style={{ backgroundColor: t.color }} />
+                      {t.label}
                     </button>
                   ))}
                 </div>

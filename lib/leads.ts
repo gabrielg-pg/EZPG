@@ -90,6 +90,127 @@ export const CAPITAL_TIERS: Record<string, { label: string; badge: string; premi
   sem_capital: { label: "Sem capital", badge: "bg-red-500/15 text-red-400 border-red-500/25" },
 }
 
+// ---------- BOARD (Kanban) por VALOR ----------
+// Colunas de entrada = faixas de capital (o lead cai automaticamente na faixa da resposta dele).
+// Colunas de ação = etapas comerciais manuais (Contato Feito, Fechado, Perdido).
+export type BoardColumnKey =
+  | "cap_2k_5k"
+  | "cap_5k_10k"
+  | "cap_acima_10k"
+  | "cap_sem_capital"
+  | "contato_feito"
+  | "fechado"
+  | "perdido"
+
+export type BoardColumn = {
+  key: BoardColumnKey
+  label: string
+  color: string
+  description: string
+  kind: "capital" | "action"
+  capital?: string
+  pipelineStatus?: PipelineStatus
+}
+
+export const BOARD_COLUMNS: BoardColumn[] = [
+  {
+    key: "cap_2k_5k",
+    label: "R$ 2.000 – R$ 5.000",
+    color: "#94A3B8",
+    description: "Novos leads dessa faixa",
+    kind: "capital",
+    capital: "2k_5k",
+  },
+  {
+    key: "cap_5k_10k",
+    label: "R$ 5.000 – R$ 10.000",
+    color: "#F59E0B",
+    description: "Novos leads dessa faixa",
+    kind: "capital",
+    capital: "5k_10k",
+  },
+  {
+    key: "cap_acima_10k",
+    label: "Acima de R$ 10.000",
+    color: "#10B981",
+    description: "Novos leads dessa faixa",
+    kind: "capital",
+    capital: "acima_10k",
+  },
+  {
+    key: "cap_sem_capital",
+    label: "Sem capital",
+    color: "#71717A",
+    description: "Sem faixa informada",
+    kind: "capital",
+    capital: "sem_capital",
+  },
+  {
+    key: "contato_feito",
+    label: "Contato Feito",
+    color: "#0EA5E9",
+    description: "Primeiro contato realizado",
+    kind: "action",
+    pipelineStatus: "contato_feito",
+  },
+  {
+    key: "fechado",
+    label: "Fechado",
+    color: "#22C55E",
+    description: "Cliente fechado",
+    kind: "action",
+    pipelineStatus: "fechado",
+  },
+  {
+    key: "perdido",
+    label: "Perdido",
+    color: "#EF4444",
+    description: "Lead não convertido",
+    kind: "action",
+    pipelineStatus: "perdido",
+  },
+]
+
+// Determina em qual coluna o lead deve aparecer.
+// Leads em etapa comercial usam o pipeline_status; os demais caem na faixa de capital.
+export function getLeadColumnKey(lead: Pick<Lead, "pipeline_status" | "capital">): BoardColumnKey {
+  if (lead.pipeline_status === "fechado") return "fechado"
+  if (lead.pipeline_status === "perdido") return "perdido"
+  if (lead.pipeline_status === "contato_feito" || lead.pipeline_status === "em_negociacao") {
+    return "contato_feito"
+  }
+  // Entrada (qualificado / novo): agrupa por faixa de capital
+  const cap = lead.capital && CAPITAL_TIERS[lead.capital] ? lead.capital : "sem_capital"
+  return `cap_${cap}` as BoardColumnKey
+}
+
+// Alvos de movimentação manual (o que aparece no menu "Mover para").
+// "reabrir" volta o lead para a coluna da faixa de capital dele.
+export type MoveTargetKey = "reabrir" | "contato_feito" | "fechado" | "perdido"
+
+export const MOVE_TARGETS: { key: MoveTargetKey; label: string; color: string }[] = [
+  { key: "reabrir", label: "Novo (reabrir)", color: "#94A3B8" },
+  { key: "contato_feito", label: "Contato Feito", color: "#0EA5E9" },
+  { key: "fechado", label: "Fechado", color: "#22C55E" },
+  { key: "perdido", label: "Perdido", color: "#EF4444" },
+]
+
+// Traduz um alvo de board (coluna ou move target) para o pipeline_status persistido.
+export function boardKeyToPipelineStatus(key: string): PipelineStatus {
+  if (key === "contato_feito") return "contato_feito"
+  if (key === "fechado") return "fechado"
+  if (key === "perdido") return "perdido"
+  // qualquer coluna de capital ou "reabrir" => estado de entrada
+  return "qualificado"
+}
+
+// Dado um lead, retorna o alvo "atual" para filtrar do menu de movimentação.
+export function currentMoveTarget(lead: Pick<Lead, "pipeline_status" | "capital">): MoveTargetKey {
+  const col = getLeadColumnKey(lead)
+  if (col === "contato_feito" || col === "fechado" || col === "perdido") return col
+  return "reabrir"
+}
+
 // Formata WhatsApp (11 dígitos) para link wa.me
 export function toWhatsAppNumber(raw: string): string {
   const digits = raw.replace(/\D/g, "")

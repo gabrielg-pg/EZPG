@@ -3,7 +3,7 @@
 import { sql } from "@/lib/db"
 import { getSession } from "@/lib/auth"
 import { revalidatePath } from "next/cache"
-import type { Lead, PipelineStatus } from "@/lib/leads"
+import { boardKeyToPipelineStatus, type Lead } from "@/lib/leads"
 
 // ---------- FORMULÁRIO PÚBLICO (sem auth) ----------
 
@@ -108,10 +108,13 @@ export async function getPipelineLeads(): Promise<Lead[]> {
 
 export async function movePipelineLead(
   id: string,
-  toStatus: PipelineStatus,
+  toBoardKey: string,
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const user = await requireCrmAccess()
+
+    // Traduz a coluna do board (faixa de capital / ação) para o status persistido
+    const toStatus = boardKeyToPipelineStatus(toBoardKey)
 
     const current = await sql`SELECT pipeline_status FROM leads WHERE id = ${id}`
     const fromStatus = (current as Array<{ pipeline_status: string }>)[0]?.pipeline_status ?? null
