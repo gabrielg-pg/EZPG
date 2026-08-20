@@ -1,10 +1,19 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
+import {
+  trackFunnelEntry,
+  trackVideoStart,
+  trackVideoComplete,
+  trackWhatsAppClick,
+} from "@/lib/tracking"
+
+const FUNNEL_NAME = "Funil 1 - VSL Quem Somos"
+const FUNNEL_NUMBER = 1
 
 // Vimeo Player SDK é carregado via <Script> no layout desta rota.
 type VimeoPlayer = {
-  on: (event: string, cb: (data: { seconds: number }) => void) => void
+  on: (event: string, cb: (data?: { seconds: number }) => void) => void
 }
 declare global {
   interface Window {
@@ -81,12 +90,16 @@ export default function QuemSomosPage() {
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const [ctaVisible, setCtaVisible] = useState(false)
 
+  // Rastreia a entrada no funil ao montar
+  useEffect(() => {
+    trackFunnelEntry(FUNNEL_NAME, FUNNEL_NUMBER)
+  }, [])
+
   useEffect(() => {
     let cancelled = false
 
     // Aguarda o SDK do Vimeo ficar disponível (o script é afterInteractive).
-    // Usamos o SDK apenas para revelar o CTA aos 5:30 — o vídeo é iniciado pelo
-    // próprio usuário no botão de play do player (comportamento padrão do Vimeo).
+    // Usamos o SDK para revelar o CTA aos 5:30 e para rastrear play/ended do vídeo.
     function init() {
       if (cancelled) return
       const iframe = iframeRef.current
@@ -98,10 +111,24 @@ export default function QuemSomosPage() {
 
       let shown = false
       player.on("timeupdate", (data) => {
-        if (!shown && data.seconds >= REVEAL_AT_SECONDS) {
+        if (!shown && data && data.seconds >= REVEAL_AT_SECONDS) {
           shown = true
           setCtaVisible(true)
         }
+      })
+
+      // Início do vídeo (apenas na primeira reprodução)
+      let started = false
+      player.on("play", () => {
+        if (!started) {
+          started = true
+          trackVideoStart()
+        }
+      })
+
+      // Conclusão do vídeo
+      player.on("ended", () => {
+        trackVideoComplete()
       })
     }
 
@@ -159,6 +186,7 @@ export default function QuemSomosPage() {
                 href="https://wa.link/r8jz4y"
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={() => trackWhatsAppClick(FUNNEL_NAME, FUNNEL_NUMBER)}
                 className="btn-whatsapp inline-flex items-center gap-2 rounded-full bg-[#25D366] px-8 py-4 text-base font-semibold text-[#0A0A0A] transition-transform hover:scale-[1.02]"
               >
                 <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor" aria-hidden="true">

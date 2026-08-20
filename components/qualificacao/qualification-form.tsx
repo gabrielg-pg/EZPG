@@ -5,6 +5,15 @@ import { useState, useEffect, useRef, useCallback } from "react"
 import { useSearchParams } from "next/navigation"
 import { Check, ArrowLeft, ArrowRight, ShieldCheck, BadgeCheck } from "lucide-react"
 import { createPartialLead, updateLeadProgress } from "@/app/actions/leads-actions"
+import {
+  trackFunnelEntry,
+  trackQuizAnswer,
+  trackQuizResult,
+  trackWhatsAppClick,
+} from "@/lib/tracking"
+
+const FUNNEL_NAME = "Funil 2 - Qualificação"
+const FUNNEL_NUMBER = 2
 
 const WHATSAPP_LINK = "https://wa.link/a571wz"
 const BLOG_LINK = "https://progrowthglobal.com.br/blog/"
@@ -89,6 +98,11 @@ export function QualificationForm() {
   // Gate de idade (fora da contagem das 7 etapas): "none" | "gate" | "rejected"
   const [ageStep, setAgeStep] = useState<"none" | "gate" | "rejected">("none")
   const formStarted = useRef(false)
+
+  // Rastreia a entrada no funil ao montar
+  useEffect(() => {
+    trackFunnelEntry(FUNNEL_NAME, FUNNEL_NUMBER)
+  }, [])
 
   // Tela de entrada → dispara FormStart e abre a verificação de idade
   const startQualification = () => {
@@ -176,9 +190,11 @@ export function QualificationForm() {
   // Step 5: capital (bifurcação)
   const handleCapital = (value: string, disqualify?: boolean) => {
     setForm((f) => ({ ...f, capital: value }))
+    trackQuizAnswer(FUNNEL_NAME, 5, value)
     if (disqualify) {
       setDisqualifying(true)
       track("trackCustom", "LeadDesqualificado")
+      trackQuizResult(FUNNEL_NAME, 0, false)
       if (leadId) {
         void updateLeadProgress(leadId, { capital: "sem_capital", status: "desqualificado" })
       }
@@ -195,6 +211,7 @@ export function QualificationForm() {
   // Step 4: experiência
   const handleExperiencia = (value: string) => {
     setForm((f) => ({ ...f, experiencia: value }))
+    trackQuizAnswer(FUNNEL_NAME, 4, value)
     if (leadId) void updateLeadProgress(leadId, { experiencia: value })
     setStep(5)
   }
@@ -202,9 +219,11 @@ export function QualificationForm() {
   // Step 6 → 7: prazo + qualificação final
   const handlePrazo = (value: string) => {
     setForm((f) => ({ ...f, prazo: value }))
+    trackQuizAnswer(FUNNEL_NAME, 6, value)
     if (leadId) void updateLeadProgress(leadId, { prazo: value, status: "qualificado" })
     track("track", "Lead")
     track("trackCustom", "LeadQualificado")
+    trackQuizResult(FUNNEL_NAME, 1, true)
     setStep(7)
   }
 
@@ -339,9 +358,11 @@ export function QualificationForm() {
               onClick={() => {
                 if (step === 1) {
                   if (!form.objetivo) return triggerShake()
+                  trackQuizAnswer(FUNNEL_NAME, 1, form.objetivo)
                   setStep(2)
                 } else if (step === 2) {
                   if (!form.situacao) return triggerShake()
+                  trackQuizAnswer(FUNNEL_NAME, 2, form.situacao)
                   setStep(3)
                 } else if (step === 3) {
                   handleContactSubmit()
@@ -568,7 +589,10 @@ function ConfirmationStep({ showWhats }: { showWhats: boolean }) {
         href={WHATSAPP_LINK}
         target="_blank"
         rel="noopener noreferrer"
-        onClick={() => track("trackCustom", "WhatsAppClick")}
+        onClick={() => {
+          track("trackCustom", "WhatsAppClick")
+          trackWhatsAppClick(FUNNEL_NAME, FUNNEL_NUMBER)
+        }}
         className={`flex h-[56px] w-full max-w-sm items-center justify-center gap-2.5 rounded-xl bg-[#16A34A] text-sm font-semibold uppercase tracking-wide text-white transition-all duration-500 hover:bg-[#15803D] ${
           showWhats ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-4 opacity-0"
         }`}

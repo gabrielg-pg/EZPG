@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -20,6 +20,10 @@ import {
   getProfile,
   type QuizAnswers,
 } from "@/lib/quiz"
+import { trackFunnelEntry, trackQuizAnswer, trackQuizResult } from "@/lib/tracking"
+
+const FUNNEL_NAME = "Funil 3 - Quiz Inicial"
+const FUNNEL_NUMBER = 3
 
 const VSL_URL = process.env.NEXT_PUBLIC_VSL_URL || "https://progrowth-execucao.vercel.app/quem-somos"
 
@@ -38,9 +42,15 @@ export function QuizFlow() {
   const currentQuestion = QUIZ_QUESTIONS[questionIndex]
   const progress = Math.round(((questionIndex + 1) / totalQuestions) * 100)
 
+  // Rastreia a entrada no funil ao montar
+  useEffect(() => {
+    trackFunnelEntry(FUNNEL_NAME, FUNNEL_NUMBER)
+  }, [])
+
   function selectOption(value: string) {
     const updated = { ...answers, [currentQuestion.id]: value }
     setAnswers(updated)
+    trackQuizAnswer(FUNNEL_NAME, questionIndex + 1, value)
     // Avança automaticamente após pequena pausa para feedback visual
     setTimeout(() => {
       if (questionIndex < totalQuestions - 1) {
@@ -102,6 +112,9 @@ export function QuizFlow() {
 
     setFinalScore(score)
     setScreen("result")
+
+    // Todos que concluem o quiz avançam para a VSL (não há reprovação neste funil)
+    trackQuizResult(FUNNEL_NAME, score, true)
 
     // Mantém o resultado visível por alguns segundos antes de ir para a VSL
     setTimeout(() => {
