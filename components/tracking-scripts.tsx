@@ -51,37 +51,59 @@ export function TrackingScripts() {
           };
 
           window.trackQuizResult = function(funnelName, score, passed) {
-            gtag('event', 'quiz_completed', {
-              'event_category': 'pro_growth_funnel',
-              'event_label': funnelName,
-              'value': score,
-              'passed': passed,
-              'timestamp': new Date().toISOString()
-            });
+            if (passed) {
+              // Evento RECOMENDADO do GA4 para gera\u00e7\u00e3o de lead (mark\u00e1vel como convers\u00e3o)
+              gtag('event', 'generate_lead', {
+                'currency': 'BRL',
+                'value': score || 1,
+                'funnel_name': funnelName,
+                'funnel_number': funnelName.indexOf('Qualifica') >= 0 ? 2 : 3,
+                'quiz_score': score,
+                'method': 'form'
+              });
+            } else {
+              // Lead desqualificado: evento personalizado (n\u00e3o \u00e9 convers\u00e3o)
+              gtag('event', 'quiz_disqualified', {
+                'event_category': 'pro_growth_funnel',
+                'event_label': funnelName,
+                'quiz_score': score
+              });
+            }
           };
 
+          // Eventos de v\u00eddeo usam os nomes RECOMENDADOS do GA4 (video_start / video_complete)
           window.trackVideoStart = function() {
             gtag('event', 'video_start', {
-              'event_category': 'pro_growth_funnel',
-              'event_label': 'VSL - Quem Somos'
+              'video_title': 'VSL - Quem Somos',
+              'funnel_name': 'Funil 1 - VSL Quem Somos'
             });
           };
 
           window.trackVideoComplete = function() {
             gtag('event', 'video_complete', {
-              'event_category': 'pro_growth_funnel',
-              'event_label': 'VSL - Quem Somos'
+              'video_title': 'VSL - Quem Somos',
+              'funnel_name': 'Funil 1 - VSL Quem Somos'
             });
           };
 
           window.trackWhatsAppClick = function(funnelName, funnelNumber) {
-            gtag('event', 'conversion_complete', {
-              'event_category': 'pro_growth_conversion',
-              'event_label': funnelName + ' - WhatsApp Click',
-              'funnel_number': funnelNumber,
-              'conversion': true,
-              'value': 1
-            });
+            if (funnelNumber === 1) {
+              // A VSL n\u00e3o tem formul\u00e1rio: o clique no WhatsApp \u00e9 a pr\u00f3pria gera\u00e7\u00e3o do lead
+              gtag('event', 'generate_lead', {
+                'currency': 'BRL',
+                'value': 1,
+                'funnel_name': funnelName,
+                'funnel_number': funnelNumber,
+                'method': 'whatsapp'
+              });
+            } else {
+              // Nos funis com formul\u00e1rio o lead j\u00e1 foi contado; aqui \u00e9 s\u00f3 o contato
+              gtag('event', 'whatsapp_click', {
+                'event_category': 'pro_growth_conversion',
+                'event_label': funnelName,
+                'funnel_number': funnelNumber
+              });
+            }
           };
         `}
       </Script>
