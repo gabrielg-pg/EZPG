@@ -35,6 +35,8 @@ import {
   Clock,
   AlertTriangle,
   Loader2,
+  FolderOpen,
+  ExternalLink,
 } from "lucide-react"
 import {
   MONTHS_SHORT,
@@ -394,6 +396,25 @@ export function NexusGrowthPanel({
         isAdmin={isAdmin}
         onChanged={reloadCredentials}
       />
+
+      {/* Drive Nexus Growth */}
+      <a
+        href="https://drive.google.com/drive/folders/1kUbUH1dLYpx1QLlpfHDxs4Z7Ozblp84I?hl=pt-br"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="group flex items-center gap-4 rounded-xl border border-border bg-card p-5 transition-colors hover:border-primary/40 hover:bg-primary/5"
+      >
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary/70 text-white shadow-lg shadow-primary/25">
+          <FolderOpen className="h-6 w-6" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="font-semibold text-foreground">Drive Nexus Growth</p>
+          <p className="truncate text-sm text-muted-foreground">
+            Arquivos e materiais das redes sociais da Pro Growth Global
+          </p>
+        </div>
+        <ExternalLink className="h-5 w-5 shrink-0 text-muted-foreground transition-colors group-hover:text-primary" />
+      </a>
 
       {/* Dialogs */}
       <NexusContentDialog
