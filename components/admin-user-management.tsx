@@ -22,7 +22,7 @@ import { createUserAction } from "@/app/actions/auth-actions"
 import { updateUser, deleteUser } from "@/app/actions/user-actions"
 import { cn } from "@/lib/utils"
 
-type RoleType = "admin" | "comercial" | "manager" | "user" | "zona_execucao" | "gestor_ads" | "mineracao" | "blog" | "esteira"
+type RoleType = "admin" | "comercial" | "manager" | "user" | "zona_execucao" | "gestor_ads" | "mineracao" | "blog" | "esteira" | "nexus_growth"
 
 // Permissões de módulo (separadas dos níveis de acesso), persistidas via user_roles.
 const moduleConfig = {
