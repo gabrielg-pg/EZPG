@@ -201,27 +201,29 @@ export async function createUser(data: {
 }): Promise<{ success: boolean; error?: string }> {
   try {
     const passwordHash = await hashPassword(data.password)
-
-    const inserted = await sql`
-      INSERT INTO users (username, email, password_hash, name, role, status)
-      VALUES (${data.username}, ${data.email}, ${passwordHash}, ${data.name}, ${data.role}, 'ativo')
-      RETURNING id
-    `
-
-    // Persiste todas as roles selecionadas na tabela user_roles
-    const newUserId = (inserted as Array<{ id: number }>)[0]?.id
     const allRoles = Array.from(new Set((data.roles && data.roles.length > 0 ? data.roles : [data.role]).filter(Boolean)))
-    if (newUserId && allRoles.length > 0) {
-      for (const role of allRoles) {
-        await sql`INSERT INTO user_roles (user_id, role) VALUES (${newUserId}, ${role})`
-      }
-    }
+
+    // Inserção atômica: cria o usuário e todas as roles em uma única instrução (CTE).
+    // Se qualquer role violar constraints, NADA é gravado — evita usuários órfãos sem roles.
+    await sql`
+      WITH new_user AS (
+        INSERT INTO users (username, email, password_hash, name, role, status)
+        VALUES (${data.username}, ${data.email}, ${passwordHash}, ${data.name}, ${data.role}, 'ativo')
+        RETURNING id
+      )
+      INSERT INTO user_roles (user_id, role)
+      SELECT new_user.id, r
+      FROM new_user, unnest(${allRoles}::text[]) AS r
+    `
 
     return { success: true }
   } catch (error: unknown) {
     console.error("Create user error:", error)
     if (error && typeof error === "object" && "code" in error && (error as any).code === "23505") {
       return { success: false, error: "Usuário ou email já existe" }
+    }
+    if (error && typeof error === "object" && "code" in error && (error as any).code === "23514") {
+      return { success: false, error: "Uma das permissões selecionadas é inválida" }
     }
     return { success: false, error: "Erro ao criar usuário" }
   }
