@@ -468,40 +468,23 @@ export async function getNexusCredentials(): Promise<{
     FROM nexus_credentials c
     ORDER BY c.platform_name ASC, c.id ASC
   `
-  const perms = await sql`
-    SELECT credential_id, user_id, can_view, can_reveal_password, can_edit
-    FROM nexus_credential_permissions
-  `
-  const permByCred = new Map<number, Array<Record<string, unknown>>>()
-  for (const p of perms as Record<string, unknown>[]) {
-    const cid = p.credential_id as number
-    if (!permByCred.has(cid)) permByCred.set(cid, [])
-    permByCred.get(cid)!.push(p)
-  }
 
-  const result: NexusCredential[] = []
-  for (const row of rows as Record<string, unknown>[]) {
-    const cid = row.id as number
-    const credPerms = permByCred.get(cid) ?? []
-    const mine = credPerms.find((p) => (p.user_id as number) === user.id)
-    // Admin vê tudo; parceiro só vê credenciais em que foi autorizado.
-    if (!admin && !mine) continue
-    const canReveal = admin || Boolean(mine?.can_reveal_password)
-    const canEdit = admin || Boolean(mine?.can_edit)
-    result.push({
-      id: cid,
-      platform_name: (row.platform_name as string) ?? "",
-      platform_url: (row.platform_url as string) ?? "",
-      username: (row.username as string) ?? "",
-      notes: (row.notes as string) ?? "",
-      can_reveal: canReveal,
-      can_edit: canEdit,
-      authorized_user_ids: credPerms.map((p) => p.user_id as number),
-      created_by: (row.created_by as number) ?? null,
-      created_at: String(row.created_at ?? ""),
-      updated_at: String(row.updated_at ?? ""),
-    })
-  }
+  // O acesso aos acessos é controlado pela permissão "Nexus Growth" (atribuída em
+  // Usuários). Qualquer pessoa que enxerga o painel pode visualizar e revelar as
+  // senhas; apenas administradores criam/editam/excluem.
+  const result: NexusCredential[] = (rows as Record<string, unknown>[]).map((row) => ({
+    id: row.id as number,
+    platform_name: (row.platform_name as string) ?? "",
+    platform_url: (row.platform_url as string) ?? "",
+    username: (row.username as string) ?? "",
+    notes: (row.notes as string) ?? "",
+    can_reveal: true,
+    can_edit: admin,
+    authorized_user_ids: [],
+    created_by: (row.created_by as number) ?? null,
+    created_at: String(row.created_at ?? ""),
+    updated_at: String(row.updated_at ?? ""),
+  }))
   return { ok: true, credentials: result }
 }
 
@@ -511,7 +494,6 @@ type CredentialInput = {
   username: string
   password: string // texto puro vindo do form; criptografado antes de gravar
   notes: string
-  authorized_user_ids: number[]
 }
 
 export async function createNexusCredential(
@@ -529,13 +511,6 @@ export async function createNexusCredential(
       RETURNING id
     `
     const credId = (rows[0] as { id: number }).id
-    for (const uid of input.authorized_user_ids ?? []) {
-      await sql`
-        INSERT INTO nexus_credential_permissions (credential_id, user_id, can_view, can_reveal_password, can_edit)
-        VALUES (${credId}, ${uid}, TRUE, TRUE, FALSE)
-        ON CONFLICT (credential_id, user_id) DO NOTHING
-      `
-    }
     await logActivity(user.id, "criar_acesso", `credential#${credId}`)
     revalidatePath("/zona-de-execucao/nexus-growth")
     return { success: true }
@@ -569,15 +544,6 @@ export async function updateNexusCredential(
           platform_name = ${input.platform_name}, platform_url = ${input.platform_url},
           username = ${input.username}, notes = ${input.notes}, updated_at = NOW()
         WHERE id = ${id}
-      `
-    }
-    // Redefine autorizações
-    await sql`DELETE FROM nexus_credential_permissions WHERE credential_id = ${id}`
-    for (const uid of input.authorized_user_ids ?? []) {
-      await sql`
-        INSERT INTO nexus_credential_permissions (credential_id, user_id, can_view, can_reveal_password, can_edit)
-        VALUES (${id}, ${uid}, TRUE, TRUE, FALSE)
-        ON CONFLICT (credential_id, user_id) DO NOTHING
       `
     }
     await logActivity(user.id, "editar_acesso", `credential#${id}`)
@@ -616,17 +582,7 @@ export async function revealNexusPassword(
     return { success: false, error: "Não autorizado" }
   }
   try {
-    let allowed = isAdmin(user)
-    if (!allowed) {
-      const p = await sql`
-        SELECT can_reveal_password FROM nexus_credential_permissions
-        WHERE credential_id = ${id} AND user_id = ${user.id} LIMIT 1
-      `
-      allowed = p.length > 0 && Boolean((p[0] as { can_reveal_password: boolean }).can_reveal_password)
-    }
-    if (!allowed) {
-      return { success: false, error: "Você não tem permissão para ver esta senha" }
-    }
+    // Autorização já validada por canViewNexus (permissão "Nexus Growth").
     const rows = await sql`SELECT encrypted_password FROM nexus_credentials WHERE id = ${id} LIMIT 1`
     if (rows.length === 0) return { success: false, error: "Acesso não encontrado" }
     const decrypted = decryptSecret((rows[0] as { encrypted_password: string }).encrypted_password)

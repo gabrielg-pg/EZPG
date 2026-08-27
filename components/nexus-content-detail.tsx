@@ -22,13 +22,11 @@ import {
   ThumbsUp,
   RotateCcw,
   Clock,
-  User as UserIcon,
   AlertTriangle,
 } from "lucide-react"
 import {
   STATUS_META,
   STATUS_ORDER,
-  PLATFORM_META,
   CONTENT_TYPE_META,
   PILLAR_META,
   isLate,
@@ -36,27 +34,21 @@ import {
   type NexusStatus,
 } from "@/lib/nexus"
 
-type SelectableUser = { id: number; name: string }
-
 export function NexusContentDetail({
   content,
-  users,
   isAdmin,
   onClose,
   onEdit,
   onStatusChange,
-  onResponsibleChange,
   onSendForApproval,
   onApprove,
   onRequestChanges,
 }: {
   content: NexusContent | null
-  users: SelectableUser[]
   isAdmin: boolean
   onClose: () => void
   onEdit: (c: NexusContent) => void
   onStatusChange: (id: number, status: NexusStatus) => void
-  onResponsibleChange: (id: number, userId: number | null) => void
   onSendForApproval: (id: number) => void
   onApprove: (id: number) => void
   onRequestChanges: (id: number, note: string) => void
@@ -101,11 +93,6 @@ export function NexusContentDetail({
                 Atrasado
               </Badge>
             )}
-            {content.platforms.map((p) => (
-              <Badge key={p} variant="outline" className={cn("border", PLATFORM_META[p].badge)}>
-                {PLATFORM_META[p].label}
-              </Badge>
-            ))}
           </div>
         </DialogHeader>
 
@@ -122,12 +109,6 @@ export function NexusContentDetail({
               <span>{CONTENT_TYPE_META[content.content_type]}</span>
             )}
             {content.pillar && <span>{PILLAR_META[content.pillar]}</span>}
-            {content.responsible_name && (
-              <span className="inline-flex items-center gap-1.5">
-                <UserIcon className="h-4 w-4" />
-                {content.responsible_name}
-              </span>
-            )}
           </div>
 
           {content.revision_note && (
@@ -211,8 +192,8 @@ export function NexusContentDetail({
           )}
 
           {/* Controles inline */}
-          <div className="grid grid-cols-1 gap-4 border-t border-border pt-4 sm:grid-cols-2">
-            <div className="space-y-2">
+          <div className="border-t border-border pt-4">
+            <div className="space-y-2 sm:max-w-xs">
               <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                 Status
               </label>
@@ -224,26 +205,6 @@ export function NexusContentDetail({
                   {STATUS_ORDER.map((s) => (
                     <SelectItem key={s} value={s}>
                       {STATUS_META[s].label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                Responsável
-              </label>
-              <Select
-                value={content.responsible_user_id ? String(content.responsible_user_id) : ""}
-                onValueChange={(v) => onResponsibleChange(content.id, v ? Number(v) : null)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  {users.map((u) => (
-                    <SelectItem key={u.id} value={String(u.id)}>
-                      {u.name}
                     </SelectItem>
                   ))}
                 </SelectContent>

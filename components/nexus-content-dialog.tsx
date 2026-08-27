@@ -13,10 +13,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { cn } from "@/lib/utils"
 import { Loader2 } from "lucide-react"
 import {
-  PLATFORM_META,
   CONTENT_TYPE_META,
   PILLAR_META,
   STATUS_META,
@@ -27,8 +25,6 @@ import {
   type NexusPillar,
   type NexusStatus,
 } from "@/lib/nexus"
-
-type SelectableUser = { id: number; name: string }
 
 export type ContentFormValue = {
   title: string
@@ -73,14 +69,12 @@ export function NexusContentDialog({
   onOpenChange,
   defaultDate,
   editing,
-  users,
   onSubmit,
 }: {
   open: boolean
   onOpenChange: (v: boolean) => void
   defaultDate: string
   editing: NexusContent | null
-  users: SelectableUser[]
   onSubmit: (value: ContentFormValue) => Promise<void>
 }) {
   const [form, setForm] = useState<ContentFormValue>(emptyForm(defaultDate))
@@ -110,15 +104,6 @@ export function NexusContentDialog({
       setForm(emptyForm(defaultDate))
     }
   }, [open, editing, defaultDate])
-
-  const togglePlatform = (p: NexusPlatform) => {
-    setForm((f) => ({
-      ...f,
-      platforms: f.platforms.includes(p)
-        ? f.platforms.filter((x) => x !== p)
-        : [...f.platforms, p],
-    }))
-  }
 
   const handleSave = async () => {
     if (!form.title.trim()) return
@@ -150,31 +135,6 @@ export function NexusContentDialog({
               onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
               placeholder="Reel — Bastidores Pro Growth"
             />
-          </div>
-
-          {/* Plataformas */}
-          <div className="space-y-2">
-            <Label>Plataforma</Label>
-            <div className="flex flex-wrap gap-2">
-              {(Object.keys(PLATFORM_META) as NexusPlatform[]).map((p) => {
-                const active = form.platforms.includes(p)
-                return (
-                  <button
-                    key={p}
-                    type="button"
-                    onClick={() => togglePlatform(p)}
-                    className={cn(
-                      "rounded-lg border px-3 py-1.5 text-sm transition-colors",
-                      active
-                        ? PLATFORM_META[p].badge
-                        : "border-border text-muted-foreground hover:text-foreground hover:border-foreground/30",
-                    )}
-                  >
-                    {PLATFORM_META[p].label}
-                  </button>
-                )
-              })}
-            </div>
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -221,7 +181,7 @@ export function NexusContentDialog({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {/* Status */}
             <div className="space-y-2">
               <Label>Status</Label>
@@ -236,28 +196,6 @@ export function NexusContentDialog({
                   {STATUS_ORDER.map((s) => (
                     <SelectItem key={s} value={s}>
                       {STATUS_META[s].label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Responsável */}
-            <div className="space-y-2">
-              <Label>Responsável</Label>
-              <Select
-                value={form.responsible_user_id ? String(form.responsible_user_id) : ""}
-                onValueChange={(v) =>
-                  setForm((f) => ({ ...f, responsible_user_id: v ? Number(v) : null }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  {users.map((u) => (
-                    <SelectItem key={u.id} value={String(u.id)}>
-                      {u.name}
                     </SelectItem>
                   ))}
                 </SelectContent>

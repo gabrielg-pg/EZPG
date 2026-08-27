@@ -42,14 +42,12 @@ import {
   WEEKDAYS_SHORT,
   WEEKDAYS_LONG,
   STATUS_META,
-  PLATFORM_META,
   buildMonthGrid,
   toDateKey,
   isLate,
   type NexusContent,
   type NexusCredential,
   type NexusStatus,
-  type NexusPlatform,
 } from "@/lib/nexus"
 import { NexusContentDialog, type ContentFormValue } from "@/components/nexus-content-dialog"
 import { NexusContentDetail } from "@/components/nexus-content-detail"
@@ -59,7 +57,6 @@ import {
   createNexusContent,
   updateNexusContent,
   updateNexusStatus,
-  updateNexusResponsible,
   moveNexusContent,
   duplicateNexusContent,
   deleteNexusContent,
@@ -69,21 +66,17 @@ import {
   getNexusCredentials,
 } from "@/app/actions/nexus-actions"
 
-type SelectableUser = { id: number; name: string }
-
 export function NexusGrowthPanel({
   initialYear,
   initialMonth, // 1-12
   initialContents,
   initialCredentials,
-  users,
   isAdmin,
 }: {
   initialYear: number
   initialMonth: number
   initialContents: NexusContent[]
   initialCredentials: NexusCredential[]
-  users: SelectableUser[]
   isAdmin: boolean
 }) {
   const [year, setYear] = useState(initialYear)
@@ -94,9 +87,7 @@ export function NexusGrowthPanel({
   const [loading, setLoading] = useState(false)
 
   // Filtros
-  const [platformFilter, setPlatformFilter] = useState<string>("todos")
   const [statusFilter, setStatusFilter] = useState<string>("todos")
-  const [responsibleFilter, setResponsibleFilter] = useState<string>("todos")
   const [search, setSearch] = useState("")
 
   // Dialogs
@@ -138,13 +129,11 @@ export function NexusGrowthPanel({
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
     return contents.filter((c) => {
-      if (platformFilter !== "todos" && !c.platforms.includes(platformFilter as NexusPlatform)) return false
       if (statusFilter !== "todos" && c.status !== statusFilter) return false
-      if (responsibleFilter !== "todos" && String(c.responsible_user_id ?? "") !== responsibleFilter) return false
       if (q && !c.title.toLowerCase().includes(q) && !c.caption.toLowerCase().includes(q)) return false
       return true
     })
-  }, [contents, platformFilter, statusFilter, responsibleFilter, search])
+  }, [contents, statusFilter, search])
 
   const byDate = useMemo(() => {
     const map = new Map<string, NexusContent[]>()
@@ -162,14 +151,6 @@ export function NexusGrowthPanel({
     const aguardando = contents.filter((c) => c.status === "aguardando_aprovacao").length
     const publicados = contents.filter((c) => c.status === "publicado").length
     return { total, emProducao, aguardando, publicados }
-  }, [contents])
-
-  const platformCounts = useMemo(() => {
-    const counts: Record<string, number> = {}
-    for (const c of contents) {
-      for (const p of c.platforms) counts[p] = (counts[p] ?? 0) + 1
-    }
-    return counts
   }, [contents])
 
   const grid = useMemo(() => buildMonthGrid(year, month - 1), [year, month])
@@ -282,32 +263,11 @@ export function NexusGrowthPanel({
             {contents.length} {contents.length === 1 ? "conteúdo planejado" : "conteúdos planejados"}
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {Object.entries(platformCounts).map(([p, count]) => (
-            <Badge key={p} variant="outline" className={cn("border", PLATFORM_META[p as NexusPlatform]?.badge)}>
-              {PLATFORM_META[p as NexusPlatform]?.label}: {count}
-            </Badge>
-          ))}
-        </div>
       </div>
 
       {/* Filtros */}
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-wrap gap-2">
-          <Select value={platformFilter} onValueChange={setPlatformFilter}>
-            <SelectTrigger className="w-40">
-              <SelectValue placeholder="Plataforma" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todos">Todas plataformas</SelectItem>
-              {(Object.keys(PLATFORM_META) as NexusPlatform[]).map((p) => (
-                <SelectItem key={p} value={p}>
-                  {PLATFORM_META[p].label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-40">
               <SelectValue placeholder="Status" />
@@ -317,20 +277,6 @@ export function NexusGrowthPanel({
               {(Object.keys(STATUS_META) as NexusStatus[]).map((s) => (
                 <SelectItem key={s} value={s}>
                   {STATUS_META[s].label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={responsibleFilter} onValueChange={setResponsibleFilter}>
-            <SelectTrigger className="w-44">
-              <SelectValue placeholder="Responsável" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todos">Todos responsáveis</SelectItem>
-              {users.map((u) => (
-                <SelectItem key={u.id} value={String(u.id)}>
-                  {u.name}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -445,7 +391,6 @@ export function NexusGrowthPanel({
       {/* Acessos */}
       <NexusCredentialsSection
         credentials={credentials}
-        users={users}
         isAdmin={isAdmin}
         onChanged={reloadCredentials}
       />
@@ -456,25 +401,17 @@ export function NexusGrowthPanel({
         onOpenChange={setDialogOpen}
         defaultDate={dialogDate}
         editing={editing}
-        users={users}
         onSubmit={handleSubmit}
       />
 
       <NexusContentDetail
         content={detail}
-        users={users}
         isAdmin={isAdmin}
         onClose={() => setDetail(null)}
         onEdit={openEdit}
         onStatusChange={(id, status) => {
           setDetail((d) => (d ? { ...d, status } : d))
           runAndReload(() => updateNexusStatus(id, status))
-        }}
-        onResponsibleChange={(id, userId) => {
-          setDetail((d) =>
-            d ? { ...d, responsible_user_id: userId, responsible_name: users.find((u) => u.id === userId)?.name ?? null } : d,
-          )
-          runAndReload(() => updateNexusResponsible(id, userId))
         }}
         onSendForApproval={(id) => {
           setDetail(null)
@@ -567,7 +504,6 @@ function ContentCard({
   dragging: boolean
 }) {
   const late = isLate(content.date, content.status)
-  const primaryPlatform = content.platforms[0]
 
   return (
     <div
@@ -580,22 +516,7 @@ function ContentCard({
         dragging && "opacity-40",
       )}
     >
-      <div className="mb-1.5 flex items-start justify-between gap-1">
-        <div className="flex flex-wrap gap-1">
-          {content.platforms.slice(0, 2).map((p) => (
-            <span
-              key={p}
-              className={cn("rounded border px-1.5 py-0.5 text-[10px] font-medium", PLATFORM_META[p].badge)}
-            >
-              {PLATFORM_META[p].label}
-            </span>
-          ))}
-          {content.platforms.length > 2 && (
-            <span className="rounded border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground">
-              +{content.platforms.length - 2}
-            </span>
-          )}
-        </div>
+      <div className="mb-1.5 flex items-start justify-end gap-1">
         <DropdownMenu>
           <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
             <button
@@ -647,10 +568,6 @@ function ContentCard({
           </span>
         )}
       </div>
-
-      {content.responsible_name && (
-        <p className="mt-1.5 truncate text-[11px] text-muted-foreground">{content.responsible_name}</p>
-      )}
     </div>
   )
 }

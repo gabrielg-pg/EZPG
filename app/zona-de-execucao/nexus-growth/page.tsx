@@ -8,7 +8,6 @@ import {
   ensureNexusTables,
   getNexusContents,
   getNexusCredentials,
-  getNexusSelectableUsers,
 } from "@/app/actions/nexus-actions"
 
 export default async function NexusGrowthPage() {
@@ -27,10 +26,9 @@ export default async function NexusGrowthPage() {
   const year = now.getFullYear()
   const month = now.getMonth() + 1 // 1-12
 
-  const [contentsRes, credentialsRes, users] = await Promise.all([
+  const [contentsRes, credentialsRes] = await Promise.all([
     getNexusContents(year, month),
     getNexusCredentials(),
-    getNexusSelectableUsers(),
   ])
 
   return (
@@ -40,7 +38,6 @@ export default async function NexusGrowthPage() {
         initialMonth={month}
         initialContents={contentsRes.contents}
         initialCredentials={credentialsRes.credentials}
-        users={users}
         isAdmin={roles.includes("admin")}
       />
     </DashboardLayout>

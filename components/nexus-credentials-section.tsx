@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { cn } from "@/lib/utils"
 import {
   KeyRound,
   Plus,
@@ -28,16 +27,12 @@ import {
   revealNexusPassword,
 } from "@/app/actions/nexus-actions"
 
-type SelectableUser = { id: number; name: string }
-
 export function NexusCredentialsSection({
   credentials,
-  users,
   isAdmin,
   onChanged,
 }: {
   credentials: NexusCredential[]
-  users: SelectableUser[]
   isAdmin: boolean
   onChanged: () => void
 }) {
@@ -103,7 +98,6 @@ export function NexusCredentialsSection({
           open={dialogOpen}
           onOpenChange={setDialogOpen}
           editing={editing}
-          users={users}
           onSaved={onChanged}
         />
       )}
@@ -289,13 +283,11 @@ function CredentialDialog({
   open,
   onOpenChange,
   editing,
-  users,
   onSaved,
 }: {
   open: boolean
   onOpenChange: (v: boolean) => void
   editing: NexusCredential | null
-  users: SelectableUser[]
   onSaved: () => void
 }) {
   const [form, setForm] = useState({
@@ -304,7 +296,6 @@ function CredentialDialog({
     username: "",
     password: "",
     notes: "",
-    authorized_user_ids: [] as number[],
   })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -322,7 +313,6 @@ function CredentialDialog({
         username: editing.username,
         password: "",
         notes: editing.notes,
-        authorized_user_ids: editing.authorized_user_ids,
       })
     } else {
       setForm({
@@ -331,21 +321,11 @@ function CredentialDialog({
         username: "",
         password: "",
         notes: "",
-        authorized_user_ids: [],
       })
     }
   }
   if (!open && initializedFor !== -1) {
     setInitializedFor(-1)
-  }
-
-  const toggleUser = (id: number) => {
-    setForm((f) => ({
-      ...f,
-      authorized_user_ids: f.authorized_user_ids.includes(id)
-        ? f.authorized_user_ids.filter((x) => x !== id)
-        : [...f.authorized_user_ids, id],
-    }))
   }
 
   const handleSave = async () => {
@@ -430,37 +410,10 @@ function CredentialDialog({
               onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
             />
           </div>
-          <div className="space-y-2">
-            <Label>Quem pode acessar?</Label>
-            <div className="max-h-48 space-y-1.5 overflow-y-auto rounded-lg border border-border p-2">
-              {users.length === 0 ? (
-                <p className="p-2 text-sm text-muted-foreground">Nenhum usuário disponível.</p>
-              ) : (
-                users.map((u) => {
-                  const active = form.authorized_user_ids.includes(u.id)
-                  return (
-                    <button
-                      key={u.id}
-                      type="button"
-                      onClick={() => toggleUser(u.id)}
-                      className={cn(
-                        "flex w-full items-center justify-between rounded-lg border px-3 py-2 text-sm transition-colors",
-                        active
-                          ? "border-primary/40 bg-primary/10 text-foreground"
-                          : "border-transparent text-muted-foreground hover:bg-white/5 hover:text-foreground",
-                      )}
-                    >
-                      {u.name}
-                      {active && <Check className="h-4 w-4 text-primary" />}
-                    </button>
-                  )
-                })
-              )}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Usuários autorizados podem visualizar e revelar a senha deste acesso.
-            </p>
-          </div>
+          <p className="text-xs text-muted-foreground">
+            Quem pode visualizar e revelar estas senhas é definido pela permissão{" "}
+            <span className="font-medium text-foreground">Nexus Growth</span> na tela de Usuários.
+          </p>
         </div>
 
         <DialogFooter>
