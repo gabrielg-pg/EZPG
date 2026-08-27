@@ -33,6 +33,7 @@ function resolveLandingPage(roles: string[]): string {
   if (roles.includes("gestor_ads")) return "/zona-de-execucao/criativos"
   if (roles.includes("mineracao")) return "/mineracao"
   if (roles.includes("blog")) return "/blog"
+  if (roles.includes("nexus_growth")) return "/zona-de-execucao/nexus-growth"
   // "user" e qualquer outra role básica têm acesso a Demandas.
   return "/demandas"
 }
