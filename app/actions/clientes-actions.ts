@@ -26,7 +26,7 @@ export async function createClientesTables() {
       estado VARCHAR(2) NOT NULL DEFAULT '',
       cidade TEXT NOT NULL DEFAULT '',
       cep VARCHAR(15) NOT NULL DEFAULT '',
-      plano TEXT NOT NULL DEFAULT 'starter',
+      plano TEXT NOT NULL DEFAULT 'start_growth',
       ativo BOOLEAN NOT NULL DEFAULT true,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
@@ -104,7 +104,7 @@ type ClienteInput = {
 }
 
 function normalizePlano(plano: string): Plano {
-  return PLANOS.includes(plano as Plano) ? (plano as Plano) : "starter"
+    return PLANOS.includes(plano as Plano) ? (plano as Plano) : "start_growth"
 }
 
 // Cria cliente + primeira compra (que inicia o LTV)

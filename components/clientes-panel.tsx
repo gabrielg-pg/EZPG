@@ -65,7 +65,8 @@ import {
   type Plano,
   PLANOS,
   PLANO_LABEL,
-  PLANO_BADGE,
+  planoLabel,
+  planoBadge,
   ESTADOS_BR,
   TIPOS_COMPRA,
   formatCurrency,
@@ -464,8 +465,8 @@ function ClienteRow({
         <TableCell className="whitespace-nowrap text-muted-foreground">{cliente.cep || "—"}</TableCell>
         <TableCell className="whitespace-nowrap text-muted-foreground">{cliente.cpf}</TableCell>
         <TableCell>
-          <Badge variant="outline" className={cn("font-medium", PLANO_BADGE[cliente.plano])}>
-            {PLANO_LABEL[cliente.plano]}
+          <Badge variant="outline" className={cn("font-medium", planoBadge(cliente.plano))}>
+            {planoLabel(cliente.plano)}
           </Badge>
         </TableCell>
         <TableCell className="whitespace-nowrap text-muted-foreground">
@@ -646,9 +647,9 @@ function ClienteCardMobile({
             {cliente.estado ? ` · ${cliente.estado}` : ""}
           </p>
         </div>
-        <Badge variant="outline" className={cn("shrink-0 font-medium", PLANO_BADGE[cliente.plano])}>
-          {PLANO_LABEL[cliente.plano]}
-        </Badge>
+          <Badge variant="outline" className={cn("shrink-0 font-medium", planoBadge(cliente.plano))}>
+            {planoLabel(cliente.plano)}
+          </Badge>
       </div>
       <div className="mt-3 flex items-center justify-between">
         <div>
@@ -752,7 +753,7 @@ const emptyForm: FormState = {
   estado: "",
   cidade: "",
   cep: "",
-  plano: "starter",
+  plano: "start_growth",
   ativo: true,
   valorPrimeiraCompra: "",
 }

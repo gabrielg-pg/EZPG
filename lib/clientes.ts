@@ -1,18 +1,31 @@
-export type Plano = "starter" | "pro" | "premium"
+export type Plano = "start_growth" | "pro_vertebra" | "scale_vertebra" | "scale_global" | "personalizado"
 
-export const PLANOS: Plano[] = ["starter", "pro", "premium"]
+export const PLANOS: Plano[] = ["start_growth", "pro_vertebra", "scale_vertebra", "scale_global", "personalizado"]
 
 export const PLANO_LABEL: Record<Plano, string> = {
-  starter: "Starter",
-  pro: "Pro",
-  premium: "Premium",
+  start_growth: "Start GROWTH",
+  pro_vertebra: "Pro VÉRTEBRA",
+  scale_vertebra: "Scale VÉRTEBRA",
+  scale_global: "Scale GLOBAL",
+  personalizado: "Personalizado",
 }
 
-// Badges seguindo o branding: Starter=verde, Pro=primary, Premium=roxo
+// Badges seguindo o branding do funil de planos
 export const PLANO_BADGE: Record<Plano, string> = {
-  starter: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
-  pro: "bg-primary/15 text-primary border-primary/30",
-  premium: "bg-purple-500/15 text-purple-400 border-purple-500/30",
+  start_growth: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+  pro_vertebra: "bg-primary/15 text-primary border-primary/30",
+  scale_vertebra: "bg-blue-500/15 text-blue-400 border-blue-500/30",
+  scale_global: "bg-purple-500/15 text-purple-400 border-purple-500/30",
+  personalizado: "bg-muted text-muted-foreground border-border",
+}
+
+// Fallback resiliente para valores legados/desconhecidos vindos do banco
+export function planoLabel(plano: string): string {
+  return PLANO_LABEL[plano as Plano] ?? plano
+}
+
+export function planoBadge(plano: string): string {
+  return PLANO_BADGE[plano as Plano] ?? "bg-muted text-muted-foreground border-border"
 }
 
 export interface Cliente {
