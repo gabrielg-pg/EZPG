@@ -200,6 +200,44 @@ export async function deleteCliente(id: number): Promise<{ success: boolean; err
   }
 }
 
+// Ajusta o LTV total do cliente para um valor absoluto.
+// Como o LTV é a soma das compras, gravamos um registro de ajuste com o delta
+// (positivo ou negativo) para que a soma passe a bater com o valor informado.
+export async function ajustarLtvCliente(
+  clienteId: number,
+  novoLtv: number,
+): Promise<{ success: boolean; error?: string }> {
+  if (!(await isAdmin())) return { success: false, error: "Não autorizado" }
+  if (!Number.isFinite(novoLtv) || novoLtv < 0) {
+    return { success: false, error: "Informe um LTV válido" }
+  }
+
+  try {
+    const rows = await sql`
+      SELECT COALESCE(SUM(valor), 0) AS ltv FROM pg_cliente_compras WHERE cliente_id = ${clienteId}
+    `
+    const atual = Number((rows[0] as { ltv: string | number }).ltv) || 0
+    const delta = Math.round((novoLtv - atual) * 100) / 100
+    if (delta !== 0) {
+      await sql`
+        INSERT INTO pg_cliente_compras (cliente_id, valor, data_compra, tipo, descricao)
+        VALUES (
+          ${clienteId},
+          ${delta},
+          ${new Date().toISOString().slice(0, 10)},
+          'Ajuste',
+          'Ajuste manual de LTV'
+        )
+      `
+    }
+    revalidatePath(PATH)
+    return { success: true }
+  } catch (e) {
+    console.error("ajustarLtvCliente error:", e)
+    return { success: false, error: "Erro ao ajustar o LTV" }
+  }
+}
+
 // Adiciona uma nova compra — o LTV é recalculado automaticamente na leitura
 export async function addCompra(
   clienteId: number,

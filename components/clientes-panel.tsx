@@ -83,6 +83,7 @@ import {
   updateCliente,
   deleteCliente,
   addCompra,
+  ajustarLtvCliente,
   getClienteCompras,
 } from "@/app/actions/clientes-actions"
 
@@ -742,6 +743,7 @@ type FormState = {
   plano: Plano
   ativo: boolean
   valorPrimeiraCompra: string
+  ltvTotal: string
 }
 
 const emptyForm: FormState = {
@@ -756,6 +758,7 @@ const emptyForm: FormState = {
   plano: "start_growth",
   ativo: true,
   valorPrimeiraCompra: "",
+  ltvTotal: "",
 }
 
 function ClienteFormDialog({
@@ -787,6 +790,7 @@ function ClienteFormDialog({
         plano: editing.plano,
         ativo: editing.ativo,
         valorPrimeiraCompra: "",
+        ltvTotal: String(num(editing.ltv)),
       })
     } else {
       setForm(emptyForm)
@@ -803,6 +807,12 @@ function ClienteFormDialog({
     if (!editing) {
       const v = Number.parseFloat(form.valorPrimeiraCompra)
       if (!(v > 0)) return setError("Informe o valor da 1ª compra.")
+    }
+    let novoLtv: number | null = null
+    if (editing && form.ltvTotal.trim() !== "") {
+      const parsed = Number.parseFloat(form.ltvTotal)
+      if (!(parsed >= 0)) return setError("Informe um LTV válido.")
+      novoLtv = Math.round(parsed * 100) / 100
     }
     setError("")
     startSaving(async () => {
@@ -821,12 +831,20 @@ function ClienteFormDialog({
       const result = editing
         ? await updateCliente(editing.id, base)
         : await createCliente({ ...base, valorPrimeiraCompra: Number.parseFloat(form.valorPrimeiraCompra) })
-      if (result.success) {
-        onOpenChange(false)
-        window.location.reload()
-      } else {
+      if (!result.success) {
         setError(result.error || "Erro ao salvar.")
+        return
       }
+      // Ajusta o LTV se o valor foi alterado durante a edição
+      if (editing && novoLtv !== null && novoLtv !== Math.round(num(editing.ltv) * 100) / 100) {
+        const ltvResult = await ajustarLtvCliente(editing.id, novoLtv)
+        if (!ltvResult.success) {
+          setError(ltvResult.error || "Cliente salvo, mas houve erro ao ajustar o LTV.")
+          return
+        }
+      }
+      onOpenChange(false)
+      window.location.reload()
     })
   }
 
@@ -938,6 +956,22 @@ function ClienteFormDialog({
                 placeholder="0,00"
                 className="bg-background/50 border-sidebar-border text-white"
               />
+            </Field>
+          )}
+          {editing && (
+            <Field label="LTV total (R$)">
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                value={form.ltvTotal}
+                onChange={(e) => set("ltvTotal", e.target.value)}
+                placeholder="0,00"
+                className="bg-background/50 border-sidebar-border text-white"
+              />
+              <p className="mt-1 text-xs text-muted-foreground">
+                Ajusta o LTV acumulado do cliente. A diferença é registrada como um ajuste no histórico de compras.
+              </p>
             </Field>
           )}
           <div className="flex items-center gap-3 sm:col-span-2">
