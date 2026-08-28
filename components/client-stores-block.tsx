@@ -6,13 +6,23 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { Store, Plus, ExternalLink, Trash2, Loader2, MapPin, Globe } from "lucide-react"
+import { Store, Plus, ExternalLink, Trash2, Loader2, MapPin, Globe, Pencil, Check, X, Wallet } from "lucide-react"
 import {
   createClientStore,
   deleteClientStore,
+  updateClientStoreAdspend,
+  ADSPEND_CURRENCIES,
   type ClientStoreEntry,
   type ClientStoreType,
+  type AdspendCurrency,
 } from "@/app/actions/client-store-actions"
 
 type ColumnConfig = {
@@ -26,25 +36,64 @@ const COLUMNS: ColumnConfig[] = [
   { type: "global", title: "Globais", icon: Globe },
 ]
 
+const CURRENCY_META: Record<AdspendCurrency, { label: string; symbol: string; locale: string }> = {
+  BRL: { label: "Real (R$)", symbol: "R$", locale: "pt-BR" },
+  USD: { label: "Dólar (US$)", symbol: "US$", locale: "en-US" },
+  EUR: { label: "Euro (€)", symbol: "€", locale: "de-DE" },
+  GBP: { label: "Libra (£)", symbol: "£", locale: "en-GB" },
+}
+
+function formatAdspend(value: number, currency: AdspendCurrency): string {
+  const meta = CURRENCY_META[currency] ?? CURRENCY_META.BRL
+  try {
+    return new Intl.NumberFormat(meta.locale, {
+      style: "currency",
+      currency,
+      minimumFractionDigits: 2,
+    }).format(value)
+  } catch {
+    return `${meta.symbol} ${value.toFixed(2)}`
+  }
+}
+
 export function ClientStoresBlock({ initialStores }: { initialStores: ClientStoreEntry[] }) {
   const [stores, setStores] = useState<ClientStoreEntry[]>(initialStores)
   const [addOpen, setAddOpen] = useState(false)
   const [addType, setAddType] = useState<ClientStoreType>("nacional")
-  const [form, setForm] = useState({ name: "", site: "", niche: "" })
+  const [form, setForm] = useState<{
+    name: string
+    site: string
+    niche: string
+    adspend: string
+    adspendCurrency: AdspendCurrency
+  }>({ name: "", site: "", niche: "", adspend: "", adspendCurrency: "BRL" })
   const [error, setError] = useState("")
   const [pendingDelete, setPendingDelete] = useState<ClientStoreEntry | null>(null)
   const [isPending, startTransition] = useTransition()
 
+  // Edição inline de ADSPEND
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [editDraft, setEditDraft] = useState<{ adspend: string; adspendCurrency: AdspendCurrency }>({
+    adspend: "",
+    adspendCurrency: "BRL",
+  })
+  const [savingId, setSavingId] = useState<number | null>(null)
+
   const openAdd = (type: ClientStoreType) => {
     setAddType(type)
-    setForm({ name: "", site: "", niche: "" })
+    setForm({ name: "", site: "", niche: "", adspend: "", adspendCurrency: "BRL" })
     setError("")
     setAddOpen(true)
   }
 
   const handleAdd = () => {
     if (!form.name.trim() || !form.site.trim() || !form.niche.trim()) {
-      setError("Preencha todos os campos.")
+      setError("Preencha nome, site e nicho.")
+      return
+    }
+    const adspendValue = form.adspend.trim() === "" ? 0 : Number.parseFloat(form.adspend)
+    if (!(adspendValue >= 0)) {
+      setError("Informe um valor de ADSPEND válido.")
       return
     }
     startTransition(async () => {
@@ -53,12 +102,37 @@ export function ClientStoresBlock({ initialStores }: { initialStores: ClientStor
         site: form.site,
         niche: form.niche,
         type: addType,
+        adspend: adspendValue,
+        adspendCurrency: form.adspendCurrency,
       })
       if (result.success && result.store) {
         setStores((prev) => [...prev, result.store as ClientStoreEntry])
         setAddOpen(false)
       } else {
         setError(result.error || "Erro ao adicionar loja.")
+      }
+    })
+  }
+
+  const startEditAdspend = (store: ClientStoreEntry) => {
+    setEditingId(store.id)
+    setEditDraft({ adspend: String(store.adspend ?? 0), adspendCurrency: store.adspend_currency ?? "BRL" })
+  }
+
+  const saveEditAdspend = (id: number) => {
+    const value = editDraft.adspend.trim() === "" ? 0 : Number.parseFloat(editDraft.adspend)
+    if (!(value >= 0)) return
+    setSavingId(id)
+    startTransition(async () => {
+      const result = await updateClientStoreAdspend(id, value, editDraft.adspendCurrency)
+      setSavingId(null)
+      if (result.success) {
+        setStores((prev) =>
+          prev.map((s) =>
+            s.id === id ? { ...s, adspend: value, adspend_currency: editDraft.adspendCurrency } : s,
+          ),
+        )
+        setEditingId(null)
       }
     })
   }
@@ -77,7 +151,7 @@ export function ClientStoresBlock({ initialStores }: { initialStores: ClientStor
     <section className="space-y-4">
       <div className="flex items-center gap-2">
         <Store className="h-5 w-5 text-primary" />
-        <h3 className="text-lg font-semibold text-foreground">Lojas de nossos clientes</h3>
+        <h3 className="text-lg font-semibold text-foreground">Lojas de nossos clientes + ADSPEND</h3>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -121,7 +195,7 @@ export function ClientStoresBlock({ initialStores }: { initialStores: ClientStor
                         className="group flex items-start gap-3 rounded-lg border border-border bg-secondary/40 px-3 py-2.5 transition-colors hover:border-primary/40"
                       >
                         <Store className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                        <div className="min-w-0 flex-1 space-y-1">
+                        <div className="min-w-0 flex-1 space-y-1.5">
                           <p className="truncate text-sm font-medium text-foreground">{store.name}</p>
                           <a
                             href={store.site}
@@ -132,9 +206,80 @@ export function ClientStoresBlock({ initialStores }: { initialStores: ClientStor
                             <ExternalLink className="h-3 w-3 shrink-0" />
                             {store.site.replace(/^https?:\/\//, "")}
                           </a>
-                          <Badge className="border-teal-500/25 bg-teal-500/15 text-teal-400 hover:bg-teal-500/15">
-                            {store.niche}
-                          </Badge>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Badge className="border-teal-500/25 bg-teal-500/15 text-teal-400 hover:bg-teal-500/15">
+                              {store.niche}
+                            </Badge>
+                          </div>
+
+                          {/* ADSPEND mês */}
+                          {editingId === store.id ? (
+                            <div className="flex items-center gap-2 pt-0.5">
+                              <Select
+                                value={editDraft.adspendCurrency}
+                                onValueChange={(v) =>
+                                  setEditDraft((d) => ({ ...d, adspendCurrency: v as AdspendCurrency }))
+                                }
+                              >
+                                <SelectTrigger className="h-8 w-[92px] shrink-0 border-border bg-background/60 text-foreground">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {ADSPEND_CURRENCIES.map((c) => (
+                                    <SelectItem key={c} value={c}>
+                                      {CURRENCY_META[c].symbol} {c}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <Input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                autoFocus
+                                value={editDraft.adspend}
+                                onChange={(e) => setEditDraft((d) => ({ ...d, adspend: e.target.value }))}
+                                placeholder="0,00"
+                                className="h-8 w-32 border-border bg-background/60 text-foreground"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => saveEditAdspend(store.id)}
+                                disabled={savingId === store.id}
+                                aria-label="Salvar ADSPEND"
+                                className="rounded-md p-1.5 text-emerald-400 transition-colors hover:bg-emerald-500/10 disabled:opacity-50"
+                              >
+                                {savingId === store.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Check className="h-4 w-4" />
+                                )}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setEditingId(null)}
+                                disabled={savingId === store.id}
+                                aria-label="Cancelar edição"
+                                className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground disabled:opacity-50"
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => startEditAdspend(store)}
+                              className="group/adspend flex items-center gap-1.5 rounded-md text-left"
+                              title="Editar ADSPEND mensal"
+                            >
+                              <Wallet className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                              <span className="text-xs text-muted-foreground">ADSPEND/mês:</span>
+                              <span className="text-xs font-semibold text-foreground">
+                                {formatAdspend(store.adspend ?? 0, store.adspend_currency ?? "BRL")}
+                              </span>
+                              <Pencil className="h-3 w-3 text-muted-foreground opacity-0 transition-opacity group-hover/adspend:opacity-100" />
+                            </button>
+                          )}
                         </div>
                         <button
                           type="button"
@@ -202,6 +347,38 @@ export function ClientStoresBlock({ initialStores }: { initialStores: ClientStor
                 onChange={(e) => setForm({ ...form, niche: e.target.value })}
                 className="bg-secondary/40 border-border text-foreground placeholder:text-muted-foreground/50"
               />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm text-muted-foreground">ADSPEND mensal</Label>
+              <div className="flex items-center gap-2">
+                <Select
+                  value={form.adspendCurrency}
+                  onValueChange={(v) => setForm({ ...form, adspendCurrency: v as AdspendCurrency })}
+                >
+                  <SelectTrigger className="w-[130px] shrink-0 border-border bg-secondary/40 text-foreground">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ADSPEND_CURRENCIES.map((c) => (
+                      <SelectItem key={c} value={c}>
+                        {CURRENCY_META[c].label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="0,00"
+                  value={form.adspend}
+                  onChange={(e) => setForm({ ...form, adspend: e.target.value })}
+                  className="bg-secondary/40 border-border text-foreground placeholder:text-muted-foreground/50"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground/70">
+                Valor que o cliente pode gastar por mês em tráfego pago.
+              </p>
             </div>
             {error && <p className="text-xs text-destructive">{error}</p>}
           </div>
