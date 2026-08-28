@@ -265,6 +265,30 @@ export async function addCompra(
   }
 }
 
+export async function updateCompra(
+  id: number,
+  data: { valor: number; dataCompra: string; tipo: string; descricao: string },
+): Promise<{ success: boolean; error?: string }> {
+  if (!(await isAdmin())) return { success: false, error: "Não autorizado" }
+  if (!(data.valor > 0)) return { success: false, error: "Informe um valor válido" }
+
+  try {
+    await sql`
+      UPDATE pg_cliente_compras
+      SET valor = ${data.valor},
+          data_compra = ${data.dataCompra || new Date().toISOString().slice(0, 10)},
+          tipo = ${data.tipo?.trim() || "Plano"},
+          descricao = ${data.descricao?.trim() || ""}
+      WHERE id = ${id}
+    `
+    revalidatePath(PATH)
+    return { success: true }
+  } catch (e) {
+    console.error("updateCompra error:", e)
+    return { success: false, error: "Erro ao atualizar compra" }
+  }
+}
+
 export async function deleteCompra(id: number): Promise<{ success: boolean; error?: string }> {
   if (!(await isAdmin())) return { success: false, error: "Não autorizado" }
   try {

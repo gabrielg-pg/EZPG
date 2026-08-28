@@ -57,6 +57,8 @@ import {
   Filter,
   ShoppingCart,
   TrendingUp,
+  Check,
+  X,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
@@ -83,6 +85,8 @@ import {
   updateCliente,
   deleteCliente,
   addCompra,
+  updateCompra,
+  deleteCompra,
   ajustarLtvCliente,
   getClienteCompras,
 } from "@/app/actions/clientes-actions"
@@ -550,6 +554,12 @@ function ClienteRow({
 
 function ClienteHistory({ cliente }: { cliente: Cliente }) {
   const [compras, setCompras] = useState<Compra[] | null>(null)
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [busyId, setBusyId] = useState<number | null>(null)
+  const [rowError, setRowError] = useState<string>("")
+  const [draft, setDraft] = useState({ valor: "", dataCompra: "", tipo: "Plano", descricao: "" })
+
+  const reload = () => getClienteCompras(cliente.id).then(setCompras)
 
   useEffect(() => {
     let active = true
@@ -560,6 +570,51 @@ function ClienteHistory({ cliente }: { cliente: Cliente }) {
       active = false
     }
   }, [cliente.id])
+
+  const startEdit = (co: Compra) => {
+    setRowError("")
+    setEditingId(co.id)
+    setDraft({
+      valor: String(num(co.valor)),
+      dataCompra: (co.data_compra || "").slice(0, 10),
+      tipo: co.tipo || "Plano",
+      descricao: co.descricao || "",
+    })
+  }
+
+  const saveEdit = async (id: number) => {
+    const v = Number.parseFloat(draft.valor)
+    if (!(v > 0)) {
+      setRowError("Informe um valor válido.")
+      return
+    }
+    setBusyId(id)
+    const result = await updateCompra(id, {
+      valor: v,
+      dataCompra: draft.dataCompra,
+      tipo: draft.tipo,
+      descricao: draft.descricao,
+    })
+    setBusyId(null)
+    if (result.success) {
+      setEditingId(null)
+      setRowError("")
+      await reload()
+    } else {
+      setRowError(result.error || "Erro ao salvar.")
+    }
+  }
+
+  const removeCompra = async (id: number) => {
+    if (!confirm("Excluir este lançamento? O LTV será recalculado.")) return
+    setBusyId(id)
+    const result = await deleteCompra(id)
+    setBusyId(null)
+    if (result.success) await reload()
+    else setRowError(result.error || "Erro ao excluir.")
+  }
+
+  const total = (compras ?? []).reduce((acc, co) => acc + num(co.valor), 0)
 
   return (
     <div className="p-5">
@@ -577,12 +632,13 @@ function ClienteHistory({ cliente }: { cliente: Cliente }) {
           </span>
         </span>
         <span className="text-muted-foreground">
-          Total de compras: <span className="text-foreground">{cliente.total_compras}</span>
+          Total de compras: <span className="text-foreground">{compras?.length ?? cliente.total_compras}</span>
         </span>
       </div>
       <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
         Histórico de compras
       </p>
+      {rowError && <p className="mb-2 text-xs text-rose-400">{rowError}</p>}
       {compras === null ? (
         <div className="flex items-center gap-2 py-3 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" /> Carregando...
@@ -598,26 +654,119 @@ function ClienteHistory({ cliente }: { cliente: Cliente }) {
                 <th className="px-3 py-2 font-medium">Tipo</th>
                 <th className="px-3 py-2 font-medium">Descrição</th>
                 <th className="px-3 py-2 text-right font-medium">Valor</th>
+                <th className="px-3 py-2 text-right font-medium">Ações</th>
               </tr>
             </thead>
             <tbody>
-              {compras.map((co) => (
-                <tr key={co.id} className="border-b border-border/50 last:border-0">
-                  <td className="whitespace-nowrap px-3 py-2 text-muted-foreground">{formatDateBR(co.data_compra)}</td>
-                  <td className="px-3 py-2 text-foreground">{co.tipo}</td>
-                  <td className="px-3 py-2 text-muted-foreground">{co.descricao || "—"}</td>
-                  <td className="whitespace-nowrap px-3 py-2 text-right font-medium text-foreground">
-                    {formatCurrency(co.valor)}
-                  </td>
-                </tr>
-              ))}
+              {compras.map((co) =>
+                editingId === co.id ? (
+                  <tr key={co.id} className="border-b border-border/50 bg-background/40 last:border-0">
+                    <td className="px-3 py-2">
+                      <Input
+                        type="date"
+                        value={draft.dataCompra}
+                        onChange={(e) => setDraft((d) => ({ ...d, dataCompra: e.target.value }))}
+                        className="h-8 bg-background/50 border-sidebar-border text-white"
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <Select value={draft.tipo} onValueChange={(v) => setDraft((d) => ({ ...d, tipo: v }))}>
+                        <SelectTrigger className="h-8 bg-background/50 border-sidebar-border text-white">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-sidebar border-sidebar-border text-white">
+                          {TIPOS_COMPRA.map((t) => (
+                            <SelectItem key={t} value={t} className="focus:bg-white/10 focus:text-white">
+                              {t}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </td>
+                    <td className="px-3 py-2">
+                      <Input
+                        value={draft.descricao}
+                        onChange={(e) => setDraft((d) => ({ ...d, descricao: e.target.value }))}
+                        placeholder="Opcional"
+                        className="h-8 bg-background/50 border-sidebar-border text-white"
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={draft.valor}
+                        onChange={(e) => setDraft((d) => ({ ...d, valor: e.target.value }))}
+                        className="h-8 bg-background/50 border-sidebar-border text-right text-white"
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => saveEdit(co.id)}
+                          disabled={busyId === co.id}
+                          className="rounded-md p-1.5 text-emerald-400 transition-colors hover:bg-emerald-500/10 disabled:opacity-50"
+                          title="Salvar"
+                          aria-label="Salvar alteração"
+                        >
+                          {busyId === co.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                        </button>
+                        <button
+                          onClick={() => {
+                            setEditingId(null)
+                            setRowError("")
+                          }}
+                          disabled={busyId === co.id}
+                          className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground disabled:opacity-50"
+                          title="Cancelar"
+                          aria-label="Cancelar edição"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  <tr key={co.id} className="border-b border-border/50 last:border-0">
+                    <td className="whitespace-nowrap px-3 py-2 text-muted-foreground">{formatDateBR(co.data_compra)}</td>
+                    <td className="px-3 py-2 text-foreground">{co.tipo}</td>
+                    <td className="px-3 py-2 text-muted-foreground">{co.descricao || "—"}</td>
+                    <td className="whitespace-nowrap px-3 py-2 text-right font-medium text-foreground">
+                      {formatCurrency(co.valor)}
+                    </td>
+                    <td className="px-3 py-2">
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => startEdit(co)}
+                          disabled={busyId !== null}
+                          className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground disabled:opacity-50"
+                          title="Editar lançamento"
+                          aria-label="Editar lançamento"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => removeCompra(co.id)}
+                          disabled={busyId !== null}
+                          className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-rose-500/10 hover:text-rose-400 disabled:opacity-50"
+                          title="Excluir lançamento"
+                          aria-label="Excluir lançamento"
+                        >
+                          {busyId === co.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ),
+              )}
               <tr className="bg-primary/5">
                 <td colSpan={3} className="px-3 py-2 text-right text-xs font-semibold uppercase text-muted-foreground">
                   LTV total
                 </td>
                 <td className="whitespace-nowrap px-3 py-2 text-right font-bold text-primary">
-                  {formatCurrency(cliente.ltv)}
+                  {formatCurrency(total)}
                 </td>
+                <td />
               </tr>
             </tbody>
           </table>
