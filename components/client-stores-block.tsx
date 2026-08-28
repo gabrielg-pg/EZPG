@@ -19,11 +19,13 @@ import {
   createClientStore,
   deleteClientStore,
   updateClientStoreAdspend,
+} from "@/app/actions/client-store-actions"
+import {
   ADSPEND_CURRENCIES,
   type ClientStoreEntry,
   type ClientStoreType,
   type AdspendCurrency,
-} from "@/app/actions/client-store-actions"
+} from "@/lib/client-stores"
 
 type ColumnConfig = {
   type: ClientStoreType

@@ -5,7 +5,7 @@ import { Pickaxe, ExternalLink, ListChecks, Search, FolderOpen } from "lucide-re
 import { ClientStoresBlock } from "@/components/client-stores-block"
 import { AccessCredentialsBlock } from "@/components/access-credentials-block"
 import { MiningToolsBlocks } from "@/components/mining-tools-blocks"
-import type { ClientStoreEntry } from "@/app/actions/client-store-actions"
+import type { ClientStoreEntry } from "@/lib/client-stores"
 import type { AccessCredential } from "@/app/actions/access-actions"
 import type { MiningExtension, UsefulCode } from "@/app/actions/mining-tools-actions"
 
