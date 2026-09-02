@@ -1,6 +1,7 @@
 import { sql } from "@/lib/db"
 import {
   VERTEBRA_PIPELINE,
+  normalizeVertebraStatus,
   type VertebraAnswers,
   type VertebraStatus,
   isVertebraStatus,
@@ -33,7 +34,7 @@ export async function ensureVertebraLeadsTable(): Promise<void> {
       target_income TEXT,
       employment_status TEXT,
       current_income TEXT,
-      status TEXT NOT NULL DEFAULT 'prospect',
+      status TEXT NOT NULL DEFAULT 'novo',
       respostas JSONB NOT NULL DEFAULT '{}'::jsonb,
       utm_source TEXT,
       utm_medium TEXT,
@@ -69,7 +70,7 @@ export async function insertVertebraLead(input: InsertVertebraLeadInput): Promis
       ${respostas.target_income ?? null},
       ${respostas.employment_status ?? null},
       ${respostas.current_income ?? null},
-      'aprovado',
+      'novo',
       ${JSON.stringify(respostas)}::jsonb,
       ${input.utm_source ?? null},
       ${input.utm_medium ?? null},
@@ -94,5 +95,8 @@ export async function listVertebraLeads(): Promise<MetodoVertebraLead[]> {
     FROM leads_vertebra
     ORDER BY created_at DESC
   `
-  return rows as MetodoVertebraLead[]
+  return (rows as MetodoVertebraLead[]).map((r) => ({
+    ...r,
+    status: normalizeVertebraStatus(r.status),
+  }))
 }

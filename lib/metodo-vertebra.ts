@@ -161,12 +161,7 @@ export function getVertebraAnswerLabel(key: VertebraAnswerKey, value?: string): 
 
 // ---- Pipeline do dashboard ----
 
-export type VertebraStatus =
-  | "prospect"
-  | "qualificado"
-  | "aprovado"
-  | "whatsapp_enviado"
-  | "convertido"
+export type VertebraStatus = "novo" | "contato_feito" | "fechado" | "perdido"
 
 export type VertebraPipelineColumn = {
   key: VertebraStatus
@@ -179,44 +174,36 @@ export type VertebraPipelineColumn = {
 
 export const VERTEBRA_PIPELINE: VertebraPipelineColumn[] = [
   {
-    key: "prospect",
-    label: "Prospect",
-    hex: "#64748B",
-    color: "text-slate-300",
-    bg: "bg-slate-500/10",
-    dot: "bg-slate-400",
-  },
-  {
-    key: "qualificado",
-    label: "Qualificado",
-    hex: "#3B82F6",
-    color: "text-blue-300",
-    bg: "bg-blue-500/10",
-    dot: "bg-blue-400",
-  },
-  {
-    key: "aprovado",
-    label: "Aprovado",
+    key: "novo",
+    label: "Novo Lead",
     hex: "#8B5CF6",
     color: "text-violet-300",
     bg: "bg-violet-500/10",
     dot: "bg-violet-400",
   },
   {
-    key: "whatsapp_enviado",
-    label: "WhatsApp Enviado",
-    hex: "#F59E0B",
-    color: "text-amber-300",
-    bg: "bg-amber-500/10",
-    dot: "bg-amber-400",
+    key: "contato_feito",
+    label: "Contato Feito",
+    hex: "#3B82F6",
+    color: "text-blue-300",
+    bg: "bg-blue-500/10",
+    dot: "bg-blue-400",
   },
   {
-    key: "convertido",
-    label: "Convertido",
+    key: "fechado",
+    label: "Fechado",
     hex: "#22C55E",
     color: "text-green-300",
     bg: "bg-green-500/10",
     dot: "bg-green-400",
+  },
+  {
+    key: "perdido",
+    label: "Perdido",
+    hex: "#EF4444",
+    color: "text-red-300",
+    bg: "bg-red-500/10",
+    dot: "bg-red-400",
   },
 ]
 
@@ -231,4 +218,19 @@ export const VERTEBRA_STATUS_META: Record<VertebraStatus, VertebraPipelineColumn
 
 export function isVertebraStatus(v: string): v is VertebraStatus {
   return VERTEBRA_PIPELINE.some((c) => c.key === v)
+}
+
+// Mapeia status legados (pipeline antigo de 5 colunas) para as 4 colunas atuais
+const LEGACY_VERTEBRA_STATUS: Record<string, VertebraStatus> = {
+  prospect: "novo",
+  qualificado: "novo",
+  aprovado: "novo",
+  whatsapp_enviado: "contato_feito",
+  convertido: "fechado",
+}
+
+export function normalizeVertebraStatus(value?: string | null): VertebraStatus {
+  if (!value) return "novo"
+  if (isVertebraStatus(value)) return value
+  return LEGACY_VERTEBRA_STATUS[value] ?? "novo"
 }
