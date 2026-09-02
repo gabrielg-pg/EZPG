@@ -36,18 +36,18 @@ export const VERTEBRA_QUESTIONS: Record<VertebraAnswerKey, VertebraQuestion> = {
     title: "Quanto VOCÊ QUER estar ganhando em 30 DIAS?",
     subtitle: "Escolha a meta que mais te representa hoje.",
     options: [
-      { value: "2.5k_5k", label: "R$ 2.5k – 5k / dia" },
-      { value: "5k_10k", label: "R$ 5k – 10k / dia" },
-      { value: "10k_25k", label: "R$ 10k – 25k / dia" },
-      { value: "acima_25k", label: "Acima de R$ 25k / dia" },
+      { value: "2.5k_5k", label: "R$ 2.5k – 5k" },
+      { value: "5k_10k", label: "R$ 5k – 10k" },
+      { value: "10k_25k", label: "R$ 10k – 25k" },
+      { value: "acima_25k", label: "Acima de R$ 25k" },
     ],
   },
   gender: {
     key: "gender",
     title: "Você é...",
     options: [
-      { value: "homem", label: "Homem", emoji: "😊" },
-      { value: "mulher", label: "Mulher", emoji: "💪" },
+      { value: "homem", label: "Homem", emoji: "💪" },
+      { value: "mulher", label: "Mulher", emoji: "😊" },
     ],
   },
   employment_status: {

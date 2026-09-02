@@ -17,6 +17,7 @@ const PURPLE = "#6B21A8"
 // Sequência completa das 16 telas
 type StepKind =
   | { kind: "question"; key: VertebraAnswerKey } // telas de escolha
+  | { kind: "mecanismo" } // tela do mecanismo de troca (antes do método)
   | { kind: "method" } // tela 5
   | { kind: "social" } // tela 9
   | { kind: "authority" } // tela 13
@@ -30,6 +31,7 @@ const STEPS: StepKind[] = [
   { kind: "question", key: "gender" }, // 2
   { kind: "question", key: "employment_status" }, // 3
   { kind: "question", key: "current_income" }, // 4
+  { kind: "mecanismo" }, // mecanismo de troca
   { kind: "method" }, // 5
   { kind: "question", key: "affirmation_1" }, // 6
   { kind: "question", key: "affirmation_2" }, // 7
@@ -111,6 +113,7 @@ export function VertebraFlow() {
               onBack={stepIndex > 0 ? goBack : undefined}
             />
           )}
+          {step.kind === "mecanismo" && <MecanismoScreen onNext={goNext} onBack={goBack} />}
           {step.kind === "method" && <MethodScreen onNext={goNext} onBack={goBack} />}
           {step.kind === "social" && <SocialProofScreen onNext={goNext} onBack={goBack} />}
           {step.kind === "authority" && <AuthorityScreen onNext={goNext} onBack={goBack} />}
@@ -201,16 +204,104 @@ function QuestionScreen({
   )
 }
 
+/* ---------------- Tela: Mecanismo de Troca ---------------- */
+
+function MecanismoScreen({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
+  const [playing, setPlaying] = useState(false)
+  const videoId = "iO8NRnadk9g"
+
+  return (
+    <div>
+      <BackButton onClick={onBack} />
+
+      <p className="text-pretty text-sm font-semibold text-slate-500">
+        7 a cada 10 pessoas vão se aposentar ganhando{" "}
+        <span className="text-violet-700">menos de 2 salários mínimos</span>.
+      </p>
+      <p className="mt-4 text-sm text-slate-400">E isso tem um nome...</p>
+      <h1 className="mt-1 text-balance font-poppins text-3xl font-extrabold leading-tight tracking-tight text-violet-700">
+        MECANISMO DE TROCA
+      </h1>
+      <p className="mt-3 text-pretty text-[15px] leading-relaxed text-slate-600">
+        Você passa a vida toda trocando o ativo mais valioso da sua vida{" "}
+        <span className="italic">(seu tempo)</span> por{" "}
+        <span className="font-semibold text-slate-800">migalhas</span>.
+      </p>
+
+      {/* Ilustração do mecanismo */}
+      <div className="mt-6 overflow-hidden rounded-3xl border border-violet-100 bg-white shadow-lg shadow-violet-100">
+        <Image
+          src="/mecanismo-de-troca.png"
+          alt="Ilustração do Mecanismo de Troca: tempo entrando na esteira e saindo em migalhas"
+          width={1280}
+          height={720}
+          className="h-auto w-full"
+          priority
+        />
+      </div>
+
+      <p className="mt-6 text-pretty text-[15px] leading-relaxed text-slate-600">
+        Mas existe um jeito real de{" "}
+        <span className="font-bold text-slate-900">sair desse mecanismo</span>. É exatamente isso que
+        você vai entender com seu <span className="font-bold text-violet-700">plano personalizado</span>.
+      </p>
+
+      {/* Depoimento em vídeo (YouTube inline, não expande) */}
+      <div className="mt-6">
+        <p className="mb-3 text-sm font-semibold text-slate-700">
+          Depoimento de um dos meus alunos que usa o{" "}
+          <span className="text-violet-700">Sistema de Repasse</span> 👇
+        </p>
+        <div className="relative aspect-video w-full overflow-hidden rounded-3xl border border-violet-100 bg-black shadow-lg shadow-violet-100">
+          {playing ? (
+            <iframe
+              className="absolute inset-0 h-full w-full"
+              src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&fs=0&playsinline=1`}
+              title="Depoimento de aluno — Sistema de Repasse"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              referrerPolicy="strict-origin-when-cross-origin"
+            />
+          ) : (
+            <button
+              type="button"
+              onClick={() => setPlaying(true)}
+              aria-label="Reproduzir depoimento"
+              className="group absolute inset-0 h-full w-full"
+            >
+              <Image
+                src={`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`}
+                alt="Miniatura do depoimento em vídeo"
+                fill
+                className="object-cover opacity-90 transition-opacity group-hover:opacity-100"
+                sizes="(max-width: 640px) 100vw, 576px"
+                unoptimized
+              />
+              <span className="absolute inset-0 flex items-center justify-center bg-black/25 transition-colors group-hover:bg-black/15">
+                <span className="flex h-16 w-16 items-center justify-center rounded-full bg-white/95 shadow-xl transition-transform group-hover:scale-110">
+                  <svg viewBox="0 0 24 24" className="ml-1 h-7 w-7 text-violet-700" fill="currentColor">
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                </span>
+              </span>
+            </button>
+          )}
+        </div>
+      </div>
+
+      <PrimaryButton onClick={onNext} className="mt-8">
+        QUERO SAIR DESSE MECANISMO →
+      </PrimaryButton>
+    </div>
+  )
+}
+
 /* ---------------- Tela 5: Método ---------------- */
 
 function MethodScreen({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
   return (
     <div>
       <BackButton onClick={onBack} />
-      <span className="inline-flex items-center rounded-full bg-violet-100 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-violet-700">
-        Apresentando
-      </span>
-      <h1 className="mt-3 font-poppins text-3xl font-extrabold leading-tight tracking-tight">
+      <h1 className="font-poppins text-3xl font-extrabold leading-tight tracking-tight">
         MÉTODO VÉRTEBRA™
       </h1>
       <p className="mt-2 text-pretty text-sm text-slate-500">
