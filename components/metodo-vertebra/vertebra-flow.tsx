@@ -249,8 +249,8 @@ function MecanismoScreen({ onNext, onBack }: { onNext: () => void; onBack: () =>
       {/* Depoimento em vídeo (YouTube inline, não expande) */}
       <div className="mt-6">
         <p className="mb-3 text-sm font-semibold text-slate-700">
-          Depoimento de um dos meus alunos que usa o{" "}
-          <span className="text-violet-700">Sistema de Repasse</span> 👇
+          Depoimento de um dos nossos clientes que usa o{" "}
+          <span className="text-violet-700">Método VÉRTEBRA</span> 👇
         </p>
         <div className="relative aspect-video w-full overflow-hidden rounded-3xl border border-violet-100 bg-black shadow-lg shadow-violet-100">
           {playing ? (
