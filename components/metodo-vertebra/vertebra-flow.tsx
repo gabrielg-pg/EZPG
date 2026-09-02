@@ -263,7 +263,7 @@ function SocialProofScreen({ onNext, onBack }: { onNext: () => void; onBack: () 
         <span className="text-violet-700">+2.157 operações estruturadas</span>
       </h1>
       <div className="mt-6 rounded-3xl bg-gradient-to-br from-violet-700 to-violet-900 px-6 py-10 text-white">
-        <p className="text-xs uppercase tracking-widest text-violet-200">Gerados pelo método</p>
+        <p className="text-xs uppercase tracking-widest text-violet-200">Gerados pelo MÉTODO VÉRTEBRA™</p>
         <p className="mt-1 font-poppins text-5xl font-extrabold">+R$ 67M</p>
       </div>
       <PrimaryButton onClick={onNext} className="mt-8">
@@ -280,32 +280,72 @@ function AuthorityScreen({ onNext, onBack }: { onNext: () => void; onBack: () =>
     <div>
       <BackButton onClick={onBack} />
       <div className="overflow-hidden rounded-3xl border border-violet-100 bg-white shadow-xl shadow-violet-100">
-        <div className="relative aspect-[4/5] w-full">
-          <Image
-            src="/alisson-founder.jpg"
-            alt="Alisson Jordi Wisenteiner, founder da Pro Growth Global"
-            fill
-            className="object-cover"
-            sizes="(max-width: 640px) 100vw, 576px"
-            priority
-          />
-        </div>
-        <div className="p-6">
-          <h1 className="font-poppins text-2xl font-bold tracking-tight">
-            Alisson Jordi Wisenteiner
-          </h1>
-          <p className="text-sm text-slate-500">Founder — Pro Growth Global</p>
-          <div className="mt-4 rounded-2xl border-l-4 border-green-500 bg-green-50 px-4 py-3">
-            <p className="text-pretty text-sm font-medium text-green-800">
-              &quot;Comecei aos 14 anos, com -R$ 160 emprestados.&quot;
-            </p>
+        <div className="flex items-center gap-4 p-5">
+          <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl">
+            <Image
+              src="/alisson-founder.jpg"
+              alt="Alisson Jordi Wisenteiner, founder da Pro Growth Global"
+              fill
+              className="object-cover"
+              sizes="96px"
+              priority
+            />
           </div>
-          <div className="mt-5 grid grid-cols-3 gap-3 text-center">
+          <div className="min-w-0">
+            <h1 className="font-poppins text-xl font-bold leading-tight tracking-tight">
+              Alisson Jordi Wisenteiner
+            </h1>
+            <p className="text-sm text-slate-500">Founder — Pro Growth Global</p>
+          </div>
+        </div>
+
+        <div className="px-5 pb-5">
+          <div className="grid grid-cols-3 gap-3 text-center">
             <Stat big="+2.157" small="alunos" />
             <Stat big="+R$ 67M" small="gerados" />
             <Stat big="+15 anos" small="experiência" />
           </div>
         </div>
+      </div>
+
+      {/* Bloco de história */}
+      <div className="mt-5 rounded-3xl border border-violet-100 bg-white p-6 shadow-sm">
+        <span className="inline-flex items-center rounded-full bg-violet-100 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-violet-700">
+          Minha história
+        </span>
+        <div className="mt-4 space-y-4 text-pretty text-[15px] leading-relaxed text-slate-600">
+          <p>
+            Comecei a trabalhar aos 14 anos. Montador de calçado numa esteira, chão de fábrica.
+            Enquanto os amigos jogavam bola, eu cumpria turno.
+          </p>
+          <p>
+            Decidi estudar comércio exterior. Saí da esteira. Entrei em empresas de importação e
+            exportação.
+          </p>
+          <p>
+            Foi ali que descobri o dropshipping, numa época em que ninguém falava nisso no Brasil.
+            Sem curso. Sem mentor. Só o mesmo raciocínio que me tirou da linha de produção.
+          </p>
+          <p>
+            Anos operando, testando, ajustando. Até entender que o problema nunca foi o modelo. Era
+            quem operava sem entender o próprio processo. Igual eu, antes, na esteira.
+          </p>
+        </div>
+
+        <blockquote className="mt-5 rounded-2xl border-l-4 border-violet-500 bg-violet-50 px-5 py-4">
+          <p className="text-pretty text-[15px] font-medium italic leading-relaxed text-violet-900">
+            &quot;Quem não entende o processo, nunca sai da linha de produção. Quem entende, constrói a
+            própria esteira.&quot;
+          </p>
+          <cite className="mt-2 block text-sm font-semibold not-italic text-violet-700">
+            Alisson Jordi
+          </cite>
+        </blockquote>
+
+        <p className="mt-5 text-pretty text-[15px] font-medium leading-relaxed text-slate-700">
+          Foi daí que nasceu o <span className="font-bold text-violet-700">Método VÉRTEBRA™</span>. E
+          foi daí que nasceu a <span className="font-bold text-violet-700">Pro Growth Global</span>.
+        </p>
       </div>
 
       <div className="mt-6">

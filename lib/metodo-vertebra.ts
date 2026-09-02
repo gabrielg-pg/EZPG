@@ -79,8 +79,8 @@ export const VERTEBRA_QUESTIONS: Record<VertebraAnswerKey, VertebraQuestion> = {
     title: "TRABALHO +8H/DIA E NÃO CONSIGO GUARDAR DINHEIRO",
     subtitle: "O quanto isso é a sua realidade?",
     options: [
-      { value: "nao_sobra", label: "Não sobra nada" },
-      { value: "ate_guardo", label: "Até guardo" },
+      { value: "nao_sobra", label: "Não sobra nada", emoji: "😰" },
+      { value: "ate_guardo", label: "Até guardo", emoji: "💵" },
       { value: "ta_rico", label: "Tá rico", emoji: "💰" },
     ],
   },
@@ -89,8 +89,8 @@ export const VERTEBRA_QUESTIONS: Record<VertebraAnswerKey, VertebraQuestion> = {
     title: "PERDI TODAS AS OPORTUNIDADES DE GANHAR DINHEIRO NA INTERNET",
     subtitle: "O quanto isso é a sua realidade?",
     options: [
-      { value: "nao_aguento", label: "Não aguento" },
-      { value: "cascalho", label: "Consegui fazer cascalho" },
+      { value: "nao_aguento", label: "Não aguento", emoji: "😩" },
+      { value: "cascalho", label: "Consegui fazer cascalho", emoji: "💵" },
       { value: "voando_alto", label: "TÔ VOANDO ALTO", emoji: "🚀" },
     ],
   },
@@ -99,8 +99,8 @@ export const VERTEBRA_QUESTIONS: Record<VertebraAnswerKey, VertebraQuestion> = {
     title: "TENHO MEDO DE PERDER TEMPO E DINHEIRO COM NEGÓCIO ONLINE...",
     subtitle: "O quanto isso é a sua realidade?",
     options: [
-      { value: "minha_realidade", label: "100% minha realidade" },
-      { value: "desconfiado", label: "Sou desconfiado" },
+      { value: "minha_realidade", label: "100% minha realidade", emoji: "😨" },
+      { value: "desconfiado", label: "Sou desconfiado", emoji: "🤨" },
       { value: "pra_cima", label: "PRA CIMA DELES", emoji: "🔥" },
     ],
   },
