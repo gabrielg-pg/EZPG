@@ -7,7 +7,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { LayoutDashboard, Store, Users, LogOut, Menu, X, ChevronRight, Loader2, Calendar, Rocket, KeyRound, TrendingUp, KanbanSquare, ClipboardList, Megaphone, Gauge, MessageSquareText, Sparkles, HandCoins, BarChart3, FileText, Building2, Filter, UserRound, Share2 } from "lucide-react"
+import { LayoutDashboard, Store, Users, LogOut, Menu, X, ChevronRight, Loader2, Calendar, Rocket, KeyRound, TrendingUp, KanbanSquare, ClipboardList, Megaphone, Gauge, MessageSquareText, Sparkles, HandCoins, BarChart3, FileText, Building2, Filter, UserRound, Share2, Target } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { logoutAction } from "@/app/actions/auth-actions"
 
@@ -40,6 +40,7 @@ export function DashboardLayout({ children, userRoles = ["user"] }: DashboardLay
     { name: "PG Dash", href: "/pg-dash", icon: Gauge, roles: ["admin", "zona_execucao"] },
     { name: "Funil Formulário", href: "/crm", icon: KanbanSquare, roles: ["admin", "gestor_ads"] },
     { name: "Funil QUIZ", href: "/funil", icon: Filter, roles: ["admin", "gestor_ads"] },
+  { name: "Funil VÉRTEBRA", href: "/zona-de-execucao/funil-vertebra", icon: Target, roles: ["admin", "gestor_ads"] },
     { name: "Raio-X dos Planos", href: "/raiox-planos", icon: BarChart3, roles: ["admin"] },
     { name: "Financeiro", href: "/financeiro", icon: TrendingUp, roles: ["admin"] },
     { name: "Usuários", href: "/admin", icon: Users, roles: ["admin"] },
