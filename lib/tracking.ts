@@ -37,14 +37,35 @@ export function trackQuizResult(funnelName: string, score: number, passed: boole
   call("trackMetaQuizComplete", funnelName, passed)
 }
 
-/** Início da reprodução do vídeo da VSL. */
-export function trackVideoStart() {
-  call("trackVideoStart")
+/** Início da reprodução de um vídeo (VSL ou depoimento). */
+export function trackVideoStart(videoTitle?: string, funnelName?: string) {
+  call("trackVideoStart", videoTitle, funnelName)
 }
 
-/** Conclusão do vídeo da VSL. */
-export function trackVideoComplete() {
-  call("trackVideoComplete")
+/** Conclusão de um vídeo (VSL ou depoimento). */
+export function trackVideoComplete(videoTitle?: string, funnelName?: string) {
+  call("trackVideoComplete", videoTitle, funnelName)
+}
+
+/** Visualização de uma etapa/tela do funil (mapeia todas as telas, sem furos). */
+export function trackFunnelStep(
+  funnelName: string,
+  funnelNumber: number,
+  stepNumber: number,
+  stepName: string,
+) {
+  call("trackFunnelStep", funnelName, funnelNumber, stepNumber, stepName)
+}
+
+/** Captura de lead via formulário — conversão (dispara GA generate_lead + Meta Lead). */
+export function trackLeadCapture(funnelName: string, funnelNumber: number) {
+  call("trackLeadCapture", funnelName, funnelNumber)
+  call("trackMetaLeadCapture", funnelName)
+}
+
+/** Conclusão do funil, ex.: redirecionamento para a VSL. */
+export function trackFunnelComplete(funnelName: string, funnelNumber: number) {
+  call("trackFunnelComplete", funnelName, funnelNumber)
 }
 
 /** Clique no botão de WhatsApp — conversão (dispara GA + Meta). */

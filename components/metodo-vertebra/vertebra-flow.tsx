@@ -10,9 +10,61 @@ import {
   type VertebraQuestion,
 } from "@/lib/metodo-vertebra"
 import { submitVertebraLead } from "@/app/actions/metodo-vertebra-actions"
+import {
+  trackFunnelEntry,
+  trackFunnelStep,
+  trackQuizAnswer,
+  trackVideoStart,
+  trackLeadCapture,
+  trackFunnelComplete,
+} from "@/lib/tracking"
 
 const VSL_URL = "https://progrowth-execucao.vercel.app/quem-somos"
 const PURPLE = "#6B21A8"
+
+// Identificação do funil no GA4 / Meta Pixel
+const FUNNEL_NAME = "Funil 4 - Método VÉRTEBRA"
+const FUNNEL_NUMBER = 4
+
+// Rótulos legíveis de cada pergunta (para os eventos de etapa)
+const QUESTION_STEP_LABELS: Record<VertebraAnswerKey, string> = {
+  target_income: "Meta de renda",
+  gender: "Gênero",
+  employment_status: "Situação atual",
+  current_income: "Renda atual",
+  affirmation_1: "Afirmação 1",
+  affirmation_2: "Afirmação 2",
+  affirmation_3: "Afirmação 3",
+  available_time: "Tempo disponível",
+  main_blocker: "Maior trava",
+  income_use_case: "Uso da renda",
+}
+
+// Nome legível de cada tela (mapeamento completo do funil para o GA4)
+function stepLabel(step: StepKind): string {
+  switch (step.kind) {
+    case "question": {
+      const n = VERTEBRA_QUESTION_ORDER.indexOf(step.key) + 1
+      return `Pergunta ${n} - ${QUESTION_STEP_LABELS[step.key]}`
+    }
+    case "mecanismo":
+      return "Mecanismo de Troca"
+    case "method":
+      return "Método VÉRTEBRA"
+    case "social":
+      return "Prova Social"
+    case "authority":
+      return "Autoridade"
+    case "approval":
+      return "Aprovação"
+    case "result":
+      return "Resultado Personalizado"
+    case "contact":
+      return "Captura de Contato"
+    case "redirect":
+      return "Redirect VSL"
+  }
+}
 
 // Sequência completa das 16 telas
 type StepKind =
@@ -58,6 +110,16 @@ export function VertebraFlow() {
   // progresso visual (1..100)
   const progress = Math.round(((stepIndex + 1) / totalSteps) * 100)
 
+  // Entrada no funil (dispara uma única vez)
+  useEffect(() => {
+    trackFunnelEntry(FUNNEL_NAME, FUNNEL_NUMBER)
+  }, [])
+
+  // Visualização de cada tela — mapeia todas as etapas no GA4, sem furos
+  useEffect(() => {
+    trackFunnelStep(FUNNEL_NAME, FUNNEL_NUMBER, stepIndex + 1, stepLabel(STEPS[stepIndex]))
+  }, [stepIndex])
+
   const goNext = useCallback(() => {
     setStepIndex((i) => Math.min(i + 1, STEPS.length - 1))
     setAnimKey((k) => k + 1)
@@ -71,6 +133,9 @@ export function VertebraFlow() {
   const handleAnswer = useCallback(
     (key: VertebraAnswerKey, value: string) => {
       setAnswers((prev) => ({ ...prev, [key]: value }))
+      // evento de resposta (quiz_answer) com o número da pergunta na sequência
+      const questionNumber = VERTEBRA_QUESTION_ORDER.indexOf(key) + 1
+      trackQuizAnswer(FUNNEL_NAME, questionNumber, value)
       // pequeno atraso para o usuário ver a seleção antes de avançar
       window.setTimeout(() => goNext(), 220)
     },
@@ -264,7 +329,10 @@ function MecanismoScreen({ onNext, onBack }: { onNext: () => void; onBack: () =>
           ) : (
             <button
               type="button"
-              onClick={() => setPlaying(true)}
+              onClick={() => {
+                setPlaying(true)
+                trackVideoStart("Depoimento Aluno - Método VÉRTEBRA", FUNNEL_NAME)
+              }}
               aria-label="Reproduzir depoimento"
               className="group absolute inset-0 h-full w-full"
             >
@@ -601,6 +669,8 @@ function ContactScreen({ answers, onDone }: { answers: VertebraAnswers; onDone: 
       utm_campaign: utm?.get("utm_campaign") ?? null,
     })
     if (res.ok) {
+      // conversão: lead capturado via formulário (GA generate_lead + Meta Lead)
+      trackLeadCapture(FUNNEL_NAME, FUNNEL_NUMBER)
       onDone()
     } else {
       setError(res.error ?? "Erro ao enviar. Tente novamente.")
@@ -665,6 +735,8 @@ function ContactScreen({ answers, onDone }: { answers: VertebraAnswers; onDone: 
 
 function RedirectScreen() {
   useEffect(() => {
+    // conclusão do funil: usuário concluiu e será levado para a VSL
+    trackFunnelComplete(FUNNEL_NAME, FUNNEL_NUMBER)
     const t = window.setTimeout(() => {
       window.location.href = VSL_URL
     }, 1500)

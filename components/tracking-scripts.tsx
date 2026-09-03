@@ -72,17 +72,50 @@ export function TrackingScripts() {
           };
 
           // Eventos de v\u00eddeo usam os nomes RECOMENDADOS do GA4 (video_start / video_complete)
-          window.trackVideoStart = function() {
+          window.trackVideoStart = function(videoTitle, funnelName) {
             gtag('event', 'video_start', {
-              'video_title': 'VSL - Quem Somos',
-              'funnel_name': 'Funil 1 - VSL Quem Somos'
+              'video_title': videoTitle || 'VSL - Quem Somos',
+              'funnel_name': funnelName || 'Funil 1 - VSL Quem Somos'
             });
           };
 
-          window.trackVideoComplete = function() {
+          window.trackVideoComplete = function(videoTitle, funnelName) {
             gtag('event', 'video_complete', {
-              'video_title': 'VSL - Quem Somos',
-              'funnel_name': 'Funil 1 - VSL Quem Somos'
+              'video_title': videoTitle || 'VSL - Quem Somos',
+              'funnel_name': funnelName || 'Funil 1 - VSL Quem Somos'
+            });
+          };
+
+          // Visualizacao de cada etapa/tela do funil (mapeia todas as telas, sem furos)
+          window.trackFunnelStep = function(funnelName, funnelNumber, stepNumber, stepName) {
+            gtag('event', 'funnel_step', {
+              'event_category': 'pro_growth_funnel',
+              'event_label': funnelName + ' - ' + stepName,
+              'funnel_name': funnelName,
+              'funnel_number': funnelNumber,
+              'step_number': stepNumber,
+              'step_name': stepName
+            });
+          };
+
+          // Captura de lead via formulario (evento RECOMENDADO do GA4, marcavel como conversao)
+          window.trackLeadCapture = function(funnelName, funnelNumber) {
+            gtag('event', 'generate_lead', {
+              'currency': 'BRL',
+              'value': 1,
+              'funnel_name': funnelName,
+              'funnel_number': funnelNumber,
+              'method': 'form'
+            });
+          };
+
+          // Conclusao do funil (ex.: redirecionamento para a VSL)
+          window.trackFunnelComplete = function(funnelName, funnelNumber) {
+            gtag('event', 'funnel_complete', {
+              'event_category': 'pro_growth_funnel',
+              'event_label': funnelName,
+              'funnel_name': funnelName,
+              'funnel_number': funnelNumber
             });
           };
 
@@ -143,6 +176,15 @@ export function TrackingScripts() {
             fbq('track', 'Lead', {
               content_name: funnelName + ' - WhatsApp Click',
               content_category: 'conversion',
+              value: 1,
+              currency: 'BRL'
+            });
+          };
+
+          window.trackMetaLeadCapture = function(funnelName) {
+            fbq('track', 'Lead', {
+              content_name: funnelName + ' - Lead Capturado',
+              content_category: 'lead_capture',
               value: 1,
               currency: 'BRL'
             });
