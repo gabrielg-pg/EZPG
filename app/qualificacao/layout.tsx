@@ -1,6 +1,5 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { TrackingScripts } from "@/components/tracking-scripts"
 
 export const metadata: Metadata = {
   title: "Qualificação — Pro Growth Global™",

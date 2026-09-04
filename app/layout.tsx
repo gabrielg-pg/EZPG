@@ -2,6 +2,7 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Inter, Geist_Mono, Poppins } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
+import { TrackingScripts } from "@/components/tracking-scripts"
 import "./globals.css"
 
 const _inter = Inter({ subsets: ["latin"] })
@@ -39,6 +40,8 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" className={poppins.variable}>
       <body className={`font-sans antialiased`}>
+        {/* GA4 + Meta Pixel em todas as páginas (PageView + funções de evento dos funis) */}
+        <TrackingScripts />
         {children}
         <Analytics />
       </body>

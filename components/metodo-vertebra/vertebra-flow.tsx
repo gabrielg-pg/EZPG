@@ -23,7 +23,7 @@ const VSL_URL = "https://progrowth-execucao.vercel.app/quem-somos"
 const PURPLE = "#6B21A8"
 
 // Identificação do funil no GA4 / Meta Pixel
-const FUNNEL_NAME = "Funil 4 - Método VÉRTEBRA"
+const FUNNEL_NAME = "Funil VÉRTEBRA"
 const FUNNEL_NUMBER = 4
 
 // Rótulos legíveis de cada pergunta (para os eventos de etapa)
@@ -659,22 +659,28 @@ function ContactScreen({ answers, onDone }: { answers: VertebraAnswers; onDone: 
     setLoading(true)
     setError(null)
     const utm = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null
-    const res = await submitVertebraLead({
-      nome: nome.trim(),
-      email: email.trim(),
-      whatsapp: whatsapp.trim(),
-      respostas: answers,
-      utm_source: utm?.get("utm_source") ?? null,
-      utm_medium: utm?.get("utm_medium") ?? null,
-      utm_campaign: utm?.get("utm_campaign") ?? null,
-    })
-    if (res.ok) {
-      // conversão: lead capturado via formulário (GA generate_lead + Meta Lead)
-      trackLeadCapture(FUNNEL_NAME, FUNNEL_NUMBER)
+    try {
+      const res = await submitVertebraLead({
+        nome: nome.trim(),
+        email: email.trim(),
+        whatsapp: whatsapp.trim(),
+        respostas: answers,
+        utm_source: utm?.get("utm_source") ?? null,
+        utm_medium: utm?.get("utm_medium") ?? null,
+        utm_campaign: utm?.get("utm_campaign") ?? null,
+      })
+      if (res.ok) {
+        // conversão: lead capturado via formulário (GA generate_lead + Meta Lead)
+        trackLeadCapture(FUNNEL_NAME, FUNNEL_NUMBER)
+      } else {
+        console.error("[v0] Falha ao salvar lead VÉRTEBRA:", res.error)
+      }
+    } catch (err) {
+      // Nunca deixa um erro de rede/servidor travar o funil: o lead segue para a VSL.
+      console.error("[v0] Erro ao enviar lead VÉRTEBRA:", err)
+    } finally {
+      // Independente do resultado do salvamento, avançamos para a VSL.
       onDone()
-    } else {
-      setError(res.error ?? "Erro ao enviar. Tente novamente.")
-      setLoading(false)
     }
   }
 

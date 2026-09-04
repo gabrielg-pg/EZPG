@@ -1,7 +1,6 @@
 import type React from "react"
 import type { Metadata } from "next"
 import Script from "next/script"
-import { TrackingScripts } from "@/components/tracking-scripts"
 
 const OG_THUMB = "https://vumbnail.com/1214853650.jpg"
 
@@ -39,9 +38,6 @@ export default function QuemSomosLayout({ children }: { children: React.ReactNod
       {/* SDK do Vimeo — afterInteractive é o correto em layout aninhado do App Router.
           O vídeo em si dá autoplay pelo próprio iframe; o SDK só controla som e tempo. */}
       <Script src="https://player.vimeo.com/api/player.js" strategy="afterInteractive" />
-
-      {/* Rastreamento GA4 + Meta Pixel (com as funções de evento dos funis) */}
-      <TrackingScripts />
 
       {children}
     </>
