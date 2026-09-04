@@ -50,21 +50,31 @@ export async function updateUser(
   }
 
   try {
-    // Update user basic info (keep first role as legacy role field)
-    const primaryRole = data.roles[0] || "user"
+    // Persistimos EXATAMENTE as permissões marcadas pelo admin — nada é adicionado
+    // automaticamente. O array de roles é a fonte da verdade (tabela user_roles).
+    const selectedRoles = Array.from(new Set(data.roles.filter((r) => r && r.trim() !== "")))
+    if (selectedRoles.length === 0) {
+      return { success: false, error: "Selecione ao menos uma permissão para o usuário" }
+    }
+
+    // users.role é apenas um espelho técnico (compat. legada) e sua constraint NÃO aceita
+    // módulos como "blog". Usamos o primeiro NÍVEL DE ACESSO marcado; se só houver módulos
+    // selecionados, gravamos "user" na coluna espelho — mas user_roles guarda exatamente o
+    // que foi marcado (é o que de fato controla o acesso no sistema).
+    const MODULE_ROLES = ["blog", "esteira", "nexus_growth"]
+    const accessRoles = selectedRoles.filter((r) => !MODULE_ROLES.includes(r))
+    const primaryRole = accessRoles[0] || "user"
+
     await sql`
       UPDATE users 
       SET name = ${data.name}, email = ${data.email}, role = ${primaryRole}, status = ${data.status}, updated_at = NOW()
       WHERE id = ${userId}
     `
 
-    // Update user_roles table
+    // Substitui as roles pelo conjunto exato selecionado.
     await sql`DELETE FROM user_roles WHERE user_id = ${userId}`
-    
-    for (const role of data.roles) {
-      await sql`
-        INSERT INTO user_roles (user_id, role) VALUES (${userId}, ${role})
-      `
+    for (const role of selectedRoles) {
+      await sql`INSERT INTO user_roles (user_id, role) VALUES (${userId}, ${role})`
     }
 
     revalidatePath("/admin")
@@ -75,7 +85,9 @@ export async function updateUser(
   }
 }
 
-export async function deleteUser(userId: number, transferToUserId: number) {
+// transferToUserId é OPCIONAL. Se informado, os registros do usuário são transferidos para
+// o destino antes da exclusão. Se não, o usuário é excluído diretamente (sem transferência).
+export async function deleteUser(userId: number, transferToUserId?: number | null) {
   const { user } = await getSession()
   if (!user || !user.role.includes("admin")) {
     return { success: false, error: "Não autorizado" }
@@ -86,28 +98,31 @@ export async function deleteUser(userId: number, transferToUserId: number) {
     return { success: false, error: "Não é possível excluir o próprio usuário" }
   }
 
-  if (!transferToUserId) {
-    return { success: false, error: "Selecione um usuário para transferir os dados" }
-  }
-
-  if (transferToUserId === userId) {
+  if (transferToUserId && transferToUserId === userId) {
     return { success: false, error: "Não é possível transferir para o mesmo usuário" }
   }
 
   try {
-    // Transfer stores created by the user
-    await sql`UPDATE stores SET created_by = ${transferToUserId} WHERE created_by = ${userId}`
+    if (transferToUserId) {
+      // Modo transferência: reatribui os registros ao usuário escolhido.
+      await sql`UPDATE stores SET created_by = ${transferToUserId} WHERE created_by = ${userId}`
+      await sql`UPDATE meetings SET attendant_user_id = ${transferToUserId} WHERE attendant_user_id = ${userId}`
+      await sql`UPDATE meetings SET performer_user_id = ${transferToUserId} WHERE performer_user_id = ${userId}`
+      await sql`UPDATE demandas SET created_by = ${transferToUserId} WHERE created_by = ${userId}`
+      await sql`UPDATE followups SET created_by = ${transferToUserId} WHERE created_by = ${userId}`
+    } else {
+      // Modo exclusão direta: solta as referências que aceitam NULL e remove as que não aceitam.
+      await sql`UPDATE stores SET created_by = NULL WHERE created_by = ${userId}`
+      await sql`UPDATE demandas SET created_by = NULL WHERE created_by = ${userId}`
+      await sql`UPDATE followups SET created_by = NULL WHERE created_by = ${userId}`
+      // meetings.attendant_user_id / performer_user_id são NOT NULL: as reuniões do usuário
+      // são removidas junto com ele.
+      await sql`DELETE FROM meetings WHERE attendant_user_id = ${userId} OR performer_user_id = ${userId}`
+    }
 
-    // Transfer meetings where user is attendant
-    await sql`UPDATE meetings SET attendant_user_id = ${transferToUserId} WHERE attendant_user_id = ${userId}`
-
-    // Transfer meetings where user is performer
-    await sql`UPDATE meetings SET performer_user_id = ${transferToUserId} WHERE performer_user_id = ${userId}`
-
-    // Delete user roles
+    // user_roles e sessions têm ON DELETE CASCADE, mas removemos explicitamente por clareza.
     await sql`DELETE FROM user_roles WHERE user_id = ${userId}`
-
-    // Delete the user
+    await sql`DELETE FROM sessions WHERE user_id = ${userId}`
     await sql`DELETE FROM users WHERE id = ${userId}`
 
     revalidatePath("/admin")

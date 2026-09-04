@@ -3,21 +3,29 @@ import { redirect } from "next/navigation"
 export const dynamic = "force-dynamic"
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { ExecutionZoneCards } from "@/components/execution-zone-cards"
+import { createExecutionZoneCardsTable, getExecutionZoneCards } from "@/app/actions/execution-zone-actions"
 
 export default async function ZonaDeExecucaoPage() {
   const user = await requireAuth()
 
-  const userRole = user.role?.toLowerCase() || ""
-  const roles = [userRole]
+  const roles = (user.roles ?? [user.role]).map((r) => r.toLowerCase())
 
-  // Acesso permitido para admin, comercial e zona_execucao
-  if (!["admin", "comercial", "zona_execucao"].includes(userRole)) {
+  // Acesso permitido para admin, comercial, zona_execucao, gestor_ads e mineracao
+  if (!roles.some((r) => ["admin", "comercial", "zona_execucao", "gestor_ads", "mineracao"].includes(r))) {
     redirect("/login")
   }
 
+  // Gestor de ADS (sem ser admin) só enxerga a aba Criativos — vai direto para ela
+  if (roles.includes("gestor_ads") && !roles.includes("admin")) {
+    redirect("/zona-de-execucao/criativos")
+  }
+
+  await createExecutionZoneCardsTable()
+  const cards = await getExecutionZoneCards()
+
   return (
     <DashboardLayout userRoles={roles}>
-      <ExecutionZoneCards />
+      <ExecutionZoneCards initialCards={cards} />
     </DashboardLayout>
   )
 }

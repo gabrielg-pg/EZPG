@@ -106,7 +106,7 @@ export async function logout(): Promise<void> {
 }
 
 export async function getSession(): Promise<{
-  user: { id: number; username: string; name: string; role: string } | null
+  user: { id: number; username: string; name: string; role: string; roles: string[] } | null
 }> {
   try {
     const cookieStore = cookies()
@@ -135,12 +135,29 @@ export async function getSession(): Promise<{
     }
 
     const session = sessions[0]
+
+    // A tabela user_roles é a fonte da verdade das permissões. Se existir ao menos um registro,
+    // usamos EXATAMENTE essas roles (não reinjetamos users.role, que é só um espelho técnico —
+    // caso contrário "user" reapareceria para quem tem apenas módulos como "blog").
+    // Só recorremos a users.role como fallback quando não há nenhuma role em user_roles.
+    let roles: string[] = []
+    try {
+      const roleRows = await sql`SELECT role FROM user_roles WHERE user_id = ${session.user_id}`
+      roles = (roleRows as Array<{ role: string }>).map((r) => r.role)
+    } catch {
+      roles = []
+    }
+    if (roles.length === 0 && session.role) {
+      roles = [session.role]
+    }
+
     return {
       user: {
         id: session.user_id,
         username: session.username,
         name: session.name,
         role: session.role,
+        roles,
       },
     }
   } catch (error) {
@@ -180,13 +197,23 @@ export async function createUser(data: {
   password: string
   name: string
   role: string
+  roles?: string[]
 }): Promise<{ success: boolean; error?: string }> {
   try {
     const passwordHash = await hashPassword(data.password)
+    const allRoles = Array.from(new Set((data.roles && data.roles.length > 0 ? data.roles : [data.role]).filter(Boolean)))
 
+    // Inserção atômica: cria o usuário e todas as roles em uma única instrução (CTE).
+    // Se qualquer role violar constraints, NADA é gravado — evita usuários órfãos sem roles.
     await sql`
-      INSERT INTO users (username, email, password_hash, name, role, status)
-      VALUES (${data.username}, ${data.email}, ${passwordHash}, ${data.name}, ${data.role}, 'ativo')
+      WITH new_user AS (
+        INSERT INTO users (username, email, password_hash, name, role, status)
+        VALUES (${data.username}, ${data.email}, ${passwordHash}, ${data.name}, ${data.role}, 'ativo')
+        RETURNING id
+      )
+      INSERT INTO user_roles (user_id, role)
+      SELECT new_user.id, r
+      FROM new_user, unnest(${allRoles}::text[]) AS r
     `
 
     return { success: true }
@@ -194,6 +221,9 @@ export async function createUser(data: {
     console.error("Create user error:", error)
     if (error && typeof error === "object" && "code" in error && (error as any).code === "23505") {
       return { success: false, error: "Usuário ou email já existe" }
+    }
+    if (error && typeof error === "object" && "code" in error && (error as any).code === "23514") {
+      return { success: false, error: "Uma das permissões selecionadas é inválida" }
     }
     return { success: false, error: "Erro ao criar usuário" }
   }

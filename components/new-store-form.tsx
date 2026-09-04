@@ -61,7 +61,7 @@ const accountsGlobalPlan = [
   { id: "shopify", name: "Shopify" },
   { id: "hostinger", name: "Hostinger" },
   { id: "1st_information", name: "1ST Information" },
-  { id: "hypersku", name: "HyperSKU" },
+  { id: "hypersku", name: "DV Shipping" },
 ]
 
 interface FormData {
@@ -71,6 +71,7 @@ interface FormData {
   customerName: string
   birthDate: string
   cpf: string
+  passportNumber: string
   address: string
   addressNumber: string
   cep: string
@@ -178,6 +179,7 @@ export function NewStoreForm() {
     customerName: "",
     birthDate: "",
     cpf: "",
+    passportNumber: "",
     address: "",
     addressNumber: "",
     cep: "",
@@ -325,7 +327,8 @@ export function NewStoreForm() {
         ...formData,
         birthDate: parseDateBRToISO(formData.birthDate),
         numProducts: parseInt(formData.numProducts) || 0,
-        logoReferencesUrl: uploadedFile?.url || undefined,
+        passportNumber: formData.passportNumber.trim() || undefined,
+        passportPhotoUrl: uploadedFile?.url || undefined,
         collections: formData.collections.trim() || undefined,
         storePolicies: formData.storePolicies.trim() || undefined,
       }
@@ -439,78 +442,6 @@ export function NewStoreForm() {
                   className="bg-secondary border-input text-foreground placeholder:text-muted-foreground"
                 />
               </div>
-
-              {/* Logo References Upload */}
-              {uploadAvailable && (
-                <div className="space-y-2">
-                  <Label className="text-foreground">Referências de Logo</Label>
-                  {uploadedFile ? (
-                    <div className="flex items-center gap-3 p-3 rounded-lg border border-primary/30 bg-primary/5">
-                      <FileImage className="h-5 w-5 text-primary shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-foreground font-medium truncate">{uploadedFile.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {(uploadedFile.size / 1024).toFixed(1)} KB
-                        </p>
-                      </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0"
-                        onClick={handleRemoveFile}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <div
-                      onDrop={handleDrop}
-                      onDragOver={handleDragOver}
-                      onDragLeave={handleDragLeave}
-                      onClick={() => fileInputRef.current?.click()}
-                      className={cn(
-                        "flex flex-col items-center justify-center gap-2 p-6 rounded-lg border-2 border-dashed cursor-pointer transition-colors",
-                        isDragging
-                          ? "border-primary bg-primary/10"
-                          : "border-border bg-secondary hover:border-primary/50 hover:bg-secondary/80",
-                      )}
-                    >
-                      {isUploading ? (
-                        <>
-                          <Loader2 className="h-8 w-8 text-primary animate-spin" />
-                          <p className="text-sm text-muted-foreground">Enviando...</p>
-                        </>
-                      ) : (
-                        <>
-                          <Upload className="h-8 w-8 text-muted-foreground" />
-                          <div className="text-center">
-                            <p className="text-sm text-foreground font-medium">
-                              Arraste um arquivo ou clique para selecionar
-                            </p>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              Imagens, PDF ou ZIP (max. 10MB)
-                            </p>
-                          </div>
-                        </>
-                      )}
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        className="hidden"
-                        accept="image/*,.pdf,.zip"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0]
-                          if (file) handleFileUpload(file)
-                        }}
-                      />
-                    </div>
-                  )}
-                  {uploadError && (
-                    <p className="text-xs text-destructive mt-1">{uploadError}</p>
-                  )}
-                </div>
-              )}
 
               {/* Collections */}
               <div className="space-y-2">
@@ -687,6 +618,85 @@ export function NewStoreForm() {
                   />
                 </div>
               </div>
+
+              {/* Passaporte */}
+              <div className="space-y-2">
+                <Label htmlFor="passportNumber" className="text-foreground">
+                  Número do Passaporte
+                </Label>
+                <Input
+                  id="passportNumber"
+                  value={formData.passportNumber}
+                  onChange={(e) => updateFormData("passportNumber", e.target.value.toUpperCase())}
+                  placeholder="Ex: AB123456"
+                  className="bg-secondary border-input text-foreground placeholder:text-muted-foreground"
+                />
+              </div>
+
+              {uploadAvailable && (
+                <div className="space-y-2">
+                  <Label className="text-foreground">Foto do Passaporte</Label>
+                  {uploadedFile ? (
+                    <div className="flex items-center gap-3 p-3 rounded-lg border border-primary/30 bg-primary/5">
+                      <FileImage className="h-5 w-5 text-primary shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-foreground font-medium truncate">{uploadedFile.name}</p>
+                        <p className="text-xs text-muted-foreground">{(uploadedFile.size / 1024).toFixed(1)} KB</p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0"
+                        onClick={handleRemoveFile}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div
+                      onDrop={handleDrop}
+                      onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
+                      onClick={() => fileInputRef.current?.click()}
+                      className={cn(
+                        "flex flex-col items-center justify-center gap-2 p-6 rounded-lg border-2 border-dashed cursor-pointer transition-colors",
+                        isDragging
+                          ? "border-primary bg-primary/10"
+                          : "border-border bg-secondary hover:border-primary/50 hover:bg-secondary/80",
+                      )}
+                    >
+                      {isUploading ? (
+                        <>
+                          <Loader2 className="h-8 w-8 text-primary animate-spin" />
+                          <p className="text-sm text-muted-foreground">Enviando...</p>
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="h-8 w-8 text-muted-foreground" />
+                          <div className="text-center">
+                            <p className="text-sm text-foreground font-medium">
+                              Arraste um arquivo ou clique para selecionar
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1">Imagem ou PDF (max. 10MB)</p>
+                          </div>
+                        </>
+                      )}
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        className="hidden"
+                        accept="image/*,.pdf"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0]
+                          if (file) handleFileUpload(file)
+                        }}
+                      />
+                    </div>
+                  )}
+                  {uploadError && <p className="text-xs text-destructive mt-1">{uploadError}</p>}
+                </div>
+              )}
             </div>
           )}
 
