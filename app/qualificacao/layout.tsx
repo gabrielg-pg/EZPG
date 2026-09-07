@@ -11,10 +11,5 @@ export const metadata: Metadata = {
 }
 
 export default function QualificacaoLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <>
-      <TrackingScripts />
-      {children}
-    </>
-  )
+  return <>{children}</>
 }
