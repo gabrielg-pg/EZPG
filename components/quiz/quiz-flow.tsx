@@ -25,7 +25,7 @@ import { trackFunnelEntry, trackQuizAnswer, trackQuizResult } from "@/lib/tracki
 const FUNNEL_NAME = "Funil 3 - Quiz Inicial"
 const FUNNEL_NUMBER = 3
 
-const VSL_URL = process.env.NEXT_PUBLIC_VSL_URL || "https://progrowth-execucao.vercel.app/quem-somos"
+const VSL_URL = process.env.NEXT_PUBLIC_VSL_URL || "https://www.progrowthglobal.com/quem-somos"
 
 type Screen = "start" | "warning" | "question" | "form" | "result"
 

@@ -14,7 +14,7 @@ type FunnelLinkCardProps = {
   className?: string
 }
 
-const BASE_DOMAIN = "progrowth-execucao.vercel.app"
+const BASE_DOMAIN = "www.progrowthglobal.com"
 
 export function FunnelLinkCard({ title, path, hint, className }: FunnelLinkCardProps) {
   const [copied, setCopied] = useState(false)
