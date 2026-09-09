@@ -19,7 +19,7 @@ import {
   trackFunnelComplete,
 } from "@/lib/tracking"
 
-const VSL_URL = "https://www.progrowth-global.com/quem-somos"
+const VSL_URL = "https://progrowth-global.com/quem-somos"
 const PURPLE = "#6B21A8"
 
 // Identificação do funil no GA4 / Meta Pixel
