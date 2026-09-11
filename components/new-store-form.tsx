@@ -111,7 +111,9 @@ function validateStep(step: number, formData: FormData): string | null {
   }
   if (step === 2) {
     if (!formData.customerName.trim()) return "Nome do cliente é obrigatório"
-    if (!formData.birthDate) return "Data de nascimento é obrigatória"
+    if (!/^\d{2}\/\d{2}\/\d{4}$/.test(formData.birthDate) || !parseDateBRToISO(formData.birthDate)) {
+      return "Informe uma data de nascimento válida no formato DD/MM/AAAA"
+    }
     if (!formData.cpf.trim()) return "CPF é obrigatório"
     if (!formData.address.trim()) return "Endereço é obrigatório"
     if (!formData.cep.trim()) return "CEP é obrigatório"
