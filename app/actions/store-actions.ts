@@ -53,8 +53,8 @@ export async function createStore(data: {
 
   try {
     const storeResult = await sql`
-      INSERT INTO stores (name, store_number, region, plan, progress, status, created_by, drive_link, niche, num_products, country, language, logo_references_url, collections, store_policies)
-      VALUES (${data.storeName}, ${data.storeNumber}, ${data.region}, ${data.plan}, 25, 'em_andamento', ${user.id}, ${data.driveLink || null}, ${data.niche || null}, ${data.numProducts || null}, ${data.country || null}, ${data.language || null}, ${data.logoReferencesUrl || null}, ${data.collections || null}, ${data.storePolicies || null})
+      INSERT INTO stores (name, store_number, region, plan, progress, status, created_by, drive_link, niche, num_products, country, language, logo_references_url, collections, store_policies, created_at)
+      VALUES (${data.storeName}, ${data.storeNumber}, ${data.region}, ${data.plan}, 25, 'em_andamento', ${user.id}, ${data.driveLink || null}, ${data.niche || null}, ${data.numProducts || null}, ${data.country || null}, ${data.language || null}, ${data.logoReferencesUrl || null}, ${data.collections || null}, ${data.storePolicies || null}, CURRENT_TIMESTAMP AT TIME ZONE 'America/Sao_Paulo')
       RETURNING id
     `
 
