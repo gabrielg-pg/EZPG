@@ -30,12 +30,12 @@ export function getBusinessDaysByPlan(plan: string): number {
       return 7
     case "Pro VÉRTEBRA":
     case "Pro Vértebra":
-      return 10
+      return 7
     case "Scale VÉRTEBRA+ BR":
     case "Scale Vértebra":
     case "Scale VÉRTEBRA+ GLOBAL":
     case "Scale Global":
-      return 15
+      return 10
     default:
       return 7
   }
@@ -44,54 +44,53 @@ export function getBusinessDaysByPlan(plan: string): number {
 /**
  * Formata uma data para o formato brasileiro DD/MM/AAAA
  */
-export function formatDateBR(value: string | Date | null | undefined): string {
-  if (!value) return "-"
-
-  let date: Date
-
-  if (value instanceof Date) {
-    date = value
-  } else if (typeof value === "string") {
-    // Se vier como YYYY-MM-DD ou ISO completo
-    if (/^\d{4}-\d{2}-\d{2}/.test(value)) {
-      const isoDate = value.includes("T") ? value : `${value}T12:00:00`
-      date = new Date(isoDate)
-    }
-    // Se vier como DD/MM/YYYY
-    else if (/^\d{2}\/\d{2}\/\d{4}$/.test(value)) {
-      const [dd, mm, yyyy] = value.split("/")
-      date = new Date(`${yyyy}-${mm}-${dd}T12:00:00`)
-    }
-    // Fallback: tenta como Date normal
-    else {
-      date = new Date(value)
-    }
-  } else {
-    return "-"
+function dateFromCivilString(value: string): Date | null {
+  const isoMatch = value.match(/^(\d{4})-(\d{2})-(\d{2})/)
+  if (isoMatch) {
+    const [, year, month, day] = isoMatch
+    const date = new Date(Number(year), Number(month) - 1, Number(day))
+    return date.getFullYear() === Number(year) && date.getMonth() === Number(month) - 1 && date.getDate() === Number(day)
+      ? date
+      : null
   }
 
-  return isNaN(date.getTime()) ? "-" : date.toLocaleDateString("pt-BR")
+  const brMatch = value.match(/^(\d{2})\/(\d{2})\/(\d{4})$/)
+  if (brMatch) {
+    const [, day, month, year] = brMatch
+    return dateFromCivilString(`${year}-${month}-${day}`)
+  }
+
+  return null
+}
+
+function dateFromValue(value: string | Date): Date | null {
+  if (value instanceof Date) {
+    return new Date(value.getFullYear(), value.getMonth(), value.getDate())
+  }
+
+  const civilDate = dateFromCivilString(value)
+  if (civilDate) return civilDate
+
+  const parsed = new Date(value)
+  return Number.isNaN(parsed.getTime())
+    ? null
+    : new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate())
 }
 
 /**
- * Calcula a data de entrega baseada no plano e data de criação
+ * Formata datas civis sem convertê-las para UTC. Isso preserva exatamente o dia
+ * informado no formulário ou retornado pelo banco, sem deslocamento de fuso.
+ */
+export function formatDateBR(value: string | Date | null | undefined): string {
+  if (!value) return "-"
+  const date = dateFromValue(value)
+  return date ? date.toLocaleDateString("pt-BR") : "-"
+}
+
+/**
+ * Calcula a data de entrega baseada no plano e na data civil de criação.
  */
 export function calculateDeliveryDate(createdAt: string | Date, plan: string): Date {
-  let startDate: Date
-
-  if (createdAt instanceof Date) {
-    startDate = createdAt
-  } else if (typeof createdAt === "string") {
-    if (/^\d{4}-\d{2}-\d{2}/.test(createdAt)) {
-      const isoDate = createdAt.includes("T") ? createdAt : `${createdAt}T12:00:00`
-      startDate = new Date(isoDate)
-    } else {
-      startDate = new Date(createdAt)
-    }
-  } else {
-    startDate = new Date()
-  }
-
-  const businessDays = getBusinessDaysByPlan(plan)
-  return addBusinessDays(startDate, businessDays)
+  const startDate = dateFromValue(createdAt) ?? new Date()
+  return addBusinessDays(startDate, getBusinessDaysByPlan(plan))
 }

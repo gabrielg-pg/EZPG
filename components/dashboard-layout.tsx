@@ -7,7 +7,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { LayoutDashboard, Store, Users, LogOut, Menu, X, ChevronRight, Loader2, Calendar, Rocket } from "lucide-react"
+import { LayoutDashboard, Store, Users, LogOut, Menu, X, ChevronRight, Loader2, Calendar, Rocket, KeyRound, TrendingUp, KanbanSquare, ClipboardList, Megaphone, Gauge, MessageSquareText, Sparkles, HandCoins, BarChart3, FileText, Building2, Filter, UserRound, Share2, Target } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { logoutAction } from "@/app/actions/auth-actions"
 
@@ -23,9 +23,26 @@ export function DashboardLayout({ children, userRoles = ["user"] }: DashboardLay
 
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["admin", "zona_execucao"] },
+    { name: "Demandas", href: "/demandas", icon: ClipboardList, roles: ["admin", "comercial", "zona_execucao", "user", "mineracao"] },
     { name: "Nova Loja", href: "/nova-loja", icon: Store, roles: ["admin", "zona_execucao"] },
     { name: "Reuniões", href: "/reunioes", icon: Calendar, roles: ["admin", "comercial"] },
-    { name: "Zona de Execução", href: "/zona-de-execucao", icon: Rocket, roles: ["admin", "comercial", "zona_execucao"] },
+    { name: "Zona de Execução", href: "/zona-de-execucao", icon: Rocket, roles: ["admin", "comercial", "zona_execucao", "mineracao"] },
+    { name: "Blog", href: "/blog", icon: FileText, roles: ["admin", "blog"] },
+    { name: "Onboardings", href: "/zona-de-execucao/onboardings", icon: MessageSquareText, roles: ["admin", "zona_execucao"] },
+    { name: "Vértebra Naming™", href: "/zona-de-execucao/vertebra-naming", icon: Sparkles, roles: ["admin", "zona_execucao"] },
+    { name: "Propostas", href: "/zona-de-execucao/propostas", icon: HandCoins, roles: ["admin"] },
+    { name: "Criativos", href: "/zona-de-execucao/criativos", icon: Megaphone, roles: ["admin", "gestor_ads"] },
+    { name: "Growth Clientes", href: "/zona-de-execucao/growth-clientes", icon: TrendingUp, roles: ["admin"] },
+    { name: "Nexus Growth", href: "/zona-de-execucao/nexus-growth", icon: Share2, roles: ["admin", "nexus_growth"] },
+    { name: "Clientes", href: "/zona-de-execucao/clientes", icon: UserRound, roles: ["admin"] },
+    { name: "Empresas", href: "/zona-de-execucao/empresas", icon: Building2, roles: ["admin", "zona_execucao"] },
+    { name: "Cofre", href: "/cofre", icon: KeyRound, roles: ["admin"] },
+    { name: "PG Dash", href: "/pg-dash", icon: Gauge, roles: ["admin", "zona_execucao"] },
+    { name: "Funil Formulário", href: "/crm", icon: KanbanSquare, roles: ["admin", "gestor_ads"] },
+    { name: "Funil QUIZ", href: "/funil", icon: Filter, roles: ["admin", "gestor_ads"] },
+  { name: "Funil VÉRTEBRA", href: "/zona-de-execucao/funil-vertebra", icon: Target, roles: ["admin", "gestor_ads"] },
+    { name: "Raio-X dos Planos", href: "/raiox-planos", icon: BarChart3, roles: ["admin"] },
+    { name: "Financeiro", href: "/financeiro", icon: TrendingUp, roles: ["admin"] },
     { name: "Usuários", href: "/admin", icon: Users, roles: ["admin"] },
   ]
 
@@ -60,12 +77,12 @@ export function DashboardLayout({ children, userRoles = ["user"] }: DashboardLay
             <div className="flex items-center gap-3">
               <Image
                 src="https://i.imgur.com/jfNDVLp.png"
-                alt="Pro Growth Logo"
+                alt="PRO GROWTH GLOBAL Logo"
                 width={40}
                 height={40}
                 className="rounded-xl shadow-lg shadow-primary/20"
               />
-              <span className="text-lg font-bold text-white tracking-tight">Pro Growth</span>
+              <span className="text-lg font-bold text-white tracking-tight">PRO GROWTH GLOBAL</span>
             </div>
             <button 
               onClick={() => setSidebarOpen(false)} 

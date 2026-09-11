@@ -12,6 +12,8 @@ export default async function HomePage() {
       redirect("/dashboard")
     } else if (role === "comercial") {
       redirect("/reunioes")
+    } else if (role === "gestor_ads") {
+      redirect("/zona-de-execucao/criativos")
     } else {
       redirect("/zona-de-execucao")
     }
