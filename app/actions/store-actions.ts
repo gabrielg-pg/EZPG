@@ -14,7 +14,10 @@ export async function getStores() {
     FROM stores s
     LEFT JOIN customers c ON c.store_id = s.id
     LEFT JOIN users u ON s.created_by = u.id
-    ORDER BY CAST(s.store_number AS INTEGER) DESC
+    ORDER BY CASE
+      WHEN s.store_number ~ '^[0-9]+$' THEN CAST(s.store_number AS INTEGER)
+      ELSE 0
+    END DESC, s.store_number DESC
   `
 
   return stores
