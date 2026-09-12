@@ -82,7 +82,8 @@ export async function saveInvestmentGoal(data: { name: string; targetValue: numb
 
 export async function deleteInvestmentAsset(assetId: number) {
   const userId = await adminId()
-  await sql`DELETE FROM investment_value_updates WHERE asset_id=${assetId} AND user_id=${userId}`
+  const [asset] = await sql`SELECT id FROM investment_assets WHERE id=${assetId} AND user_id=${userId} LIMIT 1`
+  if (!asset) throw new Error("Investimento não encontrado.")
   await sql`DELETE FROM investment_transactions WHERE asset_id=${assetId} AND user_id=${userId}`
   await sql`DELETE FROM investment_assets WHERE id=${assetId} AND user_id=${userId}`
   revalidatePath("/investimentos")
