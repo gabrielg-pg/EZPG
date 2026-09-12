@@ -19,6 +19,7 @@ export default async function InvestimentosPage() {
     institution: asset.institution ? String(asset.institution) : null,
     initial_value: Number(asset.initial_value ?? 0),
     current_value: asset.current_value === null || asset.current_value === undefined ? null : Number(asset.current_value),
+    maturity_date: asset.maturity_date ? String(asset.maturity_date) : null,
   }))
 
   const transactions = data.transactions.map((transaction) => ({

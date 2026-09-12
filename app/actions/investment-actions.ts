@@ -22,27 +22,27 @@ export async function getInvestments() {
   return { assets, transactions, goals, settings, allocations }
 }
 
-export async function createInvestmentAsset(data: { name: string; ticker?: string; assetType: string; category: string; institution?: string; initialValue: number; currentValue?: number; currency?: string; indexer?: string }) {
+export async function createInvestmentAsset(data: { name: string; ticker?: string; assetType: string; category: string; institution?: string; initialValue: number; currentValue?: number; maturityDate?: string; currency?: string; indexer?: string }) {
   const userId = await adminId()
   const initialValue = parseBRLInput(data.initialValue)
   if (!data.name?.trim() || initialValue <= 0) throw new Error("Informe um nome e um valor investido válido.")
   const currentValue = data.currentValue === undefined || data.currentValue === null ? initialValue : parseBRLInput(data.currentValue)
-  const [asset] = await sql`INSERT INTO investment_assets (user_id,name,ticker,asset_type,category,institution,initial_value,current_value,currency,indexer,tax_exempt,fgc,created_at,updated_at) VALUES (${userId},${data.name.trim()},${data.ticker?.trim() || null},${data.assetType},${data.category.trim()},${data.institution?.trim() || null},${initialValue},${currentValue},${data.currency || "BRL"},${data.indexer || null},false,false,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP) RETURNING id,name,initial_value,current_value`
+  const [asset] = await sql`INSERT INTO investment_assets (user_id,name,ticker,asset_type,category,institution,initial_value,current_value,currency,indexer,tax_exempt,fgc,maturity_date,created_at,updated_at) VALUES (${userId},${data.name.trim()},${data.ticker?.trim() || null},${data.assetType},${data.category.trim()},${data.institution?.trim() || null},${initialValue},${currentValue},${data.currency || "BRL"},${data.indexer || null},false,false,${data.maturityDate || null},CURRENT_TIMESTAMP,CURRENT_TIMESTAMP) RETURNING id,name,initial_value,current_value,maturity_date`
   if (!asset) throw new Error("Não foi possível criar o ativo.")
   await sql`INSERT INTO investment_transactions (user_id,asset_id,transaction_type,transaction_date,amount,currency,created_at) VALUES (${userId},${asset.id},'Aporte',CURRENT_DATE,${initialValue},${data.currency || "BRL"},CURRENT_TIMESTAMP)`
   revalidatePath("/investimentos")
-  return { id: Number(asset.id), name: String(asset.name), ticker: data.ticker?.trim() || null, category: data.category, institution: data.institution?.trim() || null, initialValue: Number(asset.initial_value), currentValue: Number(asset.current_value ?? asset.initial_value) }
+  return { id: Number(asset.id), name: String(asset.name), ticker: data.ticker?.trim() || null, category: data.category, institution: data.institution?.trim() || null, maturityDate: asset.maturity_date ? String(asset.maturity_date) : null, initialValue: Number(asset.initial_value), currentValue: Number(asset.current_value ?? asset.initial_value) }
 }
 
-export async function updateInvestmentAsset(data: { id: number; name: string; ticker?: string; category: string; institution?: string; initialValue: number; currentValue?: number }) {
+export async function updateInvestmentAsset(data: { id: number; name: string; ticker?: string; category: string; institution?: string; initialValue: number; currentValue?: number; maturityDate?: string }) {
   const userId = await adminId()
   const initialValue = parseBRLInput(data.initialValue)
   const currentValue = data.currentValue === undefined || data.currentValue === null ? initialValue : parseBRLInput(data.currentValue)
   if (!data.name?.trim() || initialValue <= 0 || currentValue < 0) throw new Error("Informe dados válidos para o investimento.")
-  const [asset] = await sql`UPDATE investment_assets SET name=${data.name.trim()},ticker=${data.ticker?.trim() || null},category=${data.category.trim()},institution=${data.institution?.trim() || null},initial_value=${initialValue},current_value=${currentValue},updated_at=CURRENT_TIMESTAMP WHERE id=${data.id} AND user_id=${userId} RETURNING id,name,ticker,category,institution,initial_value,current_value`
+  const [asset] = await sql`UPDATE investment_assets SET name=${data.name.trim()},ticker=${data.ticker?.trim() || null},category=${data.category.trim()},institution=${data.institution?.trim() || null},initial_value=${initialValue},current_value=${currentValue},maturity_date=${data.maturityDate || null},updated_at=CURRENT_TIMESTAMP WHERE id=${data.id} AND user_id=${userId} RETURNING id,name,ticker,category,institution,initial_value,current_value`
   if (!asset) throw new Error("Investimento não encontrado.")
   revalidatePath("/investimentos")
-  return { id: Number(asset.id), name: String(asset.name), ticker: asset.ticker ? String(asset.ticker) : null, category: String(asset.category), institution: asset.institution ? String(asset.institution) : null, initialValue: Number(asset.initial_value), currentValue: Number(asset.current_value ?? asset.initial_value) }
+  return { id: Number(asset.id), name: String(asset.name), ticker: asset.ticker ? String(asset.ticker) : null, category: String(asset.category), institution: asset.institution ? String(asset.institution) : null, initialValue: Number(asset.initial_value), currentValue: Number(asset.current_value ?? asset.initial_value), maturityDate: asset.maturity_date ? String(asset.maturity_date) : null }
 }
 
 export async function seedInitialInvestmentPortfolio() {
@@ -82,9 +82,11 @@ export async function saveInvestmentGoal(data: { name: string; targetValue: numb
 
 export async function deleteInvestmentAsset(assetId: number) {
   const userId = await adminId()
+  await sql`DELETE FROM investment_value_updates WHERE asset_id=${assetId} AND user_id=${userId}`
   await sql`DELETE FROM investment_transactions WHERE asset_id=${assetId} AND user_id=${userId}`
   await sql`DELETE FROM investment_assets WHERE id=${assetId} AND user_id=${userId}`
   revalidatePath("/investimentos")
+  return { deleted: true }
 }
 
 export async function saveInvestmentAllocation(category: string, targetPercentage: number) {
