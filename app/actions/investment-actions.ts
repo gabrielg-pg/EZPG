@@ -26,11 +26,10 @@ export async function createInvestmentAsset(data: { name: string; ticker?: strin
   const userId = await adminId()
   const initialValue = parseBRLInput(data.initialValue)
   if (!data.name?.trim() || initialValue <= 0) throw new Error("Informe um nome e um valor investido válido.")
-  const [asset] = await sql`INSERT INTO investment_assets (user_id,name,ticker,asset_type,category,institution,initial_value,current_value,currency,indexer,tax_exempt,fgc,created_at,updated_at) VALUES (${userId},${data.name.trim()},${data.ticker?.trim() || null},${data.assetType},${data.category.trim()},${data.institution?.trim() || null},${initialValue},${data.currentValue ?? initialValue},${data.currency || "BRL"},${data.indexer || null},false,false,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP) RETURNING *`
-  await sql`INSERT INTO investment_transactions (user_id,asset_id,transaction_type,transaction_date,amount,currency,created_at) VALUES (${userId},${asset.id},'APORTE',CURRENT_DATE,${initialValue},${data.currency || "BRL"},CURRENT_TIMESTAMP)`
-  if (data.currentValue !== null && data.currentValue !== undefined) {
-    await sql`INSERT INTO investment_value_updates (asset_id,user_id,value,reference_date,source_type) VALUES (${asset.id},${userId},${data.currentValue},CURRENT_DATE,'manual')`
-  }
+  const currentValue = data.currentValue === undefined || data.currentValue === null ? initialValue : parseBRLInput(data.currentValue)
+  const [asset] = await sql`INSERT INTO investment_assets (user_id,name,ticker,asset_type,category,institution,initial_value,current_value,currency,indexer,tax_exempt,fgc,created_at,updated_at) VALUES (${userId},${data.name.trim()},${data.ticker?.trim() || null},${data.assetType},${data.category.trim()},${data.institution?.trim() || null},${initialValue},${currentValue},${data.currency || "BRL"},${data.indexer || null},false,false,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP) RETURNING id,name,initial_value,current_value`
+  if (!asset) throw new Error("Não foi possível criar o ativo.")
+  await sql`INSERT INTO investment_transactions (user_id,asset_id,transaction_type,transaction_date,amount,currency,created_at) VALUES (${userId},${asset.id},'Aporte',CURRENT_DATE,${initialValue},${data.currency || "BRL"},CURRENT_TIMESTAMP)`
   revalidatePath("/investimentos")
   return { id: Number(asset.id), name: String(asset.name), initialValue: Number(asset.initial_value), currentValue: Number(asset.current_value ?? asset.initial_value) }
 }
@@ -47,8 +46,7 @@ export async function seedInitialInvestmentPortfolio() {
   ]
   for (const item of initialAssets) {
     const [asset] = await sql`INSERT INTO investment_assets (user_id,name,asset_type,category,subcategory,institution,currency,initial_value,current_value,maturity_date,application_date,indexer,contracted_rate,tax_exempt,fgc,created_at,updated_at) VALUES (${userId},${item.name},'RENDA_FIXA',${item.category},${item.subcategory},${item.institution},'BRL',${item.invested},${item.current ?? null},${item.maturity},${item.application ?? null},${item.name.includes('IPCA') ? 'IPCA' : item.name.includes('CDI') ? 'CDI' : 'SELIC'},${item.name.includes('IPCA') ? '7.59' : item.name.includes('90%') ? '90' : null},${item.name.includes('LCA')},${item.name.includes('LCA')},CURRENT_TIMESTAMP,CURRENT_TIMESTAMP) RETURNING id`
-    await sql`INSERT INTO investment_transactions (user_id,asset_id,transaction_type,transaction_date,amount,currency,created_at) VALUES (${userId},${asset.id},'APORTE',COALESCE(${item.application ?? null}::date,CURRENT_DATE),${item.invested},'BRL',CURRENT_TIMESTAMP)`
-    if (item.current) await sql`INSERT INTO investment_value_updates (asset_id,user_id,value,reference_date,source_type) VALUES (${asset.id},${userId},${item.current},CURRENT_DATE,'manual')`
+    await sql`INSERT INTO investment_transactions (user_id,asset_id,transaction_type,transaction_date,amount,currency,created_at) VALUES (${userId},${asset.id},'Aporte',COALESCE(${item.application ?? null}::date,CURRENT_DATE),${item.invested},'BRL',CURRENT_TIMESTAMP)`
   }
   revalidatePath("/investimentos")
   return { created: true }
