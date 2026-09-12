@@ -7,12 +7,19 @@ export const dynamic = "force-dynamic"
 
 export default async function InvestimentosPage() {
   const user = await requireAdmin()
-  const roles = (user.roles ?? [user.role]).map((role) => role.toLowerCase())
+  const roles = [user.role, ...(user.roles ?? [])]
+    .filter((role): role is string => typeof role === "string" && role.length > 0)
+    .map((role) => role.toLowerCase())
   const data = await getInvestments()
+  const serializableData = JSON.parse(
+    JSON.stringify(data, (_key, value) =>
+      typeof value === "bigint" ? Number(value) : value,
+    ),
+  )
 
   return (
     <DashboardLayout userRoles={roles}>
-      <InvestmentsDashboard initialData={JSON.parse(JSON.stringify(data))} />
+      <InvestmentsDashboard initialData={serializableData} />
     </DashboardLayout>
   )
 }

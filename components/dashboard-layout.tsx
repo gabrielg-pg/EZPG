@@ -47,7 +47,9 @@ export function DashboardLayout({ children, userRoles = ["user"] }: DashboardLay
     { name: "Usuários", href: "/admin", icon: Users, roles: ["admin"] },
   ]
 
-  const normalizedUserRoles = userRoles.map((role) => role.toLowerCase())
+  const normalizedUserRoles = userRoles
+    .filter((role): role is string => typeof role === "string")
+    .map((role) => role.toLowerCase())
   const filteredNavigation = navigation.filter((item) => item.roles.some((role) => normalizedUserRoles.includes(role.toLowerCase())))
 
   const handleLogout = () => {
