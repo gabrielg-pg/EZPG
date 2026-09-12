@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { sql } from "@/lib/db"
 import { requireAdmin } from "@/lib/auth"
+import { parseBRLInput } from "@/lib/investment-money"
 
 async function adminId() {
   const user = await requireAdmin()
@@ -23,8 +24,13 @@ export async function getInvestments() {
 
 export async function createInvestmentAsset(data: { name: string; ticker?: string; assetType: string; category: string; institution?: string; initialValue: number; currentValue?: number; currency?: string; indexer?: string }) {
   const userId = await adminId()
-  const [asset] = await sql`INSERT INTO investment_assets (user_id,name,ticker,asset_type,category,institution,initial_value,current_value,currency,indexer,tax_exempt,fgc,created_at,updated_at) VALUES (${userId},${data.name.trim()},${data.ticker?.trim() || null},${data.assetType},${data.category.trim()},${data.institution?.trim() || null},${data.initialValue},${data.currentValue ?? data.initialValue},${data.currency || "BRL"},${data.indexer || null},false,false,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP) RETURNING *`
-  await sql`INSERT INTO investment_transactions (user_id,asset_id,transaction_type,transaction_date,amount,currency,created_at) VALUES (${userId},${asset.id},'Aporte',CURRENT_DATE,${data.initialValue},${data.currency || "BRL"},CURRENT_TIMESTAMP)`
+  const initialValue = parseBRLInput(data.initialValue)
+  if (!data.name?.trim() || initialValue <= 0) throw new Error("Informe um nome e um valor investido válido.")
+  const [asset] = await sql`INSERT INTO investment_assets (user_id,name,ticker,asset_type,category,institution,initial_value,current_value,currency,indexer,tax_exempt,fgc,created_at,updated_at) VALUES (${userId},${data.name.trim()},${data.ticker?.trim() || null},${data.assetType},${data.category.trim()},${data.institution?.trim() || null},${initialValue},${data.currentValue ?? initialValue},${data.currency || "BRL"},${data.indexer || null},false,false,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP) RETURNING *`
+  await sql`INSERT INTO investment_transactions (user_id,asset_id,transaction_type,transaction_date,amount,currency,created_at) VALUES (${userId},${asset.id},'APORTE',CURRENT_DATE,${initialValue},${data.currency || "BRL"},CURRENT_TIMESTAMP)`
+  if (data.currentValue !== null && data.currentValue !== undefined) {
+    await sql`INSERT INTO investment_value_updates (asset_id,user_id,value,reference_date,source_type) VALUES (${asset.id},${userId},${data.currentValue},CURRENT_DATE,'manual')`
+  }
   revalidatePath("/investimentos")
   return { id: Number(asset.id), name: String(asset.name), initialValue: Number(asset.initial_value), currentValue: Number(asset.current_value ?? asset.initial_value) }
 }
