@@ -11,15 +11,19 @@ export default async function InvestimentosPage() {
     .filter((role): role is string => typeof role === "string" && role.length > 0)
     .map((role) => role.toLowerCase())
   const data = await getInvestments()
-  const serializableData = JSON.parse(
-    JSON.stringify(data, (_key, value) =>
-      typeof value === "bigint" ? Number(value) : value,
-    ),
-  )
+  const assets = data.assets.map((asset) => ({
+    id: Number(asset.id),
+    name: String(asset.name ?? ""),
+    ticker: asset.ticker ? String(asset.ticker) : null,
+    category: asset.category ? String(asset.category) : null,
+    institution: asset.institution ? String(asset.institution) : null,
+    initial_value: Number(asset.initial_value ?? 0),
+    current_value: Number(asset.current_value ?? asset.initial_value ?? 0),
+  }))
 
   return (
     <DashboardLayout userRoles={roles}>
-      <InvestmentsDashboard initialData={serializableData} />
+      <InvestmentsDashboard initialData={{ assets }} />
     </DashboardLayout>
   )
 }

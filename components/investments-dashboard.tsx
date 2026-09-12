@@ -1,82 +1,108 @@
 "use client"
 
-import { useMemo, useState, useTransition } from "react"
-import { useRouter } from "next/navigation"
-import { createInvestmentAsset, createInvestmentTransaction, deleteInvestmentAsset, saveInvestmentGoal } from "@/app/actions/investment-actions"
+import { useState, useTransition } from "react"
+import { createInvestmentAsset } from "@/app/actions/investment-actions"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Progress } from "@/components/ui/progress"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ArrowDownToLine, ArrowUpRight, BarChart3, Calculator, Landmark, Plus, Trash2, Wallet } from "lucide-react"
+import { Plus, Wallet } from "lucide-react"
 
-type Asset = { id:number; name:string; ticker?:string; asset_type:string; category:string; institution?:string; initial_value:number; current_value:number; currency:string }
-type Tx = { id:number; asset_id:number; transaction_type:string; transaction_date:string; amount:number; notes?:string }
-type InvestmentData = { assets:Asset[]; transactions:Tx[]; goals:any[]; settings:any[]; allocations:any[] }
-const emptyInvestmentData: InvestmentData = { assets: [], transactions: [], goals: [], settings: [], allocations: [] }
-const normalizeInvestmentData = (value: Partial<InvestmentData> | null | undefined): InvestmentData => ({
-  assets: Array.isArray(value?.assets) ? value.assets : [],
-  transactions: Array.isArray(value?.transactions) ? value.transactions : [],
-  goals: Array.isArray(value?.goals) ? value.goals : [],
-  settings: Array.isArray(value?.settings) ? value.settings : [],
-  allocations: Array.isArray(value?.allocations) ? value.allocations : [],
-})
-const money = (value:number) => new Intl.NumberFormat("pt-BR", { style:"currency", currency:"BRL", maximumFractionDigits:0 }).format(Number(value || 0))
-const date = (value:string) => new Intl.DateTimeFormat("pt-BR").format(new Date(`${value}T12:00:00`))
-
-export function InvestmentsDashboard({ initialData }: { initialData: InvestmentData }) {
-  const [data, setData] = useState(() => normalizeInvestmentData(initialData ?? emptyInvestmentData))
-  const router = useRouter()
-  const [isPending, startTransition] = useTransition()
-  const [tab, setTab] = useState("visao")
-  const [showAsset, setShowAsset] = useState(false)
-  const [showGoal, setShowGoal] = useState(false)
-  const [showTransaction, setShowTransaction] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [form, setForm] = useState({ name:"", ticker:"", assetType:"Renda fixa", category:"Renda fixa", institution:"", initialValue:"", currentValue:"" })
-  const [goal, setGoal] = useState({ name:"Liberdade financeira", targetValue:"1000000", monthlyContribution:"10000", expectedReturn:"10", targetDate:"" })
-  const [transaction, setTransaction] = useState({ assetId:"", type:"Aporte", date:new Date().toISOString().slice(0,10), amount:"", notes:"" })
-  const total = useMemo(() => data.assets.reduce((sum,a)=>sum+Number(a.current_value||a.initial_value||0),0),[data.assets])
-  const invested = useMemo(() => data.assets.reduce((sum,a)=>sum+Number(a.initial_value||0),0),[data.assets])
-  const gain = total-invested
-  const month = new Date().toISOString().slice(0,7)
-  const monthly = data.transactions.filter(t=>String(t.transaction_date).slice(0,7)===month && /aporte|compra/i.test(t.transaction_type)).reduce((s,t)=>s+Number(t.amount||0),0)
-  const classes = useMemo(()=>Array.from(data.assets.reduce((map,a)=>map.set(a.category,(map.get(a.category)||0)+Number(a.current_value||a.initial_value||0)),new Map<string,number>()).entries()).sort((a,b)=>b[1]-a[1]),[data.assets])
-  const goalData = data.goals[0]
-  const goalPercent = goalData ? Math.min(100,total/Number(goalData.target_value||1)*100) : 0
-  const refresh = () => router.refresh()
-  const run = (task:()=>Promise<unknown>, close:()=>void) => startTransition(async()=>{
-    setError(null)
-    try {
-      await task()
-      close()
-      refresh()
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Não foi possível salvar os dados.")
-    }
-  })
-
-  return <main className="min-h-screen bg-background px-5 py-8 text-foreground md:px-10 lg:px-14"><div className="mx-auto max-w-[1500px]">
-    <header className="mb-8 flex flex-col justify-between gap-5 md:flex-row md:items-end"><div><p className="mb-2 text-sm font-medium uppercase tracking-[0.2em] text-primary">Patrimônio pessoal</p><h1 className="text-4xl font-semibold tracking-tight text-balance">Investimentos</h1><p className="mt-2 text-muted-foreground">Dados reais da sua carteira, aportes e metas.</p></div><div className="flex flex-wrap gap-3"><Button variant="outline" onClick={()=>setShowGoal(true)}><Calculator data-icon="inline-start"/>Planejar meta</Button><Button variant="outline" onClick={()=>setShowTransaction(true)} disabled={!data.assets.length}><ArrowDownToLine data-icon="inline-start"/>Registrar aporte</Button><Button onClick={()=>setShowAsset(true)}><Plus data-icon="inline-start"/>Adicionar ativo</Button></div></header>
-    {error && <div role="alert" className="mb-6 rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">{error}</div>}
-    <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4"><Metric icon={<Wallet/>} label="Patrimônio total" value={money(total)} detail={`${data.assets.length} ativos acompanhados`}/><Metric icon={<ArrowUpRight/>} label="Rentabilidade" value={money(gain)} detail={invested?`${((gain/invested)*100).toFixed(1)}% sobre o investido`:"Sem aportes registrados"}/><Metric icon={<ArrowDownToLine/>} label="Aportes no mês" value={money(monthly)} detail="Movimentações reais"/><Metric icon={<Landmark/>} label="Diversificação" value={`${classes.length} classes`} detail={classes.length?"Distribuição atual":"Sem carteira"}/></section>
-    <Tabs value={tab} onValueChange={setTab} className="mt-8"><TabsList><TabsTrigger value="visao">Visão geral</TabsTrigger><TabsTrigger value="carteira">Carteira</TabsTrigger><TabsTrigger value="aportes">Aportes</TabsTrigger><TabsTrigger value="metas">Metas</TabsTrigger><TabsTrigger value="simulador">Simulador</TabsTrigger></TabsList>
-      <TabsContent value="visao" className="mt-5 grid gap-5 lg:grid-cols-[1.35fr_1fr]"><Card><CardHeader><CardTitle>Evolução do patrimônio</CardTitle></CardHeader><CardContent><RealChart transactions={data.transactions} assets={data.assets}/></CardContent></Card><Card><CardHeader><CardTitle>Alocação atual</CardTitle></CardHeader><CardContent>{classes.length?<div className="flex flex-col gap-5">{classes.map(([category,value])=><div key={category}><div className="mb-2 flex justify-between text-sm"><span>{category}</span><span className="font-medium">{total?((value/total)*100).toFixed(1):0}%</span></div><Progress value={total?value/total*100:0}/></div>)}</div>:<EmptyState onAdd={()=>setShowAsset(true)} label="Cadastre ativos para visualizar a alocação real."/>}</CardContent></Card><Card className="lg:col-span-2"><CardHeader className="flex flex-row items-center justify-between"><CardTitle>Meta financeira</CardTitle><Button variant="ghost" size="sm" onClick={()=>setShowGoal(true)}>{goalData?"Editar meta":"Criar meta"}</Button></CardHeader><CardContent>{goalData?<><div className="mb-3 flex items-end justify-between"><div><p className="text-2xl font-semibold">{money(total)}</p><p className="text-sm text-muted-foreground">de {money(Number(goalData.target_value))}</p></div><Badge variant="secondary">{goalPercent.toFixed(0)}%</Badge></div><Progress value={goalPercent}/><p className="mt-3 text-sm text-muted-foreground">Aporte mensal planejado: {money(Number(goalData.monthly_contribution))}</p></>:<EmptyState onAdd={()=>setShowGoal(true)} label="Defina uma meta para acompanhar seu progresso."/>}</CardContent></Card></TabsContent>
-      <TabsContent value="carteira" className="mt-5"><Card><CardHeader><CardTitle>Carteira atual</CardTitle></CardHeader><CardContent>{data.assets.length?<div className="flex flex-col gap-3">{data.assets.map(a=><div key={a.id} className="flex flex-col gap-3 rounded-xl border p-4 md:flex-row md:items-center md:justify-between"><div><div className="flex items-center gap-2"><p className="font-medium">{a.name}</p>{a.ticker&&<Badge variant="outline">{a.ticker}</Badge>}</div><p className="text-sm text-muted-foreground">{a.category} · {a.institution||"Sem instituição"}</p></div><div className="flex items-center gap-5"><p className="font-semibold">{money(Number(a.current_value||a.initial_value))}</p><Button variant="ghost" size="icon" onClick={()=>run(()=>deleteInvestmentAsset(a.id),()=>{})}><Trash2/></Button></div></div>)}</div>:<EmptyState onAdd={()=>setShowAsset(true)} label="Nenhum ativo cadastrado ainda."/>}</CardContent></Card></TabsContent>
-      <TabsContent value="aportes" className="mt-5"><Card><CardHeader className="flex flex-row items-center justify-between"><CardTitle>Histórico de aportes</CardTitle><Button size="sm" onClick={()=>setShowTransaction(true)} disabled={!data.assets.length}><Plus data-icon="inline-start"/>Registrar</Button></CardHeader><CardContent>{data.transactions.length?<div className="flex flex-col gap-2">{data.transactions.map(t=><div key={t.id} className="flex items-center justify-between border-b py-3"><div><p className="font-medium">{t.transaction_type}</p><p className="text-sm text-muted-foreground">{date(String(t.transaction_date))}</p></div><strong>{money(Number(t.amount))}</strong></div>)}</div>:<EmptyState onAdd={()=>setShowAsset(true)} label="Nenhum aporte registrado ainda."/>}</CardContent></Card></TabsContent>
-      <TabsContent value="metas" className="mt-5"><Card><CardHeader><CardTitle>Metas patrimoniais</CardTitle></CardHeader><CardContent>{goalData?<div className="rounded-xl border p-5"><div className="flex items-start justify-between"><div><h3 className="text-lg font-semibold">{goalData.name}</h3><p className="text-sm text-muted-foreground">{money(Number(goalData.monthly_contribution))} por mês · retorno esperado {(Number(goalData.expected_return)*100).toFixed(1)}%</p></div><Button variant="outline" size="sm" onClick={()=>setShowGoal(true)}>Editar</Button></div><Progress className="mt-5" value={goalPercent}/><p className="mt-2 text-sm text-muted-foreground">{money(total)} de {money(Number(goalData.target_value))}</p></div>:<EmptyState onAdd={()=>setShowGoal(true)} label="Crie sua primeira meta financeira."/>}</CardContent></Card></TabsContent>
-      <TabsContent value="simulador" className="mt-5"><Simulator total={total}/></TabsContent>
-    </Tabs>
-    {showAsset&&<Modal title="Adicionar ativo" onClose={()=>setShowAsset(false)}><form onSubmit={e=>{e.preventDefault();run(()=>createInvestmentAsset({...form,initialValue:Number(form.initialValue),currentValue:form.currentValue?Number(form.currentValue):undefined}),()=>setShowAsset(false))}} className="flex flex-col gap-4"><Field label="Nome"><Input required value={form.name} onChange={e=>setForm({...form,name:e.target.value})}/></Field><div className="grid gap-4 md:grid-cols-2"><Field label="Ticker"><Input value={form.ticker} onChange={e=>setForm({...form,ticker:e.target.value})}/></Field><Field label="Classe"><Input required value={form.category} onChange={e=>setForm({...form,category:e.target.value})}/></Field></div><Field label="Instituição"><Input value={form.institution} onChange={e=>setForm({...form,institution:e.target.value})}/></Field><div className="grid gap-4 md:grid-cols-2"><Field label="Valor investido"><Input required type="number" step="0.01" value={form.initialValue} onChange={e=>setForm({...form,initialValue:e.target.value})}/></Field><Field label="Valor atual"><Input type="number" step="0.01" value={form.currentValue} onChange={e=>setForm({...form,currentValue:e.target.value})}/></Field></div><Button disabled={isPending} type="submit">{isPending?"Salvando...":"Salvar ativo"}</Button></form></Modal>}
-    {showGoal&&<Modal title="Planejar meta" onClose={()=>setShowGoal(false)}><form onSubmit={e=>{e.preventDefault();run(()=>saveInvestmentGoal({name:goal.name,targetValue:Number(goal.targetValue),monthlyContribution:Number(goal.monthlyContribution),expectedReturn:Number(goal.expectedReturn)/100,targetDate:goal.targetDate||undefined}),()=>setShowGoal(false))}} className="flex flex-col gap-4"><Field label="Nome"><Input required value={goal.name} onChange={e=>setGoal({...goal,name:e.target.value})}/></Field><Field label="Valor alvo"><Input required type="number" value={goal.targetValue} onChange={e=>setGoal({...goal,targetValue:e.target.value})}/></Field><div className="grid gap-4 md:grid-cols-2"><Field label="Aporte mensal"><Input required type="number" value={goal.monthlyContribution} onChange={e=>setGoal({...goal,monthlyContribution:e.target.value})}/></Field><Field label="Retorno esperado (%)"><Input required type="number" step="0.1" value={goal.expectedReturn} onChange={e=>setGoal({...goal,expectedReturn:e.target.value})}/></Field></div><Button disabled={isPending} type="submit">Salvar meta</Button></form></Modal>}
-    {showTransaction&&<Modal title="Registrar aporte" onClose={()=>setShowTransaction(false)}><form onSubmit={e=>{e.preventDefault();run(()=>createInvestmentTransaction({assetId:Number(transaction.assetId),type:transaction.type,date:transaction.date,amount:Number(transaction.amount),notes:transaction.notes}),()=>setShowTransaction(false))}} className="flex flex-col gap-4"><Field label="Ativo"><select required className="h-10 rounded-md border bg-background px-3" value={transaction.assetId} onChange={e=>setTransaction({...transaction,assetId:e.target.value})}><option value="">Selecione</option>{data.assets.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}</select></Field><Field label="Tipo"><Input value={transaction.type} onChange={e=>setTransaction({...transaction,type:e.target.value})}/></Field><div className="grid gap-4 md:grid-cols-2"><Field label="Data"><Input required type="date" value={transaction.date} onChange={e=>setTransaction({...transaction,date:e.target.value})}/></Field><Field label="Valor"><Input required type="number" step="0.01" value={transaction.amount} onChange={e=>setTransaction({...transaction,amount:e.target.value})}/></Field></div><Button disabled={isPending} type="submit">Registrar aporte</Button></form></Modal>}
-  </div></main>
+type Asset = {
+  id: number
+  name: string
+  ticker?: string | null
+  category?: string | null
+  institution?: string | null
+  initial_value?: number | string | null
+  current_value?: number | string | null
 }
-function Metric({icon,label,value,detail}:{icon:React.ReactNode;label:string;value:string;detail:string}){return <Card><CardContent className="p-5"><div className="mb-5 flex items-center justify-between"><span className="text-muted-foreground">{label}</span><span className="text-primary">{icon}</span></div><p className="text-2xl font-semibold">{value}</p><p className="mt-1 text-sm text-muted-foreground">{detail}</p></CardContent></Card>}
-function Field({label,children}:{label:string;children:React.ReactNode}){return <div className="flex flex-col gap-2"><Label>{label}</Label>{children}</div>}
-function EmptyState({onAdd,label}:{onAdd:()=>void;label:string}){return <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed p-12 text-center"><BarChart3 className="text-primary"/><p className="text-muted-foreground">{label}</p><Button variant="outline" onClick={onAdd}><Plus data-icon="inline-start"/>Começar</Button></div>}
-function Modal({title,onClose,children}:{title:string;onClose:()=>void;children:React.ReactNode}){return <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-5 backdrop-blur-sm"><Card className="w-full max-w-lg"><CardHeader className="flex flex-row items-center justify-between"><CardTitle>{title}</CardTitle><Button variant="ghost" size="sm" onClick={onClose}>Fechar</Button></CardHeader><CardContent>{children}</CardContent></Card></div>}
-function RealChart({transactions,assets}:{transactions:Tx[];assets:Asset[]}){const points=transactions.slice().reverse().reduce<number[]>((values,t)=>[...values,(values.at(-1)||0)+Number(t.amount||0)],[]);if(!points.length)return <div className="flex h-64 items-center justify-center rounded-xl bg-muted/30 text-center text-sm text-muted-foreground">O gráfico aparecerá depois do primeiro aporte.</div>;const max=Math.max(...points,1);return <div className="flex h-64 items-end gap-2 rounded-xl bg-muted/30 p-6">{points.map((value,index)=><div key={index} className="flex flex-1 flex-col justify-end gap-2"><div className="rounded-t-md bg-primary/80" style={{height:`${Math.max(4,value/max*100)}%`}}/><span className="text-center text-xs text-muted-foreground">{index+1}</span></div>)}</div>}
-function Simulator({total}:{total:number}){const [monthly,setMonthly]=useState(10000);const [years,setYears]=useState(10);const [rate,setRate]=useState(10);const monthlyRate=rate/100/12;const months=years*12;const projected=monthlyRate?total*Math.pow(1+monthlyRate,months)+monthly*((Math.pow(1+monthlyRate,months)-1)/monthlyRate):total+monthly*months;return <Card><CardHeader><CardTitle>Simulador de patrimônio</CardTitle></CardHeader><CardContent className="grid gap-6 md:grid-cols-3"><Field label="Aporte mensal"><Input type="number" value={monthly} onChange={e=>setMonthly(Number(e.target.value))}/></Field><Field label="Prazo (anos)"><Input type="number" value={years} onChange={e=>setYears(Number(e.target.value))}/></Field><Field label="Retorno anual (%)"><Input type="number" value={rate} onChange={e=>setRate(Number(e.target.value))}/></Field><div className="rounded-xl bg-muted p-5 md:col-span-3"><p className="text-sm text-muted-foreground">Patrimônio projetado</p><p className="mt-1 text-3xl font-semibold">{money(projected)}</p><p className="mt-2 text-sm text-muted-foreground">Estimativa matemática, não recomendação de investimento.</p></div></CardContent></Card>}
+
+type InvestmentData = { assets?: Asset[] | null }
+
+const currency = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" })
+
+function numberValue(value: unknown) {
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : 0
+}
+
+export function InvestmentsDashboard({ initialData }: { initialData?: InvestmentData | null }) {
+  const [assets, setAssets] = useState<Asset[]>(Array.isArray(initialData?.assets) ? initialData.assets : [])
+  const [open, setOpen] = useState(false)
+  const [pending, startTransition] = useTransition()
+  const [error, setError] = useState("")
+  const [form, setForm] = useState({ name: "", ticker: "", category: "Renda fixa", institution: "", initialValue: "" })
+
+  const total = assets.reduce((sum, asset) => sum + numberValue(asset.current_value ?? asset.initial_value), 0)
+
+  function submit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setError("")
+    const value = Number(form.initialValue)
+    if (!form.name.trim() || !Number.isFinite(value) || value <= 0) {
+      setError("Informe o nome do ativo e um valor investido maior que zero.")
+      return
+    }
+
+    startTransition(async () => {
+      try {
+        const created = await createInvestmentAsset({
+          name: form.name,
+          ticker: form.ticker,
+          assetType: form.category,
+          category: form.category,
+          institution: form.institution,
+          initialValue: value,
+          currentValue: value,
+          currency: "BRL",
+        })
+        setAssets((current) => [...current, {
+          id: created.id,
+          name: created.name,
+          initial_value: created.initialValue,
+          current_value: created.currentValue,
+          ticker: form.ticker,
+          category: form.category,
+          institution: form.institution,
+        }])
+        setForm({ name: "", ticker: "", category: "Renda fixa", institution: "", initialValue: "" })
+        setOpen(false)
+      } catch (cause) {
+        setError(cause instanceof Error ? cause.message : "Não foi possível salvar o ativo.")
+      }
+    })
+  }
+
+  return (
+    <main className="min-h-screen bg-background px-5 py-8 text-foreground md:px-10 lg:px-14">
+      <div className="mx-auto max-w-[1500px]">
+        <header className="mb-8 flex flex-col justify-between gap-5 md:flex-row md:items-end">
+          <div>
+            <p className="mb-2 text-sm font-medium uppercase tracking-[0.2em] text-primary">Patrimônio pessoal</p>
+            <h1 className="text-4xl font-semibold tracking-tight">Investimentos</h1>
+            <p className="mt-2 text-muted-foreground">Acompanhe seus ativos e valores investidos.</p>
+          </div>
+          <Button onClick={() => { setError(""); setOpen(true) }}><Plus data-icon="inline-start" />Adicionar ativo</Button>
+        </header>
+
+        {error && <div role="alert" className="mb-6 rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">{error}</div>}
+
+        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <Card><CardContent className="p-5"><p className="text-sm text-muted-foreground">Patrimônio total</p><p className="mt-3 text-3xl font-semibold">{currency.format(total)}</p><p className="mt-2 text-sm text-muted-foreground">{assets.length} ativo(s) cadastrado(s)</p></CardContent></Card>
+          <Card><CardContent className="p-5"><p className="text-sm text-muted-foreground">Carteira</p><p className="mt-3 text-3xl font-semibold">{assets.length ? "Ativa" : "Vazia"}</p><p className="mt-2 text-sm text-muted-foreground">Dados persistidos no banco</p></CardContent></Card>
+        </section>
+
+        <Card className="mt-6">
+          <CardHeader><CardTitle>Carteira</CardTitle></CardHeader>
+          <CardContent>
+            {assets.length === 0 ? <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed p-12 text-center"><Wallet className="text-primary" /><p className="text-muted-foreground">Nenhum ativo cadastrado.</p><Button variant="outline" onClick={() => setOpen(true)}>Cadastrar primeiro ativo</Button></div> : <div className="flex flex-col gap-3">{assets.map((asset) => <div key={asset.id} className="flex flex-col gap-2 rounded-xl border p-4 md:flex-row md:items-center md:justify-between"><div><p className="font-medium">{asset.name} {asset.ticker && <Badge variant="outline">{asset.ticker}</Badge>}</p><p className="text-sm text-muted-foreground">{asset.category || "Sem categoria"} · {asset.institution || "Sem instituição"}</p></div><p className="text-lg font-semibold">{currency.format(numberValue(asset.current_value ?? asset.initial_value))}</p></div>)}</div>}
+          </CardContent>
+        </Card>
+
+        {open && <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-5 backdrop-blur-sm"><Card className="w-full max-w-lg"><CardHeader><CardTitle>Adicionar ativo</CardTitle></CardHeader><CardContent><form onSubmit={submit} className="flex flex-col gap-4"><div><Label htmlFor="investment-name">Nome</Label><Input id="investment-name" required value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} /></div><div><Label htmlFor="investment-ticker">Ticker</Label><Input id="investment-ticker" value={form.ticker} onChange={(event) => setForm({ ...form, ticker: event.target.value })} /></div><div><Label htmlFor="investment-category">Categoria</Label><Input id="investment-category" required value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })} /></div><div><Label htmlFor="investment-institution">Instituição</Label><Input id="investment-institution" value={form.institution} onChange={(event) => setForm({ ...form, institution: event.target.value })} /></div><div><Label htmlFor="investment-value">Valor investido</Label><Input id="investment-value" required min="0.01" step="0.01" type="number" value={form.initialValue} onChange={(event) => setForm({ ...form, initialValue: event.target.value })} /></div><div className="flex justify-end gap-3"><Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancelar</Button><Button type="submit" disabled={pending}>{pending ? "Salvando..." : "Salvar ativo"}</Button></div></form></CardContent></Card></div>}
+      </div>
+    </main>
+  )
+}
