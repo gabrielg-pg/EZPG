@@ -177,7 +177,8 @@ export async function requireAuth() {
 
 export async function requireAdmin() {
   const user = await requireAuth()
-  if (user.role !== "admin") {
+  const roles = new Set([user.role, ...(user.roles ?? [])].filter(Boolean).map((role) => role.toLowerCase()))
+  if (!roles.has("admin")) {
     redirect("/dashboard")
   }
   return user

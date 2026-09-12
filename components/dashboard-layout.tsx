@@ -47,7 +47,8 @@ export function DashboardLayout({ children, userRoles = ["user"] }: DashboardLay
     { name: "Usuários", href: "/admin", icon: Users, roles: ["admin"] },
   ]
 
-  const filteredNavigation = navigation.filter((item) => item.roles.some(role => userRoles.includes(role)))
+  const normalizedUserRoles = userRoles.map((role) => role.toLowerCase())
+  const filteredNavigation = navigation.filter((item) => item.roles.some((role) => normalizedUserRoles.includes(role.toLowerCase())))
 
   const handleLogout = () => {
     startTransition(async () => {
