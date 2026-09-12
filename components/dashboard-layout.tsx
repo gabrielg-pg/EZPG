@@ -43,6 +43,7 @@ export function DashboardLayout({ children, userRoles = ["user"] }: DashboardLay
   { name: "Funil VÉRTEBRA", href: "/zona-de-execucao/funil-vertebra", icon: Target, roles: ["admin", "gestor_ads"] },
     { name: "Raio-X dos Planos", href: "/raiox-planos", icon: BarChart3, roles: ["admin"] },
     { name: "Financeiro", href: "/financeiro", icon: TrendingUp, roles: ["admin"] },
+    { name: "Investimentos", href: "/investimentos", icon: BarChart3, roles: ["admin"] },
     { name: "Usuários", href: "/admin", icon: Users, roles: ["admin"] },
   ]
 
