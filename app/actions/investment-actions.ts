@@ -26,14 +26,15 @@ export async function createInvestmentAsset(data: { name: string; ticker?: strin
   const [asset] = await sql`INSERT INTO investment_assets (user_id,name,ticker,asset_type,category,institution,initial_value,current_value,currency,indexer,tax_exempt,fgc,created_at,updated_at) VALUES (${userId},${data.name.trim()},${data.ticker?.trim() || null},${data.assetType},${data.category.trim()},${data.institution?.trim() || null},${data.initialValue},${data.currentValue ?? data.initialValue},${data.currency || "BRL"},${data.indexer || null},false,false,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP) RETURNING *`
   await sql`INSERT INTO investment_transactions (user_id,asset_id,transaction_type,transaction_date,amount,currency,created_at) VALUES (${userId},${asset.id},'Aporte',CURRENT_DATE,${data.initialValue},${data.currency || "BRL"},CURRENT_TIMESTAMP)`
   revalidatePath("/investimentos")
-  return asset
+  return { id: Number(asset.id), name: String(asset.name), initialValue: Number(asset.initial_value), currentValue: Number(asset.current_value ?? asset.initial_value) }
 }
 
 export async function createInvestmentTransaction(data: { assetId: number; type: string; date: string; amount: number; notes?: string }) {
   const userId = await adminId()
   const [transaction] = await sql`INSERT INTO investment_transactions (user_id,asset_id,transaction_type,transaction_date,amount,notes,currency,created_at) SELECT ${userId},id,${data.type},${data.date},${data.amount},${data.notes || null},'BRL',CURRENT_TIMESTAMP FROM investment_assets WHERE id=${data.assetId} AND user_id=${userId} RETURNING *`
+  if (!transaction) throw new Error("Ativo de investimento não encontrado.")
   revalidatePath("/investimentos")
-  return transaction
+  return { id: Number(transaction.id), amount: Number(transaction.amount), transactionType: String(transaction.transaction_type) }
 }
 
 export async function saveInvestmentGoal(data: { name: string; targetValue: number; monthlyContribution: number; expectedReturn: number; targetDate?: string }) {

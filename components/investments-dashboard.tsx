@@ -1,6 +1,7 @@
 "use client"
 
 import { useMemo, useState, useTransition } from "react"
+import { useRouter } from "next/navigation"
 import { createInvestmentAsset, createInvestmentTransaction, deleteInvestmentAsset, saveInvestmentGoal } from "@/app/actions/investment-actions"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -19,6 +20,7 @@ const date = (value:string) => new Intl.DateTimeFormat("pt-BR").format(new Date(
 
 export function InvestmentsDashboard({ initialData }: { initialData: InvestmentData }) {
   const [data, setData] = useState(initialData)
+  const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [tab, setTab] = useState("visao")
   const [showAsset, setShowAsset] = useState(false)
@@ -36,7 +38,7 @@ export function InvestmentsDashboard({ initialData }: { initialData: InvestmentD
   const classes = useMemo(()=>Array.from(data.assets.reduce((map,a)=>map.set(a.category,(map.get(a.category)||0)+Number(a.current_value||a.initial_value||0)),new Map<string,number>()).entries()).sort((a,b)=>b[1]-a[1]),[data.assets])
   const goalData = data.goals[0]
   const goalPercent = goalData ? Math.min(100,total/Number(goalData.target_value||1)*100) : 0
-  const refresh = () => window.location.reload()
+  const refresh = () => router.refresh()
   const run = (task:()=>Promise<unknown>, close:()=>void) => startTransition(async()=>{
     setError(null)
     try {
