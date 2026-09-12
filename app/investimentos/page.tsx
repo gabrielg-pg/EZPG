@@ -21,9 +21,13 @@ export default async function InvestimentosPage() {
     current_value: Number(asset.current_value ?? asset.initial_value ?? 0),
   }))
 
+  const transactions = data.transactions.map((transaction) => ({
+    id: Number(transaction.id), asset_id: Number(transaction.asset_id), transaction_type: String(transaction.transaction_type), transaction_date: String(transaction.transaction_date), amount: Number(transaction.amount ?? 0), currency: String(transaction.currency ?? "BRL"), notes: transaction.notes ? String(transaction.notes) : null,
+  }))
+
   return (
     <DashboardLayout userRoles={roles}>
-      <InvestmentsDashboard initialData={{ assets }} />
+      <InvestmentsDashboard initialData={{ assets, transactions }} />
     </DashboardLayout>
   )
 }
