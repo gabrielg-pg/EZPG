@@ -31,7 +31,18 @@ export async function createInvestmentAsset(data: { name: string; ticker?: strin
   if (!asset) throw new Error("Não foi possível criar o ativo.")
   await sql`INSERT INTO investment_transactions (user_id,asset_id,transaction_type,transaction_date,amount,currency,created_at) VALUES (${userId},${asset.id},'Aporte',CURRENT_DATE,${initialValue},${data.currency || "BRL"},CURRENT_TIMESTAMP)`
   revalidatePath("/investimentos")
-  return { id: Number(asset.id), name: String(asset.name), initialValue: Number(asset.initial_value), currentValue: Number(asset.current_value ?? asset.initial_value) }
+  return { id: Number(asset.id), name: String(asset.name), ticker: data.ticker?.trim() || null, category: data.category, institution: data.institution?.trim() || null, initialValue: Number(asset.initial_value), currentValue: Number(asset.current_value ?? asset.initial_value) }
+}
+
+export async function updateInvestmentAsset(data: { id: number; name: string; ticker?: string; category: string; institution?: string; initialValue: number; currentValue?: number }) {
+  const userId = await adminId()
+  const initialValue = parseBRLInput(data.initialValue)
+  const currentValue = data.currentValue === undefined || data.currentValue === null ? initialValue : parseBRLInput(data.currentValue)
+  if (!data.name?.trim() || initialValue <= 0 || currentValue < 0) throw new Error("Informe dados válidos para o investimento.")
+  const [asset] = await sql`UPDATE investment_assets SET name=${data.name.trim()},ticker=${data.ticker?.trim() || null},category=${data.category.trim()},institution=${data.institution?.trim() || null},initial_value=${initialValue},current_value=${currentValue},updated_at=CURRENT_TIMESTAMP WHERE id=${data.id} AND user_id=${userId} RETURNING id,name,ticker,category,institution,initial_value,current_value`
+  if (!asset) throw new Error("Investimento não encontrado.")
+  revalidatePath("/investimentos")
+  return { id: Number(asset.id), name: String(asset.name), ticker: asset.ticker ? String(asset.ticker) : null, category: String(asset.category), institution: asset.institution ? String(asset.institution) : null, initialValue: Number(asset.initial_value), currentValue: Number(asset.current_value ?? asset.initial_value) }
 }
 
 export async function seedInitialInvestmentPortfolio() {
