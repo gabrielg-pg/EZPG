@@ -1,45 +1,63 @@
 "use server"
 
+import { revalidatePath } from "next/cache"
 import { sql } from "@/lib/db"
 import { requireAdmin } from "@/lib/auth"
 
-async function userId() {
+async function adminId() {
   const user = await requireAdmin()
   return Number(user.id)
 }
 
 export async function getInvestments() {
-  const id = await userId()
+  const userId = await adminId()
   const [assets, transactions, goals, settings, allocations] = await Promise.all([
-    sql`SELECT * FROM investment_assets WHERE user_id=${id} ORDER BY current_value DESC NULLS LAST, name`,
-    sql`SELECT * FROM investment_transactions WHERE user_id=${id} ORDER BY transaction_date DESC, id DESC LIMIT 50`,
-    sql`SELECT * FROM investment_goals WHERE user_id=${id} ORDER BY created_at DESC`,
-    sql`SELECT * FROM investment_settings WHERE user_id=${id} LIMIT 1`,
-    sql`SELECT * FROM investment_allocations WHERE user_id=${id} ORDER BY category`,
+    sql`SELECT * FROM investment_assets WHERE user_id=${userId} ORDER BY current_value DESC NULLS LAST, name`,
+    sql`SELECT * FROM investment_transactions WHERE user_id=${userId} ORDER BY transaction_date DESC, id DESC LIMIT 100`,
+    sql`SELECT * FROM investment_goals WHERE user_id=${userId} ORDER BY created_at DESC`,
+    sql`SELECT * FROM investment_settings WHERE user_id=${userId} LIMIT 1`,
+    sql`SELECT * FROM investment_allocations WHERE user_id=${userId} ORDER BY category`,
   ])
   return { assets, transactions, goals, settings, allocations }
 }
 
-export async function createInvestmentAsset(data: {
-  name: string; ticker?: string; assetType: string; category: string; institution?: string
-  initialValue: number; currentValue?: number; currency?: string; indexer?: string
-}) {
-  const id = await userId()
-  return sql`INSERT INTO investment_assets (user_id,name,ticker,asset_type,category,institution,initial_value,current_value,currency,indexer) VALUES (${id},${data.name},${data.ticker || null},${data.assetType},${data.category},${data.institution || null},${data.initialValue},${data.currentValue ?? data.initialValue},${data.currency || "BRL"},${data.indexer || null}) RETURNING *`
+export async function createInvestmentAsset(data: { name: string; ticker?: string; assetType: string; category: string; institution?: string; initialValue: number; currentValue?: number; currency?: string; indexer?: string }) {
+  const userId = await adminId()
+  const [asset] = await sql`INSERT INTO investment_assets (user_id,name,ticker,asset_type,category,institution,initial_value,current_value,currency,indexer,created_at,updated_at) VALUES (${userId},${data.name.trim()},${data.ticker?.trim() || null},${data.assetType},${data.category.trim()},${data.institution?.trim() || null},${data.initialValue},${data.currentValue ?? data.initialValue},${data.currency || "BRL"},${data.indexer || null},CURRENT_TIMESTAMP,CURRENT_TIMESTAMP) RETURNING *`
+  await sql`INSERT INTO investment_transactions (user_id,asset_id,transaction_type,transaction_date,amount,currency,created_at) VALUES (${userId},${asset.id},'Aporte',CURRENT_DATE,${data.initialValue},${data.currency || "BRL"},CURRENT_TIMESTAMP)`
+  revalidatePath("/investimentos")
+  return asset
 }
 
 export async function createInvestmentTransaction(data: { assetId: number; type: string; date: string; amount: number; notes?: string }) {
-  const id = await userId()
-  return sql`INSERT INTO investment_transactions (user_id,asset_id,transaction_type,transaction_date,amount,notes) SELECT ${id},id,${data.type},${data.date},${data.amount},${data.notes || null} FROM investment_assets WHERE id=${data.assetId} AND user_id=${id} RETURNING *`
+  const userId = await adminId()
+  const [transaction] = await sql`INSERT INTO investment_transactions (user_id,asset_id,transaction_type,transaction_date,amount,notes,currency,created_at) SELECT ${userId},id,${data.type},${data.date},${data.amount},${data.notes || null},'BRL',CURRENT_TIMESTAMP FROM investment_assets WHERE id=${data.assetId} AND user_id=${userId} RETURNING *`
+  revalidatePath("/investimentos")
+  return transaction
 }
 
 export async function saveInvestmentGoal(data: { name: string; targetValue: number; monthlyContribution: number; expectedReturn: number; targetDate?: string }) {
-  const id = await userId()
-  return sql`INSERT INTO investment_goals (user_id,name,target_value,monthly_contribution,expected_return,target_date) VALUES (${id},${data.name},${data.targetValue},${data.monthlyContribution},${data.expectedReturn},${data.targetDate || null}) RETURNING *`
+  const userId = await adminId()
+  const [goal] = await sql`INSERT INTO investment_goals (user_id,name,target_value,monthly_contribution,expected_return,target_date,created_at) VALUES (${userId},${data.name.trim()},${data.targetValue},${data.monthlyContribution},${data.expectedReturn},${data.targetDate || null},CURRENT_TIMESTAMP) RETURNING *`
+  revalidatePath("/investimentos")
+  return goal
 }
 
 export async function deleteInvestmentAsset(assetId: number) {
-  const id = await userId()
-  await sql`DELETE FROM investment_transactions WHERE asset_id=${assetId} AND user_id=${id}`
-  return sql`DELETE FROM investment_assets WHERE id=${assetId} AND user_id=${id}`
+  const userId = await adminId()
+  await sql`DELETE FROM investment_transactions WHERE asset_id=${assetId} AND user_id=${userId}`
+  await sql`DELETE FROM investment_assets WHERE id=${assetId} AND user_id=${userId}`
+  revalidatePath("/investimentos")
+}
+
+export async function saveInvestmentAllocation(category: string, targetPercentage: number) {
+  const userId = await adminId()
+  await sql`INSERT INTO investment_allocations (user_id,category,target_percentage) VALUES (${userId},${category},${targetPercentage}) ON CONFLICT (user_id,category) DO UPDATE SET target_percentage=EXCLUDED.target_percentage`
+  revalidatePath("/investimentos")
+}
+
+export async function saveInvestmentSettings(data: { monthlyContributionTarget: number; usdBrlRate: number; allocationTolerance: number; defaultProjectionRate: number }) {
+  const userId = await adminId()
+  await sql`INSERT INTO investment_settings (user_id,monthly_contribution_target,usd_brl_rate,allocation_tolerance,default_projection_rate) VALUES (${userId},${data.monthlyContributionTarget},${data.usdBrlRate},${data.allocationTolerance},${data.defaultProjectionRate}) ON CONFLICT (user_id) DO UPDATE SET monthly_contribution_target=EXCLUDED.monthly_contribution_target,usd_brl_rate=EXCLUDED.usd_brl_rate,allocation_tolerance=EXCLUDED.allocation_tolerance,default_projection_rate=EXCLUDED.default_projection_rate`
+  revalidatePath("/investimentos")
 }
