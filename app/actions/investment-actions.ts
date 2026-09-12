@@ -1,10 +1,10 @@
 "use server"
 
 import { sql } from "@/lib/db"
-import { requireAuth } from "@/lib/auth"
+import { requireAdmin } from "@/lib/auth"
 
 async function userId() {
-  const user = await requireAuth()
+  const user = await requireAdmin()
   return Number(user.id)
 }
 
