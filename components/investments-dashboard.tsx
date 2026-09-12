@@ -15,11 +15,19 @@ import { ArrowDownToLine, ArrowUpRight, BarChart3, Calculator, Landmark, Plus, T
 type Asset = { id:number; name:string; ticker?:string; asset_type:string; category:string; institution?:string; initial_value:number; current_value:number; currency:string }
 type Tx = { id:number; asset_id:number; transaction_type:string; transaction_date:string; amount:number; notes?:string }
 type InvestmentData = { assets:Asset[]; transactions:Tx[]; goals:any[]; settings:any[]; allocations:any[] }
+const emptyInvestmentData: InvestmentData = { assets: [], transactions: [], goals: [], settings: [], allocations: [] }
+const normalizeInvestmentData = (value: Partial<InvestmentData> | null | undefined): InvestmentData => ({
+  assets: Array.isArray(value?.assets) ? value.assets : [],
+  transactions: Array.isArray(value?.transactions) ? value.transactions : [],
+  goals: Array.isArray(value?.goals) ? value.goals : [],
+  settings: Array.isArray(value?.settings) ? value.settings : [],
+  allocations: Array.isArray(value?.allocations) ? value.allocations : [],
+})
 const money = (value:number) => new Intl.NumberFormat("pt-BR", { style:"currency", currency:"BRL", maximumFractionDigits:0 }).format(Number(value || 0))
 const date = (value:string) => new Intl.DateTimeFormat("pt-BR").format(new Date(`${value}T12:00:00`))
 
 export function InvestmentsDashboard({ initialData }: { initialData: InvestmentData }) {
-  const [data, setData] = useState(initialData)
+  const [data, setData] = useState(() => normalizeInvestmentData(initialData ?? emptyInvestmentData))
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [tab, setTab] = useState("visao")
