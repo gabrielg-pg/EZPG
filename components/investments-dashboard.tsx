@@ -1,7 +1,8 @@
 "use client"
 
 import { useMemo, useState, useTransition } from "react"
-import { createInvestmentAsset } from "@/app/actions/investment-actions"
+import { useRouter } from "next/navigation"
+import { createInvestmentAsset, seedInitialInvestmentPortfolio } from "@/app/actions/investment-actions"
 import { formatBRL, parseBRLInput, projectBalance } from "@/lib/investment-money"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -16,12 +17,14 @@ const tabs = ["Visão Geral", "Carteira", "Aportes", "Movimentações", "Metas",
 const amount = (value: unknown) => { const parsed = Number(value ?? 0); return Number.isFinite(parsed) ? parsed : 0 }
 
 export function InvestmentsDashboard({ initialData }: { initialData?: InvestmentData | null }) {
+  const router = useRouter()
   const [assets, setAssets] = useState<Asset[]>(Array.isArray(initialData?.assets) ? initialData.assets : [])
   const [tab, setTab] = useState("Visão Geral")
   const [open, setOpen] = useState(false)
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState("")
   const [form, setForm] = useState({ name: "", ticker: "", category: "Renda Fixa", institution: "", initialValue: "" })
+  const [seeding, setSeeding] = useState(false)
   const invested = useMemo(() => assets.reduce((sum, asset) => sum + amount(asset.initial_value), 0), [assets])
   const current = useMemo(() => assets.reduce((sum, asset) => sum + amount(asset.current_value), 0), [assets])
   const result = current - invested
@@ -41,7 +44,7 @@ export function InvestmentsDashboard({ initialData }: { initialData?: Investment
   }
 
   return <main className="min-h-screen bg-background px-5 py-8 text-foreground md:px-10 lg:px-14"><div className="mx-auto max-w-[1500px]">
-    <header className="mb-8 flex flex-col justify-between gap-5 md:flex-row md:items-end"><div><p className="mb-2 text-sm font-medium uppercase tracking-[0.2em] text-primary">Patrimônio pessoal</p><h1 className="text-4xl font-semibold tracking-tight">Investimentos</h1><p className="mt-2 text-muted-foreground">Gestão e evolução do patrimônio</p></div><div className="flex flex-wrap gap-3"><Button variant="outline" onClick={() => setTab("Metas")}>Planejar meta</Button><Button onClick={() => { setError(""); setOpen(true) }}><Plus data-icon="inline-start" />Adicionar ativo</Button></div></header>
+    <header className="mb-8 flex flex-col justify-between gap-5 md:flex-row md:items-end"><div><p className="mb-2 text-sm font-medium uppercase tracking-[0.2em] text-primary">Patrimônio pessoal</p><h1 className="text-4xl font-semibold tracking-tight">Investimentos</h1><p className="mt-2 text-muted-foreground">Gestão e evolução do patrimônio</p></div><div className="flex flex-wrap gap-3"><Button variant="outline" onClick={() => setTab("Metas")}>Planejar meta</Button>{assets.length === 0 && <Button variant="outline" disabled={seeding} onClick={() => { setSeeding(true); startTransition(async () => { try { await seedInitialInvestmentPortfolio(); router.refresh() } catch (cause) { setError(cause instanceof Error ? cause.message : "Não foi possível carregar os ativos iniciais."); setSeeding(false) } }) }}>{seeding ? "Carregando..." : "Carregar carteira inicial"}</Button>}<Button onClick={() => { setError(""); setOpen(true) }}><Plus data-icon="inline-start" />Adicionar ativo</Button></div></header>
     {error && <div role="alert" className="mb-6 rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">{error}</div>}
     <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4"><Card><CardContent className="p-5"><p className="text-sm text-muted-foreground">Patrimônio atual</p><p className="mt-3 text-3xl font-semibold">{formatBRL(current)}</p><p className="mt-2 text-sm text-muted-foreground">{assets.length} ativo(s)</p></CardContent></Card><Card><CardContent className="p-5"><p className="text-sm text-muted-foreground">Total investido</p><p className="mt-3 text-3xl font-semibold">{formatBRL(invested)}</p><p className="mt-2 text-sm text-muted-foreground">Capital aportado</p></CardContent></Card><Card><CardContent className="p-5"><p className="text-sm text-muted-foreground">Resultado</p><p className="mt-3 text-3xl font-semibold">{formatBRL(result)}</p><p className="mt-2 text-sm text-muted-foreground">Sem rentabilidade estimada</p></CardContent></Card><Card><CardContent className="p-5"><p className="text-sm text-muted-foreground">Aportes no mês</p><p className="mt-3 text-3xl font-semibold">{formatBRL(monthContribution)}</p><p className="mt-2 text-sm text-muted-foreground">Meta: {formatBRL(10000)}</p></CardContent></Card></section>
     <div className="mt-8 flex flex-wrap gap-2 rounded-xl border border-border bg-card p-2">{tabs.map((item) => <Button key={item} variant={tab === item ? "default" : "ghost"} onClick={() => setTab(item)}>{item}</Button>)}</div>

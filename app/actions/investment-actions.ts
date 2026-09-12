@@ -35,6 +35,25 @@ export async function createInvestmentAsset(data: { name: string; ticker?: strin
   return { id: Number(asset.id), name: String(asset.name), initialValue: Number(asset.initial_value), currentValue: Number(asset.current_value ?? asset.initial_value) }
 }
 
+export async function seedInitialInvestmentPortfolio() {
+  const userId = await adminId()
+  const existing = await sql`SELECT id FROM investment_assets WHERE user_id=${userId} LIMIT 1`
+  if (existing.length) return { created: false }
+  const initialAssets = [
+    { name: "Tesouro Direto LFT", category: "Renda Fixa", subcategory: "Tesouro Selic / LFT", institution: "Tesouro Direto / BTG", invested: 10315.84, current: 12305.62, maturity: "2028-03-01" },
+    { name: "LCA Banco BTG Pactual", category: "Renda Fixa", subcategory: "LCA", institution: "Banco BTG Pactual", invested: 3000, current: 3095.71, application: "2026-06-05", maturity: "2027-03-05" },
+    { name: "Tesouro IPCA+ 2032", category: "Renda Fixa", subcategory: "Tesouro IPCA+", institution: "Tesouro Direto / BTG", invested: 15001.21, maturity: "2032-08-15" },
+    { name: "LCA BTG 90% CDI", category: "Renda Fixa", subcategory: "LCA", institution: "Banco BTG Pactual", invested: 10000, maturity: "2027-09-14" },
+  ]
+  for (const item of initialAssets) {
+    const [asset] = await sql`INSERT INTO investment_assets (user_id,name,asset_type,category,subcategory,institution,currency,initial_value,current_value,maturity_date,application_date,indexer,contracted_rate,tax_exempt,fgc,created_at,updated_at) VALUES (${userId},${item.name},'RENDA_FIXA',${item.category},${item.subcategory},${item.institution},'BRL',${item.invested},${item.current ?? null},${item.maturity},${item.application ?? null},${item.name.includes('IPCA') ? 'IPCA' : item.name.includes('CDI') ? 'CDI' : 'SELIC'},${item.name.includes('IPCA') ? '7.59' : item.name.includes('90%') ? '90' : null},${item.name.includes('LCA')},${item.name.includes('LCA')},CURRENT_TIMESTAMP,CURRENT_TIMESTAMP) RETURNING id`
+    await sql`INSERT INTO investment_transactions (user_id,asset_id,transaction_type,transaction_date,amount,currency,created_at) VALUES (${userId},${asset.id},'APORTE',COALESCE(${item.application ?? null}::date,CURRENT_DATE),${item.invested},'BRL',CURRENT_TIMESTAMP)`
+    if (item.current) await sql`INSERT INTO investment_value_updates (asset_id,user_id,value,reference_date,source_type) VALUES (${asset.id},${userId},${item.current},CURRENT_DATE,'manual')`
+  }
+  revalidatePath("/investimentos")
+  return { created: true }
+}
+
 export async function createInvestmentTransaction(data: { assetId: number; type: string; date: string; amount: number; notes?: string }) {
   const userId = await adminId()
   const [transaction] = await sql`INSERT INTO investment_transactions (user_id,asset_id,transaction_type,transaction_date,amount,notes,currency,created_at) SELECT ${userId},id,${data.type},${data.date},${data.amount},${data.notes || null},'BRL',CURRENT_TIMESTAMP FROM investment_assets WHERE id=${data.assetId} AND user_id=${userId} RETURNING *`
