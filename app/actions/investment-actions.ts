@@ -39,7 +39,7 @@ export async function updateInvestmentAsset(data: { id: number; name: string; ti
   const initialValue = parseBRLInput(data.initialValue)
   const currentValue = data.currentValue === undefined || data.currentValue === null ? initialValue : parseBRLInput(data.currentValue)
   if (!data.name?.trim() || initialValue <= 0 || currentValue < 0) throw new Error("Informe dados válidos para o investimento.")
-  const [asset] = await sql`UPDATE investment_assets SET name=${data.name.trim()},ticker=${data.ticker?.trim() || null},category=${data.category.trim()},institution=${data.institution?.trim() || null},initial_value=${initialValue},current_value=${currentValue},maturity_date=${data.maturityDate || null},updated_at=CURRENT_TIMESTAMP WHERE id=${data.id} AND user_id=${userId} RETURNING id,name,ticker,category,institution,initial_value,current_value`
+  const [asset] = await sql`UPDATE investment_assets SET name=${data.name.trim()},ticker=${data.ticker?.trim() || null},category=${data.category.trim()},institution=${data.institution?.trim() || null},initial_value=${initialValue},current_value=${currentValue},maturity_date=${data.maturityDate || null},updated_at=CURRENT_TIMESTAMP WHERE id=${data.id} AND user_id=${userId} RETURNING id,name,ticker,category,institution,initial_value,current_value,maturity_date`
   if (!asset) throw new Error("Investimento não encontrado.")
   revalidatePath("/investimentos")
   return { id: Number(asset.id), name: String(asset.name), ticker: asset.ticker ? String(asset.ticker) : null, category: String(asset.category), institution: asset.institution ? String(asset.institution) : null, initialValue: Number(asset.initial_value), currentValue: Number(asset.current_value ?? asset.initial_value), maturityDate: asset.maturity_date ? String(asset.maturity_date) : null }
@@ -69,6 +69,10 @@ export async function createInvestmentTransaction(data: { assetId: number; type:
   const userId = await adminId()
   const [transaction] = await sql`INSERT INTO investment_transactions (user_id,asset_id,transaction_type,transaction_date,amount,notes,currency,created_at) SELECT ${userId},id,${data.type},${data.date},${data.amount},${data.notes || null},'BRL',CURRENT_TIMESTAMP FROM investment_assets WHERE id=${data.assetId} AND user_id=${userId} RETURNING *`
   if (!transaction) throw new Error("Ativo de investimento não encontrado.")
+  const normalizedType = data.type.toUpperCase()
+  const decreases = ["VENDA", "RESGATE", "TAXA", "IMPOSTO"].includes(normalizedType)
+  const delta = decreases ? -Math.abs(Number(data.amount)) : Math.abs(Number(data.amount))
+  await sql`UPDATE investment_assets SET current_value=COALESCE(current_value, initial_value) + ${delta}, updated_at=CURRENT_TIMESTAMP WHERE id=${data.assetId} AND user_id=${userId}`
   revalidatePath("/investimentos")
   return { id: Number(transaction.id), amount: Number(transaction.amount), transactionType: String(transaction.transaction_type) }
 }
