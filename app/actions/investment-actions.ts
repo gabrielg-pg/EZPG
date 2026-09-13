@@ -29,7 +29,6 @@ export async function createInvestmentAsset(data: { name: string; ticker?: strin
   const currentValue = data.currentValue === undefined || data.currentValue === null ? initialValue : parseBRLInput(data.currentValue)
   const [asset] = await sql`INSERT INTO investment_assets (user_id,name,ticker,asset_type,category,institution,initial_value,current_value,currency,indexer,tax_exempt,fgc,maturity_date,created_at,updated_at) VALUES (${userId},${data.name.trim()},${data.ticker?.trim() || null},${data.assetType},${data.category.trim()},${data.institution?.trim() || null},${initialValue},${currentValue},${data.currency || "BRL"},${data.indexer || null},false,false,${data.maturityDate || null},CURRENT_TIMESTAMP,CURRENT_TIMESTAMP) RETURNING id,name,initial_value,current_value,maturity_date`
   if (!asset) throw new Error("Não foi possível criar o ativo.")
-  await sql`INSERT INTO investment_transactions (user_id,asset_id,transaction_type,transaction_date,amount,currency,created_at) VALUES (${userId},${asset.id},'Aporte',CURRENT_DATE,${initialValue},${data.currency || "BRL"},CURRENT_TIMESTAMP)`
   revalidatePath("/investimentos")
   return { id: Number(asset.id), name: String(asset.name), ticker: data.ticker?.trim() || null, category: data.category, institution: data.institution?.trim() || null, maturityDate: asset.maturity_date ? String(asset.maturity_date) : null, initialValue: Number(asset.initial_value), currentValue: Number(asset.current_value ?? asset.initial_value) }
 }
