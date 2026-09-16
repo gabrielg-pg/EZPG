@@ -41,7 +41,7 @@ export function DashboardLayout({ children, userRoles = ["user"] }: DashboardLay
     { name: "Funil Formulário", href: "/crm", icon: KanbanSquare, roles: ["admin", "gestor_ads"] },
     { name: "Funil QUIZ", href: "/funil", icon: Filter, roles: ["admin", "gestor_ads"] },
   { name: "Funil VÉRTEBRA", href: "/zona-de-execucao/funil-vertebra", icon: Target, roles: ["admin", "gestor_ads"] },
-    { name: "Funis Growth", href: "/funis-growth", icon: BarChart3, roles: ["admin"] },
+    { name: "Funis Growth", href: "/funis-growth", icon: BarChart3, roles: ["admin", "funis_growth"] },
     { name: "Raio-X dos Planos", href: "/raiox-planos", icon: BarChart3, roles: ["admin"] },
     { name: "Financeiro", href: "/financeiro", icon: TrendingUp, roles: ["admin"] },
     { name: "Investimentos", href: "/investimentos", icon: BarChart3, roles: ["admin"] },

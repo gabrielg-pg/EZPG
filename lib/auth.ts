@@ -184,6 +184,13 @@ export async function requireAdmin() {
   return user
 }
 
+export async function requireFunisGrowth() {
+  const user = await requireAuth()
+  const roles = new Set([user.role, ...(user.roles ?? [])].filter(Boolean).map((role) => role.toLowerCase()))
+  if (!roles.has("admin") && !roles.has("funis_growth")) redirect("/dashboard")
+  return user
+}
+
 export async function requireComercialOrAdmin() {
   const user = await requireAuth()
   if (user.role !== "admin" && user.role !== "comercial") {

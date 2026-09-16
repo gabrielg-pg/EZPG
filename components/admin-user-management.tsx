@@ -17,18 +17,19 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-  import { Plus, Pencil, Trash2, Search, Users, Shield, UserCheck, Loader2, Briefcase, KeyRound, Mail, UserCog, Rocket, ArrowRightLeft, Megaphone, Pickaxe, FileText, Layers, Share2 } from "lucide-react"
+  import { Plus, Pencil, Trash2, Search, Users, Shield, UserCheck, Loader2, Briefcase, KeyRound, Mail, UserCog, Rocket, ArrowRightLeft, Megaphone, Pickaxe, FileText, Layers, Share2, BarChart3 } from "lucide-react"
 import { createUserAction } from "@/app/actions/auth-actions"
 import { updateUser, deleteUser } from "@/app/actions/user-actions"
 import { cn } from "@/lib/utils"
 
-type RoleType = "admin" | "comercial" | "manager" | "user" | "zona_execucao" | "gestor_ads" | "mineracao" | "blog" | "esteira" | "nexus_growth"
+type RoleType = "admin" | "comercial" | "manager" | "user" | "zona_execucao" | "gestor_ads" | "mineracao" | "blog" | "esteira" | "nexus_growth" | "funis_growth"
 
 // Permissões de módulo (separadas dos níveis de acesso), persistidas via user_roles.
 const moduleConfig = {
   blog: { label: "Blog", color: "bg-primary/15 text-primary border-primary/25", icon: FileText, description: "Acesso ao módulo Blog e ao planejamento editorial" },
   esteira: { label: "Esteira", color: "bg-[#10B981]/15 text-[#10B981] border-[#10B981]/25", icon: Layers, description: "Acesso à aba Esteira (mineração e arquivo por mês) na Zona de Execução" },
   nexus_growth: { label: "Nexus Growth", color: "bg-violet-500/15 text-violet-300 border-violet-500/25", icon: Share2, description: "Acesso ao Nexus Growth: planejamento de conteúdo, calendário e acessos de redes sociais" },
+  funis_growth: { label: "Funis Growth", color: "bg-primary/15 text-primary border-primary/25", icon: BarChart3, description: "Acesso à central de inteligência e performance dos funis" },
 } as const
 
 type ModuleType = keyof typeof moduleConfig

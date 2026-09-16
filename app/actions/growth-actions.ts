@@ -1,7 +1,7 @@
 "use server"
 
 import { sql } from "@/lib/db"
-import { requireAdmin } from "@/lib/auth"
+import { requireFunisGrowth } from "@/lib/auth"
 
 export type GrowthLead = {
   id: string
@@ -11,21 +11,24 @@ export type GrowthLead = {
   createdAt: string
   updatedAt: string | null
   funnel: "CRM" | "QUIZ" | "VÉRTEBRA"
-  email?: string
-  phone?: string
   profile?: string
 }
 
 export async function getGrowthAnalytics(): Promise<GrowthLead[]> {
-  await requireAdmin()
+  await requireFunisGrowth()
   const [crm, quiz, vertebra] = await Promise.all([
     sql`SELECT id, nome, origem, etapa, created_at, updated_at FROM pg_crm_leads ORDER BY created_at DESC`,
-    sql`SELECT id, nome, origem, created_at, created_at AS updated_at, email, whatsapp, perfil FROM quiz_leads ORDER BY created_at DESC`,
-    sql`SELECT id, nome, COALESCE(utm_source, 'VÉRTEBRA') AS origem, status, created_at, NULL::timestamp AS updated_at, email, whatsapp FROM leads_vertebra ORDER BY created_at DESC`,
+    sql`SELECT id, nome, origem, created_at, created_at AS updated_at, perfil FROM quiz_leads ORDER BY created_at DESC`,
+    sql`SELECT id, nome, COALESCE(utm_source, 'VÉRTEBRA') AS origem, status, created_at, NULL::timestamp AS updated_at FROM leads_vertebra ORDER BY created_at DESC`,
   ])
   return [
-    ...crm.map((row: any) => ({ id: `crm-${row.id}`, name: row.nome, source: row.origem || "Não informado", stage: row.etapa || "novo", createdAt: row.created_at, updatedAt: row.updated_at, funnel: "CRM" as const })),
-    ...quiz.map((row: any) => ({ id: `quiz-${row.id}`, name: row.nome, source: row.origem || "quiz", stage: "concluído", createdAt: row.created_at, updatedAt: row.updated_at, funnel: "QUIZ" as const, email: row.email, phone: row.whatsapp, profile: row.perfil })),
-    ...vertebra.map((row: any) => ({ id: `vertebra-${row.id}`, name: row.nome, source: row.origem || "VÉRTEBRA", stage: row.status || "novo", createdAt: row.created_at, updatedAt: row.updated_at, funnel: "VÉRTEBRA" as const, email: row.email, phone: row.whatsapp })),
+    ...crm.map((row: any) => ({ id: `crm-${row.id}`, name: row.nome || "", source: row.origem || "Não informado", stage: row.etapa || "novo", createdAt: String(row.created_at), updatedAt: row.updated_at ? String(row.updated_at) : null, funnel: "CRM" as const })),
+    ...quiz.map((row: any) => ({ id: `quiz-${row.id}`, name: row.nome || "", source: row.origem || "QUIZ", stage: row.perfil || "Não classificado", createdAt: String(row.created_at), updatedAt: row.updated_at ? String(row.updated_at) : null, funnel: "QUIZ" as const, profile: row.perfil || undefined })),
+    ...vertebra.map((row: any) => ({ id: `vertebra-${row.id}`, name: row.nome || "", source: row.origem || "VÉRTEBRA", stage: row.status || "novo", createdAt: String(row.created_at), updatedAt: null, funnel: "VÉRTEBRA" as const })),
   ]
+}
+
+export async function getGrowthSourceOptions(): Promise<string[]> {
+  const leads = await getGrowthAnalytics()
+  return Array.from(new Set(leads.map((lead) => lead.source))).filter(Boolean).sort()
 }
