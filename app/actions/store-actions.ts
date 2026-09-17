@@ -14,7 +14,10 @@ export async function getStores() {
     FROM stores s
     LEFT JOIN customers c ON c.store_id = s.id
     LEFT JOIN users u ON s.created_by = u.id
-    ORDER BY CAST(s.store_number AS INTEGER) DESC
+    ORDER BY CASE
+      WHEN s.store_number ~ '^[0-9]+$' THEN CAST(s.store_number AS INTEGER)
+      ELSE 0
+    END DESC, s.store_number DESC
   `
 
   return stores
@@ -28,6 +31,8 @@ export async function createStore(data: {
   customerName: string
   birthDate: string
   cpf: string
+  passportNumber?: string
+  passportPhotoUrl?: string
   address: string
   addressNumber: string
   cep: string
@@ -48,20 +53,22 @@ export async function createStore(data: {
 
   try {
     const storeResult = await sql`
-      INSERT INTO stores (name, store_number, region, plan, progress, status, created_by, drive_link, niche, num_products, country, language, logo_references_url, collections, store_policies)
-      VALUES (${data.storeName}, ${data.storeNumber}, ${data.region}, ${data.plan}, 25, 'em_andamento', ${user.id}, ${data.driveLink || null}, ${data.niche || null}, ${data.numProducts || null}, ${data.country || null}, ${data.language || null}, ${data.logoReferencesUrl || null}, ${data.collections || null}, ${data.storePolicies || null})
+      INSERT INTO stores (name, store_number, region, plan, progress, status, created_by, drive_link, niche, num_products, country, language, logo_references_url, collections, store_policies, created_at)
+      VALUES (${data.storeName}, ${data.storeNumber}, ${data.region}, ${data.plan}, 25, 'em_andamento', ${user.id}, ${data.driveLink || null}, ${data.niche || null}, ${data.numProducts || null}, ${data.country || null}, ${data.language || null}, ${data.logoReferencesUrl || null}, ${data.collections || null}, ${data.storePolicies || null}, CURRENT_TIMESTAMP AT TIME ZONE 'America/Sao_Paulo')
       RETURNING id
     `
 
     const storeId = storeResult[0].id
 
     await sql`
-      INSERT INTO customers (store_id, name, birth_date, cpf, address, address_number, cep)
+      INSERT INTO customers (store_id, name, birth_date, cpf, passport_number, passport_photo_url, address, address_number, cep)
       VALUES (
         ${storeId}, 
         ${data.customerName}, 
         ${data.birthDate || null}, 
         ${data.cpf}, 
+        ${data.passportNumber || null}, 
+        ${data.passportPhotoUrl || null}, 
         ${data.address}, 
         ${data.addressNumber}, 
         ${data.cep}

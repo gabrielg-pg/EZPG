@@ -94,6 +94,7 @@
 @theme inline {
   --font-sans: "Inter", "Inter Fallback";
   --font-mono: "Geist Mono", "Geist Mono Fallback";
+  --font-poppins: var(--font-poppins), "Inter", sans-serif;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
