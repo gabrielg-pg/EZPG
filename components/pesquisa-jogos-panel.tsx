@@ -362,7 +362,22 @@ export function PesquisaJogosPanel() {
                                     {j}
                                   </Badge>
                                 ))}
+                                {lead.jogos_selecionados.length === 0 && (
+                                  <span className="text-xs text-muted-foreground">
+                                    Nenhum jogo da lista selecionado
+                                  </span>
+                                )}
                               </div>
+                              {lead.outros_jogos && (
+                                <div className="mt-2 flex flex-col gap-1.5">
+                                  <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                    Outros jogos sugeridos
+                                  </span>
+                                  <span className="text-sm text-foreground">
+                                    {lead.outros_jogos}
+                                  </span>
+                                </div>
+                              )}
                             </div>
                           </td>
                         </tr>

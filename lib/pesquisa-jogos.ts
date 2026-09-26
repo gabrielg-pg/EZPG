@@ -35,6 +35,7 @@ export type PesquisaLead = {
   email: string
   telefone: string | null
   jogos_selecionados: string[]
+  outros_jogos: string | null
   data_resposta: string
   status: string
 }

@@ -36,7 +36,7 @@ export async function GET(request: Request) {
 
     // neon serverless não parametriza ORDER BY, então montamos com valores já validados
     const leads = await sql.query(
-      `SELECT id, nome, email, telefone, jogos_selecionados, data_resposta, status
+      `SELECT id, nome, email, telefone, jogos_selecionados, outros_jogos, data_resposta, status
        FROM pesquisa_jogos_2026
        WHERE ($1::text IS NULL OR LOWER(nome) LIKE $1 OR LOWER(email) LIKE $1)
          AND ($2::text IS NULL OR $2 = ANY(jogos_selecionados))

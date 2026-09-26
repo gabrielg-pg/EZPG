@@ -23,6 +23,7 @@ export async function POST(request: Request) {
     const email = String(body.email ?? "").trim().toLowerCase()
     const telefone = body.telefone ? String(body.telefone).trim() : null
     const jogosSelecionados: unknown = body.jogos_selecionados
+    const outrosJogos = body.outros_jogos ? String(body.outros_jogos).trim().slice(0, 500) : null
 
     // Validações
     if (nome.length < 3) {
@@ -39,21 +40,21 @@ export async function POST(request: Request) {
       )
     }
 
-    if (!Array.isArray(jogosSelecionados) || jogosSelecionados.length === 0) {
-      return NextResponse.json(
-        { success: false, error: "Selecione ao menos um jogo", field: "jogos_selecionados" },
-        { status: 400 },
-      )
-    }
-
     // Aceita apenas jogos da lista oficial, sem duplicatas
-    const jogos = Array.from(
-      new Set(jogosSelecionados.map((j) => String(j))),
-    ).filter((j) => TODOS_OS_JOGOS.includes(j))
+    const jogos = Array.isArray(jogosSelecionados)
+      ? Array.from(new Set(jogosSelecionados.map((j) => String(j)))).filter((j) =>
+          TODOS_OS_JOGOS.includes(j),
+        )
+      : []
 
-    if (jogos.length === 0) {
+    // É preciso selecionar ao menos um jogo da lista OU informar outros jogos
+    if (jogos.length === 0 && !outrosJogos) {
       return NextResponse.json(
-        { success: false, error: "Nenhum jogo válido selecionado", field: "jogos_selecionados" },
+        {
+          success: false,
+          error: "Selecione ao menos um jogo ou informe outros",
+          field: "jogos_selecionados",
+        },
         { status: 400 },
       )
     }
@@ -84,12 +85,13 @@ export async function POST(request: Request) {
     }
 
     const inseridos = await sql`
-      INSERT INTO pesquisa_jogos_2026 (nome, email, telefone, jogos_selecionados)
-      VALUES (${nome}, ${email}, ${telefone}, ${jogos})
+      INSERT INTO pesquisa_jogos_2026 (nome, email, telefone, jogos_selecionados, outros_jogos)
+      VALUES (${nome}, ${email}, ${telefone}, ${jogos}, ${outrosJogos})
       ON CONFLICT (email) DO UPDATE
         SET nome = EXCLUDED.nome,
             telefone = EXCLUDED.telefone,
             jogos_selecionados = EXCLUDED.jogos_selecionados,
+            outros_jogos = EXCLUDED.outros_jogos,
             data_resposta = CURRENT_TIMESTAMP,
             status = 'respondido'
       RETURNING id, data_resposta

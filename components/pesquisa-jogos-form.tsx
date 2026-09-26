@@ -17,6 +17,7 @@ export function PesquisaJogosForm() {
   const [email, setEmail] = useState("")
   const [telefone, setTelefone] = useState("")
   const [selecionados, setSelecionados] = useState<Set<string>>(new Set())
+  const [outrosJogos, setOutrosJogos] = useState("")
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [sucesso, setSucesso] = useState(false)
@@ -38,10 +39,11 @@ export function PesquisaJogosForm() {
     if (!EMAIL_REGEX.test(email.trim())) next.email = "Informe um e-mail válido."
     if (telefone.trim() && telefone.replace(/\D/g, "").length < 8)
       next.telefone = "Telefone inválido."
-    if (selecionados.size === 0) next.jogos = "Selecione ao menos um jogo."
+    if (selecionados.size === 0 && outrosJogos.trim().length === 0)
+      next.jogos = "Selecione ao menos um jogo ou informe outro em \"Outros\"."
     setErrors(next)
     return Object.keys(next).length === 0
-  }, [nome, email, telefone, selecionados])
+  }, [nome, email, telefone, selecionados, outrosJogos])
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -58,6 +60,7 @@ export function PesquisaJogosForm() {
             email: email.trim(),
             telefone: telefone.trim() || null,
             jogos_selecionados: Array.from(selecionados),
+            outros_jogos: outrosJogos.trim() || null,
           }),
         })
         const data = await res.json()
@@ -74,10 +77,13 @@ export function PesquisaJogosForm() {
         setIsSubmitting(false)
       }
     },
-    [nome, email, telefone, selecionados, validate],
+    [nome, email, telefone, selecionados, outrosJogos, validate],
   )
 
-  const podeEnviar = useMemo(() => totalSelecionados > 0, [totalSelecionados])
+  const podeEnviar = useMemo(
+    () => totalSelecionados > 0 || outrosJogos.trim().length > 0,
+    [totalSelecionados, outrosJogos],
+  )
 
   if (sucesso) {
     return (
@@ -110,14 +116,14 @@ export function PesquisaJogosForm() {
           />
         </div>
         <h1 className="text-3xl font-bold tracking-tight text-foreground text-balance md:text-4xl">
-          Qual jogo você quer ver em campeonato?
+          Qual jogo você quer ver no campeonato 2026?
         </h1>
         <p className="text-lg font-medium text-primary">
           Escolha seus favoritos para o campeonato municipal 2026
         </p>
         <p className="max-w-xl text-pretty text-sm leading-relaxed text-muted-foreground">
           Sua opinião importa! Selecione os jogos que você gostaria de ver competindo em São João
-          Batista no próximo ano.
+          Batista em 2026.
         </p>
       </header>
 
@@ -218,6 +224,27 @@ export function PesquisaJogosForm() {
             </div>
           </div>
         ))}
+
+        {/* Outros jogos — texto livre */}
+        <div className="flex flex-col gap-3">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+            Outros, quais?
+          </h3>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="outros-jogos" className="sr-only">
+              Outros jogos não listados
+            </Label>
+            <Input
+              id="outros-jogos"
+              value={outrosJogos}
+              onChange={(e) => setOutrosJogos(e.target.value)}
+              placeholder="Digite outros jogos que você gostaria de ver (separe por vírgula)"
+            />
+            <p className="text-xs text-muted-foreground">
+              Não encontrou seu jogo na lista? Escreva aqui os que estão faltando.
+            </p>
+          </div>
+        </div>
       </div>
 
       {errors.geral && (
