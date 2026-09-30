@@ -6,9 +6,38 @@ import { useState, useTransition } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Plus, Check, X, Loader2, CalendarCheck } from "lucide-react"
+import { Plus, Check, X, Loader2, CalendarCheck, ChevronUp, ChevronDown } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { createDemanda, toggleDemanda, deleteDemanda, type Demanda } from "@/app/actions/demandas-actions"
+import {
+  createDemanda,
+  toggleDemanda,
+  deleteDemanda,
+  reorderDemandas,
+  type Demanda,
+} from "@/app/actions/demandas-actions"
+
+const SECTION_PRESETS = [
+  { key: "MANHA", title: "☀️ MANHÃ" },
+  { key: "TARDE", title: "🌙 TARDE" },
+  { key: "NOITE", title: "🌌 NOITE" },
+]
+
+function sectionKey(title: string): string | null {
+  const normalized = title
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z]/g, "")
+    .toUpperCase()
+  return SECTION_PRESETS.some((s) => s.key === normalized) ? normalized : null
+}
+
+const isSection = (d: Demanda) => sectionKey(d.title) !== null
+
+function sortByPosition(a: Demanda, b: Demanda) {
+  const pa = a.position ?? Number.MAX_SAFE_INTEGER
+  const pb = b.position ?? Number.MAX_SAFE_INTEGER
+  return pa - pb || a.id - b.id
+}
 
 const DAYS = [
   { label: "Segunda", value: 1 },
@@ -31,14 +60,36 @@ export function DemandasBoard({ initialDemandas, weekStart }: DemandasBoardProps
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
-  const totalCount = demandas.length
-  const completedCount = demandas.filter((d) => d.completed).length
+  const tasks = demandas.filter((d) => !isSection(d))
+  const totalCount = tasks.length
+  const completedCount = tasks.filter((d) => d.completed).length
   const progressPct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0
 
-  const handleAdd = (dayOfWeek: number) => {
-    if (!newTitle.trim()) return
+  const handleMove = (dayOfWeek: number, id: number, direction: -1 | 1) => {
+    const dayList = demandas.filter((d) => d.day_of_week === dayOfWeek).sort(sortByPosition)
+    const index = dayList.findIndex((d) => d.id === id)
+    const target = index + direction
+    if (index < 0 || target < 0 || target >= dayList.length) return
+
+    const reordered = [...dayList]
+    ;[reordered[index], reordered[target]] = [reordered[target], reordered[index]]
+    const positions = new Map(reordered.map((d, i) => [d.id, i + 1]))
+    const previous = demandas
+
+    setDemandas((prev) => prev.map((d) => (positions.has(d.id) ? { ...d, position: positions.get(d.id)! } : d)))
+    startTransition(async () => {
+      const result = await reorderDemandas(reordered.map((d) => d.id))
+      if (!result.success) {
+        setDemandas(previous)
+        setError(result.error || "Erro ao mover demanda")
+      }
+    })
+  }
+
+  const handleAdd = (dayOfWeek: number, presetTitle?: string) => {
+    const title = (presetTitle ?? newTitle).trim()
+    if (!title) return
     setError(null)
-    const title = newTitle.trim()
 
     startTransition(async () => {
       const result = await createDemanda({ title, dayOfWeek, weekStart })
@@ -135,8 +186,9 @@ export function DemandasBoard({ initialDemandas, weekStart }: DemandasBoardProps
       {/* Colunas dos dias */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         {DAYS.map((day) => {
-          const dayDemandas = demandas.filter((d) => d.day_of_week === day.value)
-          const dayCompleted = dayDemandas.filter((d) => d.completed).length
+          const dayDemandas = demandas.filter((d) => d.day_of_week === day.value).sort(sortByPosition)
+          const dayTasks = dayDemandas.filter((d) => !isSection(d))
+          const dayCompleted = dayTasks.filter((d) => d.completed).length
 
           return (
             <div key={day.value} className="flex flex-col rounded-xl border border-border bg-card/50">
@@ -146,12 +198,12 @@ export function DemandasBoard({ initialDemandas, weekStart }: DemandasBoardProps
                 <span
                   className={cn(
                     "rounded-full px-2 py-0.5 text-xs font-medium",
-                    dayDemandas.length > 0 && dayCompleted === dayDemandas.length
+                    dayTasks.length > 0 && dayCompleted === dayTasks.length
                       ? "bg-green-500/15 text-green-500"
                       : "bg-muted text-muted-foreground",
                   )}
                 >
-                  {dayCompleted}/{dayDemandas.length}
+                  {dayCompleted}/{dayTasks.length}
                 </span>
               </div>
 
@@ -161,11 +213,54 @@ export function DemandasBoard({ initialDemandas, weekStart }: DemandasBoardProps
                   <p className="py-4 text-center text-xs text-muted-foreground">Nenhuma demanda ainda.</p>
                 )}
 
-                {dayDemandas.map((demanda) => (
+                {dayDemandas.map((demanda, index) => {
+                  const moveControls = (
+                    <div className="flex shrink-0 flex-col opacity-40 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+                      <button
+                        onClick={() => handleMove(day.value, demanda.id, -1)}
+                        disabled={index === 0}
+                        aria-label="Mover para cima"
+                        className="rounded text-muted-foreground hover:text-primary disabled:pointer-events-none disabled:opacity-20"
+                      >
+                        <ChevronUp className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => handleMove(day.value, demanda.id, 1)}
+                        disabled={index === dayDemandas.length - 1}
+                        aria-label="Mover para baixo"
+                        className="rounded text-muted-foreground hover:text-primary disabled:pointer-events-none disabled:opacity-20"
+                      >
+                        <ChevronDown className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )
+
+                  if (isSection(demanda)) {
+                    return (
+                      <div key={demanda.id} className="group flex items-center gap-2 pt-2 first:pt-0">
+                        {moveControls}
+                        <div className="h-px flex-1 bg-gradient-to-r from-transparent to-primary/40" />
+                        <span className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-semibold tracking-widest text-primary">
+                          {demanda.title}
+                        </span>
+                        <div className="h-px flex-1 bg-gradient-to-l from-transparent to-primary/40" />
+                        <button
+                          onClick={() => handleDelete(demanda.id)}
+                          aria-label="Excluir seção"
+                          className="shrink-0 text-muted-foreground opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100 focus-visible:opacity-100"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    )
+                  }
+
+                  return (
                   <div
                     key={demanda.id}
                     className="group flex items-center gap-2 rounded-lg border border-border bg-background/60 p-2.5"
                   >
+                    {moveControls}
                     <button
                       onClick={() => handleToggle(demanda.id, demanda.completed)}
                       aria-label={demanda.completed ? "Marcar como pendente" : "Marcar como concluída"}
@@ -194,7 +289,8 @@ export function DemandasBoard({ initialDemandas, weekStart }: DemandasBoardProps
                       <X className="h-4 w-4" />
                     </button>
                   </div>
-                ))}
+                  )
+                })}
 
                 {/* Campo inline para adicionar */}
                 {addingDay === day.value && (
@@ -223,7 +319,19 @@ export function DemandasBoard({ initialDemandas, weekStart }: DemandasBoardProps
               </div>
 
               {/* Botão adicionar */}
-              <div className="p-3 pt-0">
+              <div className="flex flex-col gap-2 p-3 pt-0">
+                <div className="flex items-center justify-center gap-2">
+                  {SECTION_PRESETS.slice(0, 2).map((preset) => (
+                    <button
+                      key={preset.key}
+                      onClick={() => handleAdd(day.value, preset.title)}
+                      disabled={isPending}
+                      className="rounded-full border border-primary/30 bg-primary/5 px-3 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/15 disabled:opacity-50"
+                    >
+                      + {preset.title}
+                    </button>
+                  ))}
+                </div>
                 {addingDay !== day.value && (
                   <Button
                     variant="ghost"

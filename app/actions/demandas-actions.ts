@@ -13,6 +13,7 @@ export type Demanda = {
   created_by: number | null
   created_by_name: string | null
   created_at: string
+  position: number | null
 }
 
 // Garante que a tabela existe
@@ -26,7 +27,8 @@ export async function createDemandasTable(): Promise<void> {
       completed BOOLEAN DEFAULT false,
       created_by INTEGER,
       created_by_name VARCHAR(255),
-      created_at TIMESTAMP DEFAULT NOW()
+      created_at TIMESTAMP DEFAULT NOW(),
+      position INTEGER
     )
   `
 }
@@ -34,10 +36,10 @@ export async function createDemandasTable(): Promise<void> {
 // Busca todas as demandas de uma semana
 export async function getDemandas(weekStart: string): Promise<Demanda[]> {
   const demandas = await sql`
-    SELECT id, title, day_of_week, week_start, completed, created_by, created_by_name, created_at
+    SELECT id, title, day_of_week, week_start, completed, created_by, created_by_name, created_at, position
     FROM pg_demandas
     WHERE week_start = ${weekStart}
-    ORDER BY day_of_week ASC, created_at ASC
+    ORDER BY day_of_week ASC, position ASC NULLS LAST, created_at ASC, id ASC
   `
   return demandas as Demanda[]
 }
@@ -59,9 +61,12 @@ export async function createDemanda(data: {
 
   try {
     const rows = await sql`
-      INSERT INTO pg_demandas (title, day_of_week, week_start, created_by, created_by_name)
-      VALUES (${data.title.trim()}, ${data.dayOfWeek}, ${data.weekStart}, ${user.id}, ${user.name})
-      RETURNING id, title, day_of_week, week_start, completed, created_by, created_by_name, created_at
+      INSERT INTO pg_demandas (title, day_of_week, week_start, created_by, created_by_name, position)
+      VALUES (
+        ${data.title.trim()}, ${data.dayOfWeek}, ${data.weekStart}, ${user.id}, ${user.name},
+        (SELECT COALESCE(MAX(position), 0) + 1 FROM pg_demandas WHERE week_start = ${data.weekStart} AND day_of_week = ${data.dayOfWeek})
+      )
+      RETURNING id, title, day_of_week, week_start, completed, created_by, created_by_name, created_at, position
     `
     revalidatePath("/demandas")
     return { success: true, demanda: rows[0] as Demanda }
@@ -86,6 +91,33 @@ export async function toggleDemanda(id: number, completed: boolean): Promise<{ s
   } catch (error) {
     console.error("Toggle demanda error:", error)
     return { success: false, error: "Erro ao atualizar demanda" }
+  }
+}
+
+// Salva a nova ordem das demandas de um dia (ids na ordem desejada)
+export async function reorderDemandas(orderedIds: number[]): Promise<{ success: boolean; error?: string }> {
+  const { user } = await getSession()
+  if (!user) {
+    return { success: false, error: "Não autenticado" }
+  }
+
+  const ids = orderedIds.filter((id) => Number.isInteger(id) && id > 0)
+  if (ids.length === 0 || ids.length > 500) {
+    return { success: false, error: "Ordem inválida" }
+  }
+
+  try {
+    await sql`
+      UPDATE pg_demandas AS d
+      SET position = v.pos
+      FROM unnest(${ids}::int[]) WITH ORDINALITY AS v(id, pos)
+      WHERE d.id = v.id
+    `
+    revalidatePath("/demandas")
+    return { success: true }
+  } catch (error) {
+    console.error("Reorder demandas error:", error)
+    return { success: false, error: "Erro ao reordenar demandas" }
   }
 }
 
