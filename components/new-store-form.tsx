@@ -167,6 +167,12 @@ function parseDateBRToISO(dateBR: string) {
   if (parts.length !== 3) return ""
   const [day, month, year] = parts
   if (day.length !== 2 || month.length !== 2 || year.length !== 4) return ""
+  const y = Number(year)
+  const m = Number(month)
+  const d = Number(day)
+  const date = new Date(Date.UTC(y, m - 1, d))
+  const isRealDate = date.getUTCFullYear() === y && date.getUTCMonth() === m - 1 && date.getUTCDate() === d
+  if (!isRealDate || y < 1900 || date.getTime() > Date.now()) return ""
   return `${year}-${month}-${day}`
 }
 
