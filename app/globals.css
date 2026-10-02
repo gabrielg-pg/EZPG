@@ -190,6 +190,32 @@
   background: rgba(139, 92, 246, 0.3);
 }
 
+.sidebar-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  transition: scrollbar-color 0.2s;
+}
+
+.sidebar-scroll:hover {
+  scrollbar-color: rgba(139, 92, 246, 0.25) transparent;
+}
+
+.sidebar-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb {
+  background: transparent;
+}
+
+.sidebar-scroll:hover::-webkit-scrollbar-thumb {
+  background: rgba(139, 92, 246, 0.25);
+}
+
 /* Glassmorphism card effect */
 .glass-card {
   background: rgba(255, 255, 255, 0.03);
