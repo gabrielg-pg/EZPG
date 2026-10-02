@@ -14,7 +14,10 @@ export async function getStores() {
     FROM stores s
     LEFT JOIN customers c ON c.store_id = s.id
     LEFT JOIN users u ON s.created_by = u.id
-    ORDER BY CAST(s.store_number AS INTEGER) DESC
+    ORDER BY CASE
+      WHEN s.store_number ~ '^[0-9]+$' THEN CAST(s.store_number AS INTEGER)
+      ELSE 0
+    END DESC, s.store_number DESC
   `
 
   return stores
@@ -28,6 +31,8 @@ export async function createStore(data: {
   customerName: string
   birthDate: string
   cpf: string
+  passportNumber?: string
+  passportPhotoUrl?: string
   address: string
   addressNumber: string
   cep: string
@@ -46,43 +51,81 @@ export async function createStore(data: {
     return { success: false, error: "Não autorizado" }
   }
 
+  const customerName = data.customerName?.trim() ?? ""
+  const cpf = data.cpf?.trim() ?? ""
+  const cep = data.cep?.trim() ?? ""
+  const address = data.address?.trim() ?? ""
+  const addressNumber = data.addressNumber?.trim() ?? ""
+  const birthDate = data.birthDate?.trim() ?? ""
+
+  if (!data.storeName?.trim() || !data.storeNumber?.trim()) {
+    return { success: false, error: "Nome e número da loja são obrigatórios" }
+  }
+  if (!customerName) return { success: false, error: "Nome do cliente é obrigatório" }
+  if (birthDate && !isValidISODate(birthDate)) {
+    return { success: false, error: "Data de nascimento inválida. Confira dia, mês e ano." }
+  }
+  if (cpf.length > 14) return { success: false, error: "CPF muito longo (máx. 14 caracteres)" }
+  if (cep.length > 10) return { success: false, error: "CEP muito longo (máx. 10 caracteres)" }
+  if (addressNumber.length > 20) return { success: false, error: "Número do endereço muito longo (máx. 20 caracteres)" }
+
+  const enabledAccounts = Object.entries(data.accounts ?? {})
+    .filter(([, acc]) => acc.enabled)
+    .map(([accountType, acc]) => ({
+      account_type: accountType,
+      login: acc.login?.trim() ?? "",
+      password: acc.password ?? "",
+    }))
+
   try {
-    const storeResult = await sql`
-      INSERT INTO stores (name, store_number, region, plan, progress, status, created_by, drive_link, niche, num_products, country, language, logo_references_url, collections, store_policies)
-      VALUES (${data.storeName}, ${data.storeNumber}, ${data.region}, ${data.plan}, 25, 'em_andamento', ${user.id}, ${data.driveLink || null}, ${data.niche || null}, ${data.numProducts || null}, ${data.country || null}, ${data.language || null}, ${data.logoReferencesUrl || null}, ${data.collections || null}, ${data.storePolicies || null})
-      RETURNING id
-    `
-
-    const storeId = storeResult[0].id
-
-    await sql`
-      INSERT INTO customers (store_id, name, birth_date, cpf, address, address_number, cep)
-      VALUES (
-        ${storeId}, 
-        ${data.customerName}, 
-        ${data.birthDate || null}, 
-        ${data.cpf}, 
-        ${data.address}, 
-        ${data.addressNumber}, 
-        ${data.cep}
+    // Single statement so the store, customer and accounts are saved together or not at all.
+    const result = await sql`
+      WITH new_store AS (
+        INSERT INTO stores (name, store_number, region, plan, progress, status, created_by, drive_link, niche, num_products, country, language, logo_references_url, collections, store_policies, created_at)
+        VALUES (${data.storeName.trim()}, ${data.storeNumber.trim()}, ${data.region}, ${data.plan}, 25, 'em_andamento', ${user.id}, ${data.driveLink || null}, ${data.niche || null}, ${data.numProducts || null}, ${data.country || null}, ${data.language || null}, ${data.logoReferencesUrl || null}, ${data.collections || null}, ${data.storePolicies || null}, CURRENT_TIMESTAMP AT TIME ZONE 'America/Sao_Paulo')
+        RETURNING id
+      ),
+      new_customer AS (
+        INSERT INTO customers (store_id, name, birth_date, cpf, passport_number, passport_photo_url, address, address_number, cep)
+        SELECT id, ${customerName}, ${birthDate || null}::date, ${cpf}, ${data.passportNumber || null}, ${data.passportPhotoUrl || null}, ${address}, ${addressNumber}, ${cep}
+        FROM new_store
+        RETURNING id
+      ),
+      new_accounts AS (
+        INSERT INTO store_accounts (store_id, account_type, login, password, enabled)
+        SELECT ns.id, a.account_type, a.login, a.password, true
+        FROM new_store ns, jsonb_to_recordset(${JSON.stringify(enabledAccounts)}::jsonb) AS a(account_type text, login text, password text)
+        RETURNING id
       )
+      SELECT
+        (SELECT id FROM new_store) AS store_id,
+        (SELECT COUNT(*)::int FROM new_customer) AS customers,
+        (SELECT COUNT(*)::int FROM new_accounts) AS accounts
     `
-
-    for (const [accountType, accountData] of Object.entries(data.accounts)) {
-      if (accountData.enabled) {
-        await sql`
-          INSERT INTO store_accounts (store_id, account_type, login, password, enabled)
-          VALUES (${storeId}, ${accountType}, ${accountData.login}, ${accountData.password}, true)
-        `
-      }
-    }
 
     revalidatePath("/dashboard")
-    return { success: true, storeId }
+    return { success: true, storeId: result[0].store_id }
   } catch (error) {
     console.error("Create store error:", error)
-    return { success: false, error: "Erro ao criar loja" }
+    return { success: false, error: describeDbError(error) }
   }
+}
+
+function isValidISODate(value: string) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
+  if (!match) return false
+  const [, y, m, d] = match.map(Number)
+  const date = new Date(Date.UTC(y, m - 1, d))
+  return date.getUTCFullYear() === y && date.getUTCMonth() === m - 1 && date.getUTCDate() === d && y >= 1900
+}
+
+function describeDbError(error: unknown) {
+  const code = (error as { code?: string })?.code
+  if (code === "22007" || code === "22008") return "Data de nascimento inválida. Confira dia, mês e ano."
+  if (code === "22001") return "Algum campo ultrapassou o tamanho permitido (CPF, CEP ou número)."
+  if (code === "23514") return "Tipo de conta inválido para este plano."
+  if (code === "23505") return "Já existe um registro com esses dados."
+  return "Erro ao criar loja. Nenhum dado foi salvo, tente novamente."
 }
 
 export async function getStoreDetails(storeId: number) {
@@ -174,7 +217,7 @@ export async function updateStore(
 
     // Update customer data if provided
     if (data.customer_name || data.birth_date || data.cpf || data.address || data.address_number || data.cep) {
-      await sql`
+      const updated = await sql`
         UPDATE customers 
         SET 
           name = COALESCE(${data.customer_name ?? null}, name),
@@ -184,7 +227,15 @@ export async function updateStore(
           address_number = COALESCE(${data.address_number ?? null}, address_number),
           cep = COALESCE(${data.cep ?? null}, cep)
         WHERE store_id = ${storeId}
+        RETURNING id
       `
+      // Stores saved without a customer row (failed earlier inserts) get one created here.
+      if (updated.length === 0) {
+        await sql`
+          INSERT INTO customers (store_id, name, birth_date, cpf, address, address_number, cep)
+          VALUES (${storeId}, ${data.customer_name?.trim() || "Sem nome"}, ${data.birth_date || null}, ${data.cpf || null}, ${data.address || null}, ${data.address_number || null}, ${data.cep || null})
+        `
+      }
     }
 
     // Update accounts if provided

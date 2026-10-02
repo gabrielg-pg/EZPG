@@ -171,11 +171,11 @@ function generateRawText(details: StoreDetails): string {
 
   return `DADOS CLIENTE:
 
-Nome completo: ${customer.name}
+Nome completo: ${customer.name || "-"}
 Data de nascimento: ${formatDateBR(customer.birth_date)}
-Endereço completo com CEP: ${customer.address}, ${customer.address_number}
-CEP: ${customer.cep}
-CPF: ${customer.cpf}
+Endereço completo com CEP: ${[customer.address, customer.address_number].filter(Boolean).join(", ") || "-"}
+CEP: ${customer.cep || "-"}
+CPF: ${customer.cpf || "-"}
 
 DRIVE: ${store.drive_link || "Não informado"}
 
@@ -695,7 +695,7 @@ export function StoreCards({ initialStores }: { initialStores: StoreData[] }) {
 
       {/* View Details Dialog */}
       <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto overflow-x-hidden">
           <DialogHeader>
             <DialogTitle className="text-foreground">Detalhes da Loja</DialogTitle>
             <DialogDescription className="text-muted-foreground">
@@ -708,27 +708,32 @@ export function StoreCards({ initialStores }: { initialStores: StoreData[] }) {
               {/* Customer Data */}
               <div className="space-y-3">
                 <h4 className="font-semibold text-foreground border-b border-primary/15 pb-2">Dados do Cliente</h4>
+                {!selectedStore.customer.name && (
+                  <p className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+                    {"Os dados do cliente desta loja não foram salvos. Clique em Editar para preenchê-los novamente."}
+                  </p>
+                )}
                 <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div>
+                  <div className="min-w-0">
                     <span className="text-muted-foreground">Nome:</span>
-                    <p className="text-foreground font-medium">{selectedStore.customer.name}</p>
+                    <p className="text-foreground font-medium break-words">{selectedStore.customer.name || "-"}</p>
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <span className="text-muted-foreground">Data de Nascimento:</span>
                     <p className="text-foreground font-medium">{formatDateBR(selectedStore.customer.birth_date)}</p>
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <span className="text-muted-foreground">CPF:</span>
-                    <p className="text-foreground font-medium">{selectedStore.customer.cpf}</p>
+                    <p className="text-foreground font-medium">{selectedStore.customer.cpf || "-"}</p>
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <span className="text-muted-foreground">CEP:</span>
-                    <p className="text-foreground font-medium">{selectedStore.customer.cep}</p>
+                    <p className="text-foreground font-medium">{selectedStore.customer.cep || "-"}</p>
                   </div>
-                  <div className="col-span-2">
+                  <div className="col-span-2 min-w-0">
                     <span className="text-muted-foreground">Endereço:</span>
-                    <p className="text-foreground font-medium">
-                      {selectedStore.customer.address}, {selectedStore.customer.address_number}
+                    <p className="text-foreground font-medium break-words">
+                      {[selectedStore.customer.address, selectedStore.customer.address_number].filter(Boolean).join(", ") || "-"}
                     </p>
                   </div>
                 </div>

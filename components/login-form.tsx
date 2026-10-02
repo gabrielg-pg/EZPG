@@ -44,7 +44,7 @@ export function LoginForm() {
             <div className="absolute inset-0 bg-primary/30 blur-3xl rounded-full scale-150" />
             <Image
               src="https://i.imgur.com/jfNDVLp.png"
-              alt="Pro Growth Logo"
+              alt="PRO GROWTH GLOBAL Logo"
               width={64}
               height={64}
               className="relative z-10 rounded-2xl shadow-xl shadow-primary/20"
@@ -52,7 +52,7 @@ export function LoginForm() {
             />
           </div>
           <div className="space-y-1">
-            <CardTitle className="text-xl font-bold text-foreground">Pro Growth</CardTitle>
+            <CardTitle className="text-xl font-bold text-foreground">PRO GROWTH GLOBAL</CardTitle>
             <CardDescription className="text-muted-foreground text-sm">
               Entre com suas credenciais para acessar
             </CardDescription>
