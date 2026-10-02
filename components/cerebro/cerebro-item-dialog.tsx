@@ -13,7 +13,14 @@ const TIPO_LABEL: Record<CerebroTipo, { novo: string; editar: string; desc: stri
   aprendizado: { novo: "Novo aprendizado", editar: "Editar aprendizado", desc: "Registre um erro, solução ou insight." },
   link: { novo: "Novo link", editar: "Editar link", desc: "Guarde um link que você usa no dia a dia." },
   modelo: { novo: "Novo modelo ou prompt", editar: "Editar modelo", desc: "Salve um texto pronto para reutilizar." },
+  estrutura: {
+    novo: "Nova estrutura para modelar",
+    editar: "Editar estrutura",
+    desc: "Registre uma loja de referência para modelar.",
+  },
 }
+
+const MOEDAS_SUGERIDAS = ["EUR", "GBP", "USD", "BRL", "CHF", "CAD", "AUD"]
 
 interface CerebroItemDialogProps {
   open: boolean
@@ -41,6 +48,9 @@ export function CerebroItemDialog({
   const [tags, setTags] = useState<string[]>([])
   const [tagDraft, setTagDraft] = useState("")
   const [favicon, setFavicon] = useState<string | null>(null)
+  const [nicho, setNicho] = useState("")
+  const [pais, setPais] = useState("")
+  const [moeda, setMoeda] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [fetchingMeta, setFetchingMeta] = useState(false)
   const [isPending, startTransition] = useTransition()
@@ -53,6 +63,9 @@ export function CerebroItemDialog({
     setCategoria(item?.categoria ?? (tipo === "link" ? "Ferramentas" : ""))
     setTags(item?.tags ?? [])
     setFavicon(item?.favicon ?? null)
+    setNicho(item?.nicho ?? "")
+    setPais(item?.pais ?? "")
+    setMoeda(item?.moeda ?? "")
     setTagDraft("")
     setError(null)
   }, [open, item, tipo])
@@ -82,7 +95,7 @@ export function CerebroItemDialog({
     e.preventDefault()
     setError(null)
     startTransition(async () => {
-      const err = await onSubmit({ tipo, titulo, conteudo, url, categoria, tags, favicon })
+      const err = await onSubmit({ tipo, titulo, conteudo, url, categoria, tags, favicon, nicho, pais, moeda })
       if (err) setError(err)
       else onOpenChange(false)
     })
@@ -103,6 +116,62 @@ export function CerebroItemDialog({
             <p role="alert" className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
               {error}
             </p>
+          )}
+
+          {tipo === "estrutura" && (
+            <>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="estrutura-nome">Nome da loja</Label>
+                <Input
+                  id="estrutura-nome"
+                  value={titulo}
+                  onChange={(e) => setTitulo(e.target.value)}
+                  placeholder="Ex: Noa Barcelona"
+                  required
+                  autoFocus
+                />
+              </div>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="estrutura-nicho">Nicho</Label>
+                  <Input id="estrutura-nicho" value={nicho} onChange={(e) => setNicho(e.target.value)} placeholder="Ex: Fashion" />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="estrutura-pais">País</Label>
+                  <Input id="estrutura-pais" value={pais} onChange={(e) => setPais(e.target.value)} placeholder="Ex: Reino Unido" />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="estrutura-moeda">Moeda</Label>
+                  <Input
+                    id="estrutura-moeda"
+                    list="estrutura-moedas"
+                    value={moeda}
+                    onChange={(e) => setMoeda(e.target.value)}
+                    placeholder="Ex: GBP"
+                  />
+                  <datalist id="estrutura-moedas">
+                    {MOEDAS_SUGERIDAS.map((m) => (
+                      <option key={m} value={m} />
+                    ))}
+                  </datalist>
+                </div>
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="estrutura-url">Link da loja</Label>
+                <Input id="estrutura-url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://..." />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="estrutura-obs">Observação (opcional)</Label>
+                <Textarea
+                  id="estrutura-obs"
+                  value={conteudo}
+                  onChange={(e) => setConteudo(e.target.value)}
+                  rows={3}
+                  className="resize-y font-sans leading-relaxed"
+                  placeholder="O que vale modelar nessa loja"
+                />
+              </div>
+            </>
           )}
 
           {tipo === "link" && (
@@ -129,6 +198,8 @@ export function CerebroItemDialog({
             </div>
           )}
 
+          {tipo !== "estrutura" && (
+          <>
           <div className="flex flex-col gap-2">
             <Label htmlFor="cerebro-titulo">{tipo === "link" ? "Nome" : "Título"}</Label>
             <Input
@@ -172,8 +243,10 @@ export function CerebroItemDialog({
               required={tipo === "modelo"}
             />
           </div>
+          </>
+          )}
 
-          {tipo !== "link" && (
+          {tipo !== "link" && tipo !== "estrutura" && (
             <div className="flex flex-col gap-2">
               <Label htmlFor="cerebro-tag">Tags</Label>
               {tags.length > 0 && (

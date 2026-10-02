@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import type { LucideIcon } from "lucide-react"
-import { Check, ChevronDown, Copy, ExternalLink, Pencil, Pin, PinOff, Plus, Trash2 } from "lucide-react"
+import { Check, ChevronDown, Copy, ExternalLink, Pencil, Pin, PinOff, Plus, Store, Trash2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { CerebroItem, CerebroTipo } from "@/app/actions/cerebro-actions"
 
@@ -96,7 +96,13 @@ export function CerebroColumn({
     )
 
   return (
-    <section className="flex h-[620px] flex-col rounded-2xl border border-border bg-card" aria-label={title}>
+    <section
+      className={cn(
+        "flex flex-col rounded-2xl border border-border bg-card",
+        tipo === "estrutura" ? "min-h-64 max-h-[620px] lg:col-span-3" : "h-[620px]",
+      )}
+      aria-label={title}
+    >
       <header className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
@@ -137,12 +143,74 @@ export function CerebroColumn({
         ) : (
           <div className="flex flex-col gap-4">
             {groups.map(([group, groupItems]) => (
-              <div key={group || "all"} className="flex flex-col gap-2">
+              <div
+                key={group || "all"}
+                className={cn(tipo === "estrutura" ? "grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3" : "flex flex-col gap-2")}
+              >
                 {group && (
                   <p className="px-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{group}</p>
                 )}
                 {groupItems.map((item) => {
                   const expanded = expandedId === item.id
+
+                  if (tipo === "estrutura") {
+                    const meta = [item.nicho, item.pais, item.moeda].filter(Boolean) as string[]
+                    return (
+                      <div
+                        key={item.id}
+                        className="group flex flex-col gap-3 rounded-xl border border-border bg-background/40 p-4 transition-colors hover:border-primary/30"
+                      >
+                        <div className="flex items-start gap-3">
+                          <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-muted">
+                            {item.favicon ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={item.favicon} alt="" className="h-4 w-4" loading="lazy" />
+                            ) : (
+                              <Store className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                            )}
+                          </span>
+                          <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                            <span className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+                              {item.fixado && <Pin className="h-3 w-3 shrink-0 text-primary" aria-label="Fixado" />}
+                              <span className="truncate">{item.titulo}</span>
+                            </span>
+                            {item.url ? (
+                              <a
+                                href={item.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex min-w-0 items-center gap-1 text-xs text-primary hover:underline"
+                              >
+                                <span className="truncate">{item.url.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "")}</span>
+                                <ExternalLink className="h-3 w-3 shrink-0" aria-hidden="true" />
+                              </a>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">Sem link</span>
+                            )}
+                          </div>
+                          {item.url && (
+                            <IconButton
+                              label={copiedId === item.id ? "Copiado!" : "Copiar link da loja"}
+                              onClick={() => copy(item.id, item.url ?? "")}
+                            >
+                              {copiedId === item.id ? <Check className="h-3.5 w-3.5 text-primary" /> : <Copy className="h-3.5 w-3.5" />}
+                            </IconButton>
+                          )}
+                          {actions(item)}
+                        </div>
+                        {meta.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5">
+                            {item.nicho && <MetaBadge label="Nicho" value={item.nicho} />}
+                            {item.pais && <MetaBadge label="País" value={item.pais} />}
+                            {item.moeda && <MetaBadge label="Moeda" value={item.moeda} />}
+                          </div>
+                        )}
+                        {item.conteudo && (
+                          <p className="whitespace-pre-wrap text-xs leading-relaxed text-muted-foreground line-clamp-3">{item.conteudo}</p>
+                        )}
+                      </div>
+                    )
+                  }
 
                   if (tipo === "link") {
                     return (
@@ -216,6 +284,22 @@ export function CerebroColumn({
                             </span>
                           )}
                         </button>
+                        {tipo === "modelo" && (
+                          <button
+                            type="button"
+                            onClick={() => copy(item.id, item.conteudo)}
+                            title={copiedId === item.id ? "Copiado!" : "Copiar prompt"}
+                            aria-label={copiedId === item.id ? "Prompt copiado" : "Copiar prompt completo"}
+                            className={cn(
+                              "flex h-7 w-7 shrink-0 items-center justify-center rounded-md border transition-colors",
+                              copiedId === item.id
+                                ? "border-primary/50 bg-primary/20 text-primary"
+                                : "border-border bg-muted/40 text-muted-foreground hover:border-primary/40 hover:text-foreground",
+                            )}
+                          >
+                            {copiedId === item.id ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                          </button>
+                        )}
                         {actions(item)}
                       </div>
 
@@ -248,6 +332,15 @@ export function CerebroColumn({
         )}
       </div>
     </section>
+  )
+}
+
+function MetaBadge({ label, value }: { label: string; value: string }) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-md border border-border bg-muted/40 px-2 py-0.5 text-[11px]">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="font-medium text-foreground">{value}</span>
+    </span>
   )
 }
 

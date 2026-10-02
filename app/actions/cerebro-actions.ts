@@ -3,7 +3,7 @@
 import { sql } from "@/lib/db"
 import { getSession } from "@/lib/auth"
 
-export type CerebroTipo = "aprendizado" | "link" | "modelo"
+export type CerebroTipo = "aprendizado" | "link" | "modelo" | "estrutura"
 
 export type CerebroItem = {
   id: number
@@ -15,6 +15,9 @@ export type CerebroItem = {
   tags: string[]
   fixado: boolean
   favicon: string | null
+  nicho: string | null
+  pais: string | null
+  moeda: string | null
   created_at: string
   updated_at: string
 }
@@ -27,11 +30,27 @@ export type CerebroInput = {
   categoria?: string | null
   tags?: string[]
   favicon?: string | null
+  nicho?: string | null
+  pais?: string | null
+  moeda?: string | null
 }
 
 type Result<T> = { ok: true; data: T } | { ok: false; error: string }
 
-const TIPOS: CerebroTipo[] = ["aprendizado", "link", "modelo"]
+type CleanInput = {
+  tipo: CerebroTipo
+  titulo: string
+  conteudo: string
+  url: string | null
+  categoria: string | null
+  tags: string[]
+  favicon: string | null
+  nicho: string | null
+  pais: string | null
+  moeda: string | null
+}
+
+const TIPOS: CerebroTipo[] = ["aprendizado", "link", "modelo", "estrutura"]
 
 async function getAdminId(): Promise<number | null> {
   const { user } = await getSession()
@@ -54,7 +73,7 @@ function normalizeUrl(raw: string): string | null {
   }
 }
 
-function sanitize(input: CerebroInput): Result<Required<Omit<CerebroInput, "favicon">> & { favicon: string | null }> {
+function sanitize(input: CerebroInput): Result<CleanInput> {
   if (!TIPOS.includes(input.tipo)) return { ok: false, error: "Tipo inválido." }
   const titulo = (input.titulo ?? "").trim().slice(0, 500)
   const conteudo = (input.conteudo ?? "").trim().slice(0, 50000)
@@ -67,10 +86,21 @@ function sanitize(input: CerebroInput): Result<Required<Omit<CerebroInput, "favi
     url = normalizeUrl(input.url ?? "")
     if (!url) return { ok: false, error: "Informe um endereço válido." }
   }
+  if (input.tipo === "estrutura" && (input.url ?? "").trim()) {
+    url = normalizeUrl(input.url ?? "")
+    if (!url) return { ok: false, error: "Informe um link da loja válido." }
+  }
   const finalTitulo = titulo || (url ? new URL(url).hostname.replace(/^www\./, "") : "")
-  if (!finalTitulo) return { ok: false, error: "Informe um título." }
-  const favicon = input.tipo === "link" && url ? input.favicon || faviconFor(url) : null
-  return { ok: true, data: { tipo: input.tipo, titulo: finalTitulo, conteudo, url, categoria, tags, favicon } }
+  if (!finalTitulo) return { ok: false, error: input.tipo === "estrutura" ? "Informe o nome da loja." : "Informe um título." }
+  const favicon = (input.tipo === "link" || input.tipo === "estrutura") && url ? input.favicon || faviconFor(url) : null
+  const isEstrutura = input.tipo === "estrutura"
+  const nicho = isEstrutura ? (input.nicho ?? "").trim().slice(0, 150) || null : null
+  const pais = isEstrutura ? (input.pais ?? "").trim().slice(0, 100) || null : null
+  const moeda = isEstrutura ? (input.moeda ?? "").trim().toUpperCase().slice(0, 20) || null : null
+  return {
+    ok: true,
+    data: { tipo: input.tipo, titulo: finalTitulo, conteudo, url, categoria, tags, favicon, nicho, pais, moeda },
+  }
 }
 
 function faviconFor(url: string) {
@@ -86,7 +116,7 @@ export async function getCerebroItems(): Promise<Result<CerebroItem[]>> {
   if (!adminId) return { ok: false, error: "Acesso negado." }
   try {
     const rows = await sql`
-      SELECT id, tipo, titulo, conteudo, url, categoria, tags, fixado, favicon, created_at, updated_at
+      SELECT id, tipo, titulo, conteudo, url, categoria, tags, fixado, favicon, nicho, pais, moeda, created_at, updated_at
       FROM pg_cerebro
       WHERE created_by = ${adminId}
       ORDER BY fixado DESC, created_at DESC
@@ -106,9 +136,9 @@ export async function createCerebroItem(input: CerebroInput): Promise<Result<Cer
   const d = clean.data
   try {
     const rows = await sql`
-      INSERT INTO pg_cerebro (tipo, titulo, conteudo, url, categoria, tags, favicon, created_by)
-      VALUES (${d.tipo}, ${d.titulo}, ${d.conteudo}, ${d.url}, ${d.categoria}, ${d.tags}::text[], ${d.favicon}, ${adminId})
-      RETURNING id, tipo, titulo, conteudo, url, categoria, tags, fixado, favicon, created_at, updated_at
+      INSERT INTO pg_cerebro (tipo, titulo, conteudo, url, categoria, tags, favicon, nicho, pais, moeda, created_by)
+      VALUES (${d.tipo}, ${d.titulo}, ${d.conteudo}, ${d.url}, ${d.categoria}, ${d.tags}::text[], ${d.favicon}, ${d.nicho}, ${d.pais}, ${d.moeda}, ${adminId})
+      RETURNING id, tipo, titulo, conteudo, url, categoria, tags, fixado, favicon, nicho, pais, moeda, created_at, updated_at
     `
     return { ok: true, data: rows[0] as CerebroItem }
   } catch (error) {
@@ -127,9 +157,10 @@ export async function updateCerebroItem(id: number, input: CerebroInput): Promis
     const rows = await sql`
       UPDATE pg_cerebro
       SET titulo = ${d.titulo}, conteudo = ${d.conteudo}, url = ${d.url}, categoria = ${d.categoria},
-          tags = ${d.tags}::text[], favicon = ${d.favicon}, updated_at = NOW()
+          tags = ${d.tags}::text[], favicon = ${d.favicon}, nicho = ${d.nicho}, pais = ${d.pais},
+          moeda = ${d.moeda}, updated_at = NOW()
       WHERE id = ${id} AND created_by = ${adminId}
-      RETURNING id, tipo, titulo, conteudo, url, categoria, tags, fixado, favicon, created_at, updated_at
+      RETURNING id, tipo, titulo, conteudo, url, categoria, tags, fixado, favicon, nicho, pais, moeda, created_at, updated_at
     `
     if (!rows[0]) return { ok: false, error: "Item não encontrado." }
     return { ok: true, data: rows[0] as CerebroItem }
@@ -146,7 +177,7 @@ export async function toggleCerebroFixado(id: number, fixado: boolean): Promise<
     const rows = await sql`
       UPDATE pg_cerebro SET fixado = ${fixado}, updated_at = NOW()
       WHERE id = ${id} AND created_by = ${adminId}
-      RETURNING id, tipo, titulo, conteudo, url, categoria, tags, fixado, favicon, created_at, updated_at
+      RETURNING id, tipo, titulo, conteudo, url, categoria, tags, fixado, favicon, nicho, pais, moeda, created_at, updated_at
     `
     if (!rows[0]) return { ok: false, error: "Item não encontrado." }
     return { ok: true, data: rows[0] as CerebroItem }

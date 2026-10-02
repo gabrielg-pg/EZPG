@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { Brain, Link2, Lightbulb, Loader2, Search, Sparkles, X } from "lucide-react"
+import { Brain, Link2, Lightbulb, Loader2, Search, Sparkles, Store, X } from "lucide-react"
 import { toast } from "sonner"
 import { Toaster } from "@/components/ui/sonner"
 import { Input } from "@/components/ui/input"
@@ -110,7 +110,9 @@ export function CerebroBoard({ initialItems, loadError }: CerebroBoardProps) {
     return items.filter((i) => {
       if (activeTag && !i.tags?.some((t) => t.toLowerCase() === activeTag.toLowerCase())) return false
       if (!q) return true
-      return [i.titulo, i.conteudo, i.url ?? "", i.categoria ?? "", ...(i.tags ?? [])].some((f) => f.toLowerCase().includes(q))
+      return [i.titulo, i.conteudo, i.url ?? "", i.categoria ?? "", i.nicho ?? "", i.pais ?? "", i.moeda ?? "", ...(i.tags ?? [])].some(
+        (f) => f.toLowerCase().includes(q),
+      )
     })
   }, [items, search, activeTag])
 
@@ -355,6 +357,20 @@ export function CerebroBoard({ initialItems, loadError }: CerebroBoardProps) {
           emptyText="Nenhum modelo ainda. Salve o primeiro texto pronto."
           filtered={hasFilter}
           onAdd={() => openNew("modelo")}
+          onEdit={openEdit}
+          onDelete={setPendingDelete}
+          onTogglePin={handleTogglePin}
+          onTagClick={setActiveTag}
+        />
+        <CerebroColumn
+          tipo="estrutura"
+          title="Estruturas para Modelar"
+          icon={Store}
+          items={byTipo("estrutura")}
+          total={totalByTipo("estrutura")}
+          emptyText="Nenhuma estrutura ainda. Registre a primeira loja para modelar."
+          filtered={hasFilter}
+          onAdd={() => openNew("estrutura")}
           onEdit={openEdit}
           onDelete={setPendingDelete}
           onTogglePin={handleTogglePin}
