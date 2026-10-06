@@ -7,7 +7,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { LayoutDashboard, Store, Users, LogOut, Menu, X, ChevronRight, Loader2, Calendar, Rocket, KeyRound, TrendingUp, KanbanSquare, ClipboardList, Megaphone, Gauge, MessageSquareText, Sparkles, HandCoins, BarChart3, FileText, Building2, Filter, UserRound, Share2, Target, Brain } from "lucide-react"
+import { LayoutDashboard, Store, Users, LogOut, Menu, X, ChevronRight, Loader2, Calendar, Rocket, KeyRound, TrendingUp, KanbanSquare, ClipboardList, Megaphone, Gauge, MessageSquareText, Sparkles, HandCoins, BarChart3, FileText, Building2, Filter, UserRound, Share2, Target, Brain, Globe2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { logoutAction } from "@/app/actions/auth-actions"
 
@@ -33,6 +33,7 @@ export function DashboardLayout({ children, userRoles = ["user"] }: DashboardLay
     { name: "Nova Loja", href: "/nova-loja", icon: Store, roles: ["admin", "zona_execucao"] },
     { name: "Reuniões", href: "/reunioes", icon: Calendar, roles: ["admin", "comercial"] },
     { name: "Zona de Execução", href: "/zona-de-execucao", icon: Rocket, roles: ["admin", "comercial", "zona_execucao", "mineracao"] },
+    { name: "Guia de Mercados", href: "/guia-de-mercados", icon: Globe2, roles: ["admin", "zona_execucao"] },
     { name: "Blog", href: "/blog", icon: FileText, roles: ["admin", "blog"] },
     { name: "Onboardings", href: "/zona-de-execucao/onboardings", icon: MessageSquareText, roles: ["admin", "zona_execucao"] },
     { name: "Vértebra Naming™", href: "/zona-de-execucao/vertebra-naming", icon: Sparkles, roles: ["admin", "zona_execucao"] },

@@ -46,6 +46,18 @@ export async function updateMarket(id:number, input:{name:string;flag:string;lan
 
 export async function archiveMarket(id:number) { const user=await admin(); await sql`UPDATE pg_market_guides SET status='archived',updated_by=${user.id},updated_at=NOW() WHERE id=${id}`; revalidatePath("/guia-de-mercados"); revalidatePath("/guia-de-mercados/[slug]", "page") }
 
+export async function duplicateMarket(id: number) {
+  const user = await admin()
+  const source = await sql`SELECT name, flag, language, currency FROM pg_market_guides WHERE id=${id} LIMIT 1`
+  if (!source[0]) return { error: "Mercado não encontrado." }
+  const name = `${source[0].name} (cópia)`
+  const slug = `${slugify(String(source[0].name))}-${Date.now().toString(36)}`
+  const created = await sql`INSERT INTO pg_market_guides (name,slug,flag,language,currency,updated_by) VALUES (${name},${slug},${source[0].flag},${source[0].language},${source[0].currency},${user.id}) RETURNING id, slug`
+  await sql`INSERT INTO pg_market_guide_sections (market_id,title,section_key,section_type,content,sort_order,visible) SELECT ${created[0].id},title,section_key,section_type,content,sort_order,visible FROM pg_market_guide_sections WHERE market_id=${id}`
+  revalidatePath("/guia-de-mercados")
+  return { slug: created[0].slug }
+}
+
 export async function updateSection(id:number, input:{title:string;content:Record<string,unknown>;visible:boolean}) { const user=await admin(); await sql`UPDATE pg_market_guide_sections SET title=${input.title.trim()},content=${JSON.stringify(input.content)}::jsonb,visible=${input.visible},updated_at=NOW() WHERE id=${id}`; await sql`UPDATE pg_market_guides SET updated_by=${user.id},updated_at=NOW() WHERE id=(SELECT market_id FROM pg_market_guide_sections WHERE id=${id})`; revalidatePath("/guia-de-mercados", "layout") }
 
 export async function createSection(marketId:number, input:{title:string;sectionType:"text"|"key_value"|"table"}) { await admin(); const r=await sql`SELECT COALESCE(MAX(sort_order),-1)+1 AS next FROM pg_market_guide_sections WHERE market_id=${marketId}`; await sql`INSERT INTO pg_market_guide_sections (market_id,title,section_type,sort_order) VALUES (${marketId},${input.title.trim()},${input.sectionType},${r[0].next})`; revalidatePath("/guia-de-mercados", "layout") }
