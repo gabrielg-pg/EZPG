@@ -11,6 +11,6 @@ export default async function MarketDetailPage({ params }: { params: Promise<{ s
   const data = await getMarket(slug)
   if (!data) notFound()
   const [session, admin] = await Promise.all([getSession(), getAdminAccess()])
-  const roles = Array.from(new Set([session.user?.role, ...(session.user?.roles ?? [])].filter(Boolean))) as string[]
+  const roles = Array.from(new Set([session?.user?.role, ...(session?.user?.roles ?? [])].filter(Boolean))) as string[]
   return <DashboardLayout userRoles={roles}><MarketGuideDetail initial={data} isAdmin={admin} /></DashboardLayout>
 }

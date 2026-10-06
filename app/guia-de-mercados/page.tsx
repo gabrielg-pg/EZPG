@@ -8,7 +8,7 @@ export const metadata = { title: "Guia de Mercados | PRO GROWTH GLOBAL" }
 
 export default async function MarketGuidePage() {
   const [session, markets, admin] = await Promise.all([getSession(), getMarkets(), getAdminAccess()])
-  const roles = Array.from(new Set([session.user?.role, ...(session.user?.roles ?? [])].filter(Boolean))) as string[]
+  const roles = Array.from(new Set([session?.user?.role, ...(session?.user?.roles ?? [])].filter(Boolean))) as string[]
   return <DashboardLayout userRoles={roles}><MarketGuideList initialMarkets={markets} isAdmin={admin} /></DashboardLayout>
 }
 
