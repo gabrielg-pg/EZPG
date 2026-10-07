@@ -81,7 +81,7 @@ export async function createCreative(data: {
       )
       RETURNING *
     `
-    revalidatePath("/zona-de-execucao/criativos")
+    revalidatePath("/criativos")
     return { success: true, creative: (rows as Creative[])[0] }
   } catch (error) {
     console.error("Create creative error:", error)
@@ -109,7 +109,7 @@ export async function moveCreative(
       SET status = ${status}, pause_reason = ${reason}, updated_at = NOW()
       WHERE id = ${id}
     `
-    revalidatePath("/zona-de-execucao/criativos")
+    revalidatePath("/criativos")
     return { success: true }
   } catch (error) {
     console.error("Move creative error:", error)
@@ -151,7 +151,7 @@ export async function updateCreative(
           updated_at = NOW()
       WHERE id = ${id}
     `
-    revalidatePath("/zona-de-execucao/criativos")
+    revalidatePath("/criativos")
     return { success: true }
   } catch (error) {
     console.error("Update creative error:", error)
@@ -165,7 +165,7 @@ export async function deleteCreative(id: number): Promise<{ success: boolean; er
   }
   try {
     await sql`DELETE FROM pg_creatives WHERE id = ${id}`
-    revalidatePath("/zona-de-execucao/criativos")
+    revalidatePath("/criativos")
     return { success: true }
   } catch (error) {
     console.error("Delete creative error:", error)

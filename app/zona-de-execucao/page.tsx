@@ -15,9 +15,9 @@ export default async function ZonaDeExecucaoPage() {
     redirect("/login")
   }
 
-  // Gestor de ADS (sem ser admin) só enxerga a aba Criativos — vai direto para ela
+  // Gestor de ADS (sem ser admin) acessa diretamente o módulo de Criativos.
   if (roles.includes("gestor_ads") && !roles.includes("admin")) {
-    redirect("/zona-de-execucao/criativos")
+    redirect("/criativos")
   }
 
   await createExecutionZoneCardsTable()

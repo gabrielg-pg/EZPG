@@ -30,7 +30,7 @@ function resolveLandingPage(roles: string[]): string {
   if (roles.includes("admin")) return "/dashboard"
   if (roles.includes("zona_execucao")) return "/zona-de-execucao"
   if (roles.includes("comercial")) return "/reunioes"
-  if (roles.includes("gestor_ads")) return "/zona-de-execucao/criativos"
+  if (roles.includes("gestor_ads")) return "/criativos"
   if (roles.includes("mineracao")) return "/mineracao"
   if (roles.includes("blog")) return "/blog"
   if (roles.includes("nexus_growth")) return "/zona-de-execucao/nexus-growth"

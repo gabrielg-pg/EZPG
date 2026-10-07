@@ -13,7 +13,7 @@ export default async function HomePage() {
     } else if (role === "comercial") {
       redirect("/reunioes")
     } else if (role === "gestor_ads") {
-      redirect("/zona-de-execucao/criativos")
+      redirect("/criativos")
     } else {
       redirect("/zona-de-execucao")
     }

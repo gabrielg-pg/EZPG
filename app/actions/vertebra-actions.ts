@@ -5,7 +5,7 @@ import { getSession } from "@/lib/auth"
 import { revalidatePath } from "next/cache"
 import type { VertebraLead, VertebraPipelineStatus, VertebraSinalStatus } from "@/lib/vertebra"
 
-const PATH = "/zona-de-execucao/propostas"
+const PATH = "/propostas"
 
 // ---------- CONFIG DE VAGAS (leitura pública) ----------
 
