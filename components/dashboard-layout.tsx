@@ -7,7 +7,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { LayoutDashboard, Store, Users, LogOut, Menu, X, ChevronRight, Loader2, Calendar, Rocket, KeyRound, TrendingUp, KanbanSquare, ClipboardList, Megaphone, Gauge, MessageSquareText, Sparkles, HandCoins, BarChart3, FileText, Building2, Filter, UserRound, Share2, Target, Brain, Globe2 } from "lucide-react"
+import { LayoutDashboard, Store, Users, LogOut, Menu, X, ChevronRight, Loader2, Rocket, KeyRound, TrendingUp, KanbanSquare, ClipboardList, Gauge, MessageSquareText, Sparkles, HandCoins, BarChart3, Building2, Filter, UserRound, Share2, Target, Brain, Globe2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { logoutAction } from "@/app/actions/auth-actions"
 
@@ -31,14 +31,11 @@ export function DashboardLayout({ children, userRoles = ["user"] }: DashboardLay
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["admin", "zona_execucao"] },
     { name: "Demandas", href: "/demandas", icon: ClipboardList, roles: ["admin", "comercial", "zona_execucao", "user", "mineracao"] },
     { name: "Nova Loja", href: "/nova-loja", icon: Store, roles: ["admin", "zona_execucao"] },
-    { name: "Reuniões", href: "/reunioes", icon: Calendar, roles: ["admin", "comercial"] },
     { name: "Zona de Execução", href: "/zona-de-execucao", icon: Rocket, roles: ["admin", "comercial", "zona_execucao", "mineracao"] },
     { name: "Guia de Mercados", href: "/guia-de-mercados", icon: Globe2, roles: ["admin", "zona_execucao"] },
-    { name: "Blog", href: "/blog", icon: FileText, roles: ["admin", "blog"] },
     { name: "Onboardings", href: "/zona-de-execucao/onboardings", icon: MessageSquareText, roles: ["admin", "zona_execucao"] },
     { name: "Vértebra Naming™", href: "/zona-de-execucao/vertebra-naming", icon: Sparkles, roles: ["admin", "zona_execucao"] },
     { name: "Propostas", href: "/propostas", icon: HandCoins, roles: ["admin"] },
-    { name: "Criativos", href: "/criativos", icon: Megaphone, roles: ["admin", "gestor_ads"] },
     { name: "Growth Clientes", href: "/zona-de-execucao/growth-clientes", icon: TrendingUp, roles: ["admin"] },
     { name: "Nexus Growth", href: "/zona-de-execucao/nexus-growth", icon: Share2, roles: ["admin", "nexus_growth"] },
     { name: "Clientes", href: "/zona-de-execucao/clientes", icon: UserRound, roles: ["admin"] },
@@ -49,7 +46,6 @@ export function DashboardLayout({ children, userRoles = ["user"] }: DashboardLay
     { name: "Funil Formulário", href: "/crm", icon: KanbanSquare, roles: ["admin", "gestor_ads"] },
     { name: "Funil QUIZ", href: "/funil", icon: Filter, roles: ["admin", "gestor_ads"] },
   { name: "Funil VÉRTEBRA", href: "/zona-de-execucao/funil-vertebra", icon: Target, roles: ["admin", "gestor_ads"] },
-    { name: "Funis Growth", href: "/funis-growth", icon: BarChart3, roles: ["admin", "funis_growth"] },
     { name: "Raio-X dos Planos", href: "/raiox-planos", icon: BarChart3, roles: ["admin"] },
     { name: "Financeiro", href: "/financeiro", icon: TrendingUp, roles: ["admin"] },
     { name: "Investimentos", href: "/investimentos", icon: BarChart3, roles: ["admin"] },
@@ -60,6 +56,12 @@ export function DashboardLayout({ children, userRoles = ["user"] }: DashboardLay
     .filter((role): role is string => typeof role === "string")
     .map((role) => role.toLowerCase())
   const filteredNavigation = navigation.filter((item) => item.roles.some((role) => normalizedUserRoles.includes(role.toLowerCase())))
+  const pageTitles: Record<string, string> = {
+    "/reunioes": "Reuniões",
+    "/blog": "Blog",
+    "/funis-growth": "Funis Growth",
+    "/criativos": "Criativos",
+  }
 
   const handleLogout = () => {
     startTransition(async () => {
@@ -167,7 +169,7 @@ export function DashboardLayout({ children, userRoles = ["user"] }: DashboardLay
           <div className="flex items-center gap-3">
             <div className="h-8 w-1 rounded-full bg-gradient-to-b from-primary to-primary/50" />
             <h1 className="text-xl font-semibold text-foreground">
-              {filteredNavigation.find((item) => item.href === pathname)?.name || "Dashboard"}
+              {filteredNavigation.find((item) => item.href === pathname)?.name || pageTitles[pathname] || "Dashboard"}
             </h1>
           </div>
         </header>
