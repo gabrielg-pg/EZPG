@@ -1,10 +1,12 @@
 export const propostaConfig = {
   validade: "Proposta válida por 5 dias após a sua reunião.",
-  whatsapp: "#",
+  whatsapp: "https://wa.link/kxuh19",
   garantia: {
-    titulo: "Garantia",
-    texto: "[TERMOS DA GARANTIA A DEFINIR]",
+    titulo: "Garantia de 7 dias",
+    texto: "Acreditamos tanto que iremos lhe entregar algo além das suas expectativas, que oferecemos 7 dias após a estrutura pronta para você avaliar e, caso não gostares, iremos devolver 100% no Pix, sem complicações. Porém, em 15 anos, nunca tivemos 1 caso de reembolso. Temos certeza que você não será o primeiro.",
   },
+  logoUrl: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/pg_neg_principal-uEzXxSS3XTRWXcfURoNuczm7hsBcte.png",
+  footer: ["Copyright © 2026 PRO GROWTH®︎ GLOBAL LTDA.", "Todos os direitos reservados.", "CNPJ: 39.980.588/0001-22"],
   videos: {
     destaque: "6_yW96AbLiE",
     verticais: ["y1tbuvC83is", "a-WmEBSTTyM", "NEOB1NGFPCk", "zYN9t_QP2qc", "f8h6ED8w9AI", "VKXDw4FcQTs", "dHoed044zdo", "iO8NRnadk9g", "D3XUAIYddI8", "wiNs5iTPynE", "W7F9PMkPaKk", "KQCUcdxhWtY"],
@@ -20,7 +22,7 @@ export const propostaConfig = {
 export type PropostaPlan = (typeof propostaConfig.planos)[number]
 export const formatBRL = (value: number) => value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
 export const firstName = (name: string) => name.trim().split(/\s+/)[0] || ""
-export const proposalLink = (name: string) => `https://progrowth-global.com/proposta?n=${encodeURIComponent(firstName(name))}`
+export const proposalLink = (_name?: string) => "https://progrowth-global.com/proposta"
 export const followUpDefaults = [
   "Oi {nome}, tudo bem? Passando para saber se você conseguiu ver a proposta com calma. Deixo o link aqui de novo: {link}. Ficou alguma dúvida sobre os planos?",
   "{nome}, tudo certo? Estou fechando a agenda de novas operações e queria confirmar se ainda faz sentido reservar a sua vaga. Se quiser, tiro qualquer dúvida por aqui mesmo.",
