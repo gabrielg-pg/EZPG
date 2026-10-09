@@ -7,6 +7,12 @@ export const propostaConfig = {
   },
   logoUrl: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/pg_neg_principal-uEzXxSS3XTRWXcfURoNuczm7hsBcte.png",
   footer: ["Copyright © 2026 PRO GROWTH®︎ GLOBAL LTDA.", "Todos os direitos reservados.", "CNPJ: 39.980.588/0001-22"],
+  paises: [
+    { nome: "Brasil", bandeira: "🇧🇷" }, { nome: "Europa", bandeira: "🇪🇺" }, { nome: "Estados Unidos", bandeira: "🇺🇸" },
+    { nome: "Portugal", bandeira: "🇵🇹" }, { nome: "Espanha", bandeira: "🇪🇸" }, { nome: "Itália", bandeira: "🇮🇹" },
+    { nome: "Reino Unido", bandeira: "🇬🇧" }, { nome: "França", bandeira: "🇫🇷" }, { nome: "Alemanha", bandeira: "🇩🇪" },
+    { nome: "Canadá", bandeira: "🇨🇦" }, { nome: "México", bandeira: "🇲🇽" },
+  ],
   videos: {
     destaque: "6_yW96AbLiE",
     verticais: ["y1tbuvC83is", "a-WmEBSTTyM", "NEOB1NGFPCk", "zYN9t_QP2qc", "f8h6ED8w9AI", "VKXDw4FcQTs", "dHoed044zdo", "iO8NRnadk9g", "D3XUAIYddI8", "wiNs5iTPynE", "W7F9PMkPaKk", "KQCUcdxhWtY"],
