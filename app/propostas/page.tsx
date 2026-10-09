@@ -3,8 +3,9 @@ export const dynamic = "force-dynamic"
 import { requireAuth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { DashboardLayout } from "@/components/dashboard-layout"
-import { PropostasBoard } from "@/components/propostas-board"
+import { PropostasPage as PropostasPageContent } from "@/components/propostas-page"
 import { getVertebraLeads, getVagasConfig } from "@/app/actions/vertebra-actions"
+import { getProposalLeads } from "@/app/actions/propostas-crm-actions"
 
 export default async function PropostasPage() {
   const user = await requireAuth()
@@ -14,11 +15,11 @@ export default async function PropostasPage() {
     redirect("/dashboard")
   }
 
-  const [leads, vagas] = await Promise.all([getVertebraLeads(), getVagasConfig()])
+  const [leads, vagas, crm] = await Promise.all([getVertebraLeads(), getVagasConfig(), getProposalLeads()])
 
   return (
     <DashboardLayout userRoles={roles}>
-      <PropostasBoard initialLeads={leads} vagas={vagas} />
+      <PropostasPageContent leads={leads} vagas={vagas} crm={crm} />
     </DashboardLayout>
   )
 }
