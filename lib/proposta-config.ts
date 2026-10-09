@@ -11,7 +11,7 @@ export const propostaConfig = {
     { nome: "Brasil", bandeira: "🇧🇷" }, { nome: "Europa", bandeira: "🇪🇺" }, { nome: "Estados Unidos", bandeira: "🇺🇸" },
     { nome: "Portugal", bandeira: "🇵🇹" }, { nome: "Espanha", bandeira: "🇪🇸" }, { nome: "Itália", bandeira: "🇮🇹" },
     { nome: "Reino Unido", bandeira: "🇬🇧" }, { nome: "França", bandeira: "🇫🇷" }, { nome: "Alemanha", bandeira: "🇩🇪" },
-    { nome: "Canadá", bandeira: "🇨🇦" }, { nome: "México", bandeira: "🇲🇽" },
+    { nome: "Canadá", bandeira: "🇨🇦" },
   ],
   videos: {
     destaque: "6_yW96AbLiE",
