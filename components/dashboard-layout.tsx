@@ -2,12 +2,12 @@
 
 import type React from "react"
 
-import { useState, useTransition } from "react"
+import { useEffect, useRef, useState, useTransition } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { LayoutDashboard, Store, Users, LogOut, Menu, X, ChevronRight, Loader2, Calendar, Rocket } from "lucide-react"
+import { LayoutDashboard, Store, Users, LogOut, Menu, X, ChevronRight, Loader2, Rocket, KeyRound, TrendingUp, KanbanSquare, ClipboardList, Gauge, MessageSquareText, Sparkles, HandCoins, BarChart3, Building2, Filter, UserRound, Share2, Target, Brain, Globe2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { logoutAction } from "@/app/actions/auth-actions"
 
@@ -20,16 +20,48 @@ export function DashboardLayout({ children, userRoles = ["user"] }: DashboardLay
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
   const pathname = usePathname()
+  const navRef = useRef<HTMLElement>(null)
+
+  useEffect(() => {
+    const active = navRef.current?.querySelector<HTMLElement>('[aria-current="page"]')
+    active?.scrollIntoView({ block: "nearest" })
+  }, [pathname])
 
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["admin", "zona_execucao"] },
+    { name: "Demandas", href: "/demandas", icon: ClipboardList, roles: ["admin", "comercial", "zona_execucao", "user", "mineracao"] },
     { name: "Nova Loja", href: "/nova-loja", icon: Store, roles: ["admin", "zona_execucao"] },
-    { name: "Reuniões", href: "/reunioes", icon: Calendar, roles: ["admin", "comercial"] },
-    { name: "Zona de Execução", href: "/zona-de-execucao", icon: Rocket, roles: ["admin", "comercial", "zona_execucao"] },
+    { name: "Zona de Execução", href: "/zona-de-execucao", icon: Rocket, roles: ["admin", "comercial", "zona_execucao", "mineracao"] },
+    { name: "Guia de Mercados", href: "/guia-de-mercados", icon: Globe2, roles: ["admin", "zona_execucao"] },
+    { name: "Onboardings", href: "/zona-de-execucao/onboardings", icon: MessageSquareText, roles: ["admin", "zona_execucao"] },
+    { name: "Vértebra Naming™", href: "/zona-de-execucao/vertebra-naming", icon: Sparkles, roles: ["admin", "zona_execucao"] },
+    { name: "Propostas", href: "/propostas", icon: HandCoins, roles: ["admin"] },
+    { name: "Growth Clientes", href: "/zona-de-execucao/growth-clientes", icon: TrendingUp, roles: ["admin"] },
+    { name: "Nexus Growth", href: "/zona-de-execucao/nexus-growth", icon: Share2, roles: ["admin", "nexus_growth"] },
+    { name: "Clientes", href: "/zona-de-execucao/clientes", icon: UserRound, roles: ["admin"] },
+    { name: "Empresas", href: "/zona-de-execucao/empresas", icon: Building2, roles: ["admin", "zona_execucao"] },
+    { name: "Cofre", href: "/cofre", icon: KeyRound, roles: ["admin"] },
+    { name: "Cérebro", href: "/cerebro", icon: Brain, roles: ["admin"] },
+    { name: "PG Dash", href: "/pg-dash", icon: Gauge, roles: ["admin", "zona_execucao"] },
+    { name: "Funil Formulário", href: "/crm", icon: KanbanSquare, roles: ["admin", "gestor_ads"] },
+    { name: "Funil QUIZ", href: "/funil", icon: Filter, roles: ["admin", "gestor_ads"] },
+  { name: "Funil VÉRTEBRA", href: "/zona-de-execucao/funil-vertebra", icon: Target, roles: ["admin", "gestor_ads"] },
+    { name: "Raio-X dos Planos", href: "/raiox-planos", icon: BarChart3, roles: ["admin"] },
+    { name: "Financeiro", href: "/financeiro", icon: TrendingUp, roles: ["admin"] },
+    { name: "Investimentos", href: "/investimentos", icon: BarChart3, roles: ["admin"] },
     { name: "Usuários", href: "/admin", icon: Users, roles: ["admin"] },
   ]
 
-  const filteredNavigation = navigation.filter((item) => item.roles.some(role => userRoles.includes(role)))
+  const normalizedUserRoles = userRoles
+    .filter((role): role is string => typeof role === "string")
+    .map((role) => role.toLowerCase())
+  const filteredNavigation = navigation.filter((item) => item.roles.some((role) => normalizedUserRoles.includes(role.toLowerCase())))
+  const pageTitles: Record<string, string> = {
+    "/reunioes": "Reuniões",
+    "/blog": "Blog",
+    "/funis-growth": "Funis Growth",
+    "/criativos": "Criativos",
+  }
 
   const handleLogout = () => {
     startTransition(async () => {
@@ -56,16 +88,16 @@ export function DashboardLayout({ children, userRoles = ["user"] }: DashboardLay
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="flex items-center justify-between h-20 px-6 border-b border-sidebar-border">
+          <div className="flex shrink-0 items-center justify-between h-20 px-6 border-b border-sidebar-border">
             <div className="flex items-center gap-3">
               <Image
                 src="https://i.imgur.com/jfNDVLp.png"
-                alt="Pro Growth Logo"
+                alt="PRO GROWTH GLOBAL Logo"
                 width={40}
                 height={40}
                 className="rounded-xl shadow-lg shadow-primary/20"
               />
-              <span className="text-lg font-bold text-white tracking-tight">Pro Growth</span>
+              <span className="text-lg font-bold text-white tracking-tight">PRO GROWTH GLOBAL</span>
             </div>
             <button 
               onClick={() => setSidebarOpen(false)} 
@@ -76,7 +108,7 @@ export function DashboardLayout({ children, userRoles = ["user"] }: DashboardLay
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 px-4 py-6 space-y-2">
+          <nav ref={navRef} className="sidebar-scroll flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 py-6 space-y-2">
             <p className="px-3 mb-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Menu</p>
             {filteredNavigation.map((item) => {
               const isActive = pathname === item.href
@@ -84,6 +116,7 @@ export function DashboardLayout({ children, userRoles = ["user"] }: DashboardLay
                 <Link
                   key={item.name}
                   href={item.href}
+                  aria-current={isActive ? "page" : undefined}
                   className={cn(
                     "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200",
                     isActive
@@ -100,7 +133,7 @@ export function DashboardLayout({ children, userRoles = ["user"] }: DashboardLay
           </nav>
 
           {/* Logout */}
-          <div className="p-4 border-t border-sidebar-border">
+          <div className="shrink-0 p-4 border-t border-sidebar-border">
             <Button
               variant="ghost"
               onClick={handleLogout}
@@ -136,7 +169,7 @@ export function DashboardLayout({ children, userRoles = ["user"] }: DashboardLay
           <div className="flex items-center gap-3">
             <div className="h-8 w-1 rounded-full bg-gradient-to-b from-primary to-primary/50" />
             <h1 className="text-xl font-semibold text-foreground">
-              {filteredNavigation.find((item) => item.href === pathname)?.name || "Dashboard"}
+              {filteredNavigation.find((item) => item.href === pathname)?.name || pageTitles[pathname] || "Dashboard"}
             </h1>
           </div>
         </header>

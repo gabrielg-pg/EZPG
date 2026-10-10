@@ -9,6 +9,7 @@
     "start": "next start"
   },
   "dependencies": {
+    "@google-analytics/data": "^6.1.0",
     "@hookform/resolvers": "^3.10.0",
     "@neondatabase/serverless": "1.0.2",
     "@radix-ui/react-accordion": "1.2.2",
